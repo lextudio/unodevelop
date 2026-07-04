@@ -1,0 +1,19 @@
+<AddIn name="AddInScout"
+       author="UnoDevelop"
+       description="Display AddInTree and loaded AddIn information"
+       addInManagerHidden="preinstalled">
+  <Manifest>
+    <Identity name="UnoDevelop.AddInScout" version="1.0"/>
+  </Manifest>
+
+  <Runtime>
+    <Import assembly="UnoDevelop.AddInScout.dll"/>
+  </Runtime>
+
+  <Path name="/UnoDevelop/MainMenu/Tools">
+    <MenuItem id="AddInScout"
+              label="AddIn Scout"
+              insertbefore="Options"
+              class="UnoDevelop.AddIns.Misc.AddInScout.ShowAddInScoutCommand" />
+  </Path>
+</AddIn>

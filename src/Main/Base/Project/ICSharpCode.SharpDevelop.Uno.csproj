@@ -1,0 +1,330 @@
+<Project Sdk="Uno.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0-desktop</TargetFramework>
+    <AssemblyName>ICSharpCode.SharpDevelop.Uno</AssemblyName>
+    <RootNamespace>ICSharpCode.SharpDevelop</RootNamespace>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <DefineConstants>$(DefineConstants);HAS_UNO;UNODEVELOP</DefineConstants>
+    <NoWarn>$(NoWarn);CS8632</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Core\Project\ICSharpCode.Core.Uno.csproj" />
+    <ProjectReference Include="$(SharpDevelopSourceRoot)\src\Libraries\ICSharpCode.TypeSystem.Abstractions\ICSharpCode.TypeSystem.Abstractions.Uno.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Build" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Features" />
+    <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic.Features" />
+    <PackageReference Include="System.Composition.Hosting" />
+    <PackageReference Include="System.Composition.TypedParts" />
+    <PackageReference Include="System.CodeDom" />
+    <PackageReference Include="StreamJsonRpc" />
+    <PackageReference Include="NuGet.PackageManagement" />
+    <PackageReference Include="Microsoft.TemplateEngine.Abstractions" />
+    <PackageReference Include="Microsoft.TemplateEngine.Edge" />
+    <PackageReference Include="Microsoft.TemplateEngine.Orchestrator.RunnableProjects" />
+    <PackageReference Include="Microsoft.TemplateEngine.Utils" />
+    <PackageReference Include="Microsoft.TemplateEngine.IDE" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(UseNuGetPackages)' == 'true' ">
+    <PackageReference Include="LeXtudio.UnoEdit" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(UseNuGetPackages)' != 'true' ">
+    <ProjectReference Include="..\..\..\..\..\UnoEdit\src\UnoEdit\UnoEdit.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\Src\AssemblyInfo.uno.cs" />
+    <Compile Include="..\Src\SharpDevelopExtensions.uno.cs" />
+    <Compile Include="..\Src\Migration\BaseMigrationBatch.cs" />
+    <Compile Include="..\Src\Workspace\WorkspaceDescriptor.cs" />
+    <Compile Include="..\Src\LanguageServices\LanguageServiceContracts.cs" />
+    <Compile Include="..\Src\LanguageServices\LanguageServiceCompletionItemList.cs" />
+    <Compile Include="..\Src\LanguageServices\LanguageDiagnosticFormatter.cs" />
+    <Compile Include="..\Src\LanguageServices\LanguageServiceProjectSnapshot.cs" />
+    <Compile Include="..\Src\LanguageServices\LanguageServiceRegistry.cs" />
+    <Compile Include="..\Src\LanguageServices\NoOpLanguageService.cs" />
+    <Compile Include="..\Src\LanguageServices\Roslyn\CSharpVBLanguageService.cs" />
+    <Compile Include="..\Src\LanguageServices\Roslyn\CSharpVBLanguageService.CodeActions.cs" />
+    <Compile Include="..\Src\LanguageServices\Lsp\LspServerRegistry.cs" />
+    <Compile Include="..\Src\LanguageServices\Lsp\LspLanguageService.cs" />
+    <Compile Include="..\Src\NuGet\UnoNuGetProject.cs" />
+    <Compile Include="..\Src\NuGet\NuGetPackageSourceCatalog.cs" />
+    <Compile Include="..\Src\NuGet\NuGetSearchResult.cs" />
+    <Compile Include="..\Src\NuGet\NuGetPackageSearchService.cs" />
+    <Compile Include="..\Src\Templates\UnoTemplateEngineHost.cs" />
+    <Compile Include="..\Src\Templates\TemplateSummary.cs" />
+    <Compile Include="..\Src\Templates\TemplateDiscoveryService.cs" />
+    <Compile Include="..\Src\Templates\TemplateInstantiationResult.cs" />
+    <!-- CustomTool / auto-run-on-save + before-build (docs/t4-templating.md) — linked from
+         upstream, guarded with #if !HAS_UNO where WPF-only (ProjectBrowserPad, ExecuteCustomToolCommand). -->
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Project\CustomTool.cs"
+             Link="Upstream\Project\CustomTool.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Project\BeforeBuildCustomToolRunner.cs"
+             Link="Upstream\Project\BeforeBuildCustomToolRunner.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Project\BeforeBuildCustomToolProjectItems.cs"
+             Link="Upstream\Project\BeforeBuildCustomToolProjectItems.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Project\BeforeBuildCustomToolFileNameFilter.cs"
+             Link="Upstream\Project\BeforeBuildCustomToolFileNameFilter.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Project\ProjectCustomToolOptions.cs"
+             Link="Upstream\Project\ProjectCustomToolOptions.cs" />
+    <Compile Include="..\Src\Gui\PadDescriptor.uno.cs" />
+    <Compile Include="..\Src\Workbench\WorkbenchPlatformBridge.cs" />
+    <Compile Include="..\Src\Workbench\WorkbenchPlatformBridge.uno.cs" />
+    <Compile Include="..\Src\Workbench\IViewContent.uno.cs" />
+    <Compile Include="..\Src\Workbench\IWorkbenchWindow.uno.cs" />
+    <Compile Include="..\Src\Workbench\IWorkbench.uno.cs" />
+    <Compile Include="..\Src\Workbench\ViewContentEventArgs.uno.cs" />
+    <!-- Editor Bookmarks -->
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Editor\Bookmarks\IBookmark.cs"
+             Link="Upstream\Editor\Bookmarks\IBookmark.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Editor\Bookmarks\BookmarkBase.cs"
+             Link="Upstream\Editor\Bookmarks\BookmarkBase.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Editor\Bookmarks\BookmarkEventArgs.cs"
+             Link="Upstream\Editor\Bookmarks\BookmarkEventArgs.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Editor\Bookmarks\SDBookmark.cs"
+             Link="Upstream\Editor\Bookmarks\SDBookmark.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Editor\Bookmarks\IBookmarkManager.cs"
+             Link="Upstream\Editor\Bookmarks\IBookmarkManager.cs" />
+    <!-- Editor / CodeCompletion interfaces -->
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Editor\DocumentUtilities.cs"
+             Link="Upstream\Editor\DocumentUtilities.cs" />
+<Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Editor\IBracketSearcher.cs"
+             Link="Upstream\Editor\IBracketSearcher.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Editor\IFormattingStrategy.cs"
+             Link="Upstream\Editor\IFormattingStrategy.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Editor\CodeCompletion\CompletionContext.cs"
+             Link="Upstream\Editor\CodeCompletion\CompletionContext.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Editor\CodeCompletion\ICompletionWindow.cs"
+             Link="Upstream\Editor\CodeCompletion\ICompletionWindow.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Editor\CodeCompletion\ICompletionItem.cs"
+             Link="Upstream\Editor\CodeCompletion\ICompletionItem.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Editor\CodeCompletion\ICompletionItemList.cs"
+             Link="Upstream\Editor\CodeCompletion\ICompletionItemList.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Editor\CodeCompletion\ICompletionListWindow.cs"
+             Link="Upstream\Editor\CodeCompletion\ICompletionListWindow.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Editor\CodeCompletion\IInsightItem.cs"
+             Link="Upstream\Editor\CodeCompletion\IInsightItem.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Editor\CodeCompletion\IInsightWindow.cs"
+             Link="Upstream\Editor\CodeCompletion\IInsightWindow.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Editor\ITextEditor.cs"
+             Link="Upstream\Editor\ITextEditor.cs" />
+    <Compile Include="..\Src\Editor\AvalonEditTextEditorAdapter.uno.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Editor\Search\ISearchResult.cs"
+             Link="Upstream\Editor\Search\ISearchResult.cs" />
+    <Compile Include="..\Src\Editor\Search\UnoSearchResultsService.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Editor\IEditorControlService.cs"
+             Link="Upstream\Editor\IEditorControlService.cs" />
+    <!-- CodeCompletion support types -->
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Editor\CodeCompletion\CodeCompletionBinding.cs"
+             Link="Upstream\Editor\CodeCompletion\CodeCompletionBinding.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Services\ParserService\CodeCompletionOptions.cs"
+             Link="Upstream\Services\ParserService\CodeCompletionOptions.cs" />
+    <!-- Refactoring -->
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Refactoring\IContextAction.cs"
+             Link="Upstream\Refactoring\IContextAction.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Refactoring\IContextActionProvider.cs"
+             Link="Upstream\Refactoring\IContextActionProvider.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Refactoring\EditorRefactoringContext.cs"
+             Link="Upstream\Refactoring\EditorRefactoringContext.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Refactoring\CodeGenerator.cs"
+             Link="Upstream\Refactoring\CodeGenerator.cs" />
+    <!-- Parser -->
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Services\Tasks\TagComment.cs"
+             Link="Upstream\Services\Tasks\TagComment.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Parser\ParseInformation.cs"
+             Link="Upstream\Parser\ParseInformation.cs" />
+    <!-- LanguageBinding -->
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Services\LanguageBinding\ILanguageBinding.cs"
+             Link="Upstream\Services\LanguageBinding\ILanguageBinding.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Services\LanguageBinding\DefaultLanguageBinding.cs"
+             Link="Upstream\Services\LanguageBinding\DefaultLanguageBinding.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Services\LanguageBinding\LanguageBindingService.cs"
+             Link="Upstream\Services\LanguageBinding\LanguageBindingService.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Services\LanguageBinding\LanguageBindingDoozer.cs"
+             Link="Upstream\Services\LanguageBinding\LanguageBindingDoozer.cs" />
+
+    <!-- DisplayBinding -->
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Workbench\DisplayBinding\IDisplayBinding.cs"
+             Link="Upstream\Workbench\DisplayBinding\IDisplayBinding.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Workbench\DisplayBinding\ISecondaryDisplayBinding.cs"
+             Link="Upstream\Workbench\DisplayBinding\ISecondaryDisplayBinding.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Workbench\DisplayBinding\DisplayBindingDescriptor.cs"
+             Link="Upstream\Workbench\DisplayBinding\DisplayBindingDescriptor.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Workbench\DisplayBinding\ExternalProcessDisplayBinding.cs"
+             Link="Upstream\Workbench\DisplayBinding\ExternalProcessDisplayBinding.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Workbench\DisplayBinding\IDisplayBindingService.cs"
+             Link="Upstream\Workbench\DisplayBinding\IDisplayBindingService.cs" />
+    <Compile Include="..\Src\Workbench\IImage.uno.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Services\StatusBar\StatusBarService.cs"
+             Link="Upstream\Services\StatusBar\IStatusBarService.cs" />
+    <Compile Include="..\Src\Workbench\File\OpenedFile.uno.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Workbench\File\IFileService.cs"
+             Link="Upstream\Workbench\File\IFileService.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Workbench\File\IRecentOpen.cs"
+             Link="Upstream\Workbench\File\IRecentOpen.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Workbench\File\FileHelpers.cs"
+             Link="Upstream\Workbench\File\FileHelpers.cs" />
+    <Compile Include="..\Src\Project\ProjectBindingDescriptor.uno.cs" />
+    <Compile Include="..\Src\Project\TargetFramework.uno.cs" />
+    <Compile Include="..\Src\Project\ProjectLoadException.uno.cs" />
+    <Compile Include="..\Src\Project\UpstreamNamespaceStubs.uno.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Gui\Components\LocalizedPropertyGrid\LocalizedPropertyAttribute.cs"
+             Link="Upstream\Gui\Components\LocalizedPropertyGrid\LocalizedPropertyAttribute.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Gui\Components\LocalizedPropertyGrid\BooleanTypeConverter.cs"
+             Link="Upstream\Gui\Components\LocalizedPropertyGrid\BooleanTypeConverter.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Gui\Components\LocalizedPropertyGrid\LocalizedPropertyDescriptor.cs"
+             Link="Upstream\Gui\Components\LocalizedPropertyGrid\LocalizedPropertyDescriptor.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Gui\Components\LocalizedPropertyGrid\LocalizedObject.cs"
+             Link="Upstream\Gui\Components\LocalizedPropertyGrid\LocalizedObject.cs" />
+
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Services\IClipboard.cs"
+             Link="Upstream\Services\IClipboard.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Workbench\IOutputPad.cs"
+             Link="Upstream\Workbench\IOutputPad.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Workbench\IShutdownService.cs"
+             Link="Upstream\Workbench\IShutdownService.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Workbench\IPadContent.cs"
+             Link="Upstream\Workbench\IPadContent.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Workbench\ICustomizedCommands.cs"
+             Link="Upstream\Workbench\ICustomizedCommands.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Workbench\ViewContentServiceAttribute.cs"
+             Link="Upstream\Workbench\ViewContentServiceAttribute.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Services\IMessageLoop.cs"
+             Link="Upstream\Services\IMessageLoop.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Services\SD.cs"
+             Link="Upstream\Services\SD.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Services\IFileSystem.cs"
+             Link="Upstream\Services\IFileSystem.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Util\FakeMessageLoop.cs"
+             Link="Upstream\Util\FakeMessageLoop.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Util\SharpDevelopServiceContainer.cs"
+             Link="Upstream\Util\SharpDevelopServiceContainer.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Util\ICanBeDirty.cs"
+         Link="Upstream\Util\ICanBeDirty.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Util\GenericConverter.cs"
+         Link="Upstream\Util\GenericConverter.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Util\ProgressCollector.cs"
+         Link="Upstream\Util\ProgressCollector.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Services\NavigationService\INavigationPoint.cs"
+         Link="Upstream\Services\NavigationService\INavigationPoint.cs" />
+
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Parser\ParserBackend.cs"
+             Link="Upstream\Parser\ParserBackend.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Project\Build\BuildTarget.cs"
+             Link="Upstream\Project\Build\BuildTarget.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Project\Build\BuildOutputVerbosity.cs"
+             Link="Upstream\Project\Build\BuildOutputVerbosity.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Project\Build\BuildDetection.cs"
+             Link="Upstream\Project\Build\BuildDetection.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Project\Build\BuildError.cs"
+             Link="Upstream\Project\Build\BuildError.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Project\Build\BuildOptions.cs"
+             Link="Upstream\Project\Build\BuildOptions.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Project\Build\BuildResults.cs"
+             Link="Upstream\Project\Build\BuildResults.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Project\Build\BuildEventArgs.cs"
+             Link="Upstream\Project\Build\BuildEventArgs.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Project\Build\ProjectBuildOptions.cs"
+             Link="Upstream\Project\Build\ProjectBuildOptions.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Project\Build\IBuildable.cs"
+             Link="Upstream\Project\Build\IBuildable.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Project\Build\IBuildFeedbackSink.cs"
+             Link="Upstream\Project\Build\IBuildFeedbackSink.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Project\Build\IBuildService.cs"
+             Link="Upstream\Project\Build\IBuildService.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Dom\IModelCollection.cs"
+             Link="Upstream\Dom\IModelCollection.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Dom\ModelCollectionChangedEvent.cs"
+             Link="Upstream\Dom\ModelCollectionChangedEvent.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Dom\ImmutableModelCollection.cs"
+             Link="Upstream\Dom\ImmutableModelCollection.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Dom\SimpleModelCollection.cs"
+             Link="Upstream\Dom\SimpleModelCollection.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Dom\SynchronizedModelCollection.cs"
+             Link="Upstream\Dom\SynchronizedModelCollection.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Util\PropertyChangedEventArgs.cs"
+         Link="Upstream\Util\PropertyChangedEventArgs.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Util\IProgressMonitor.cs"
+         Link="Upstream\Util\IProgressMonitor.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Project\IProjectService.cs"
+         Link="Upstream\Project\IProjectService.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Services\ProjectService\ProjectEventHandler.cs"
+         Link="Upstream\Services\ProjectService\ProjectEventHandler.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Services\ProjectService\ProjectItemEventHandler.cs"
+         Link="Upstream\Services\ProjectService\ProjectItemEventHandler.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Project\Configuration\ConfigurationAndPlatform.cs"
+             Link="Upstream\Project\Configuration\ConfigurationAndPlatform.cs" />
+     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Project\Configuration\ConfigurationMapping.cs"
+                Link="Upstream\Project\Configuration\ConfigurationMapping.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Project\Configuration\IConfigurationOrPlatformNameCollection.cs"
+             Link="Upstream\Project\Configuration\IConfigurationOrPlatformNameCollection.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Project\Configuration\IConfigurable.cs"
+             Link="Upstream\Project\Configuration\IConfigurable.cs" />
+     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Project\IProjectBinding.cs"
+                Link="Upstream\Project\IProjectBinding.cs" />
+     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Project\ProjectInformation.cs"
+                Link="Upstream\Project\ProjectInformation.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Project\IProject.cs"
+             Link="Upstream\Project\IProject.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Project\Items\ItemType.cs"
+             Link="Upstream\Project\Items\ItemType.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Project\IProjectItemBackendStore.cs"
+             Link="Upstream\Project\IProjectItemBackendStore.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Project\Behaviors\ProjectBehavior.cs"
+             Link="Upstream\Project\Behaviors\ProjectBehavior.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Project\Behaviors\ProjectBehaviorService.cs"
+             Link="Upstream\Project\Behaviors\ProjectBehaviorService.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Project\Items\UnknownProjectItem.cs"
+             Link="Upstream\Project\Items\UnknownProjectItem.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Project\Items\ProjectItem.cs"
+             Link="Upstream\Project\Items\ProjectItem.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Project\Items\FileProjectItem.cs"
+             Link="Upstream\Project\Items\FileProjectItem.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Project\MSBuildEnums.cs"
+         Link="Upstream\Project\MSBuildEnums.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Project\MSBuildInternals.cs"
+         Link="Upstream\Project\MSBuildInternals.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Project\ISolution.cs"
+             Link="Upstream\Project\ISolution.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Project\ISolutionFolder.cs"
+             Link="Upstream\Project\ISolutionFolder.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Project\ISolutionItem.cs"
+             Link="Upstream\Project\ISolutionItem.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Project\SolutionEventArgs.cs"
+             Link="Upstream\Project\SolutionEventArgs.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Project\SolutionSection.cs"
+             Link="Upstream\Project\SolutionSection.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Workbench\File\FileEventArgs.cs"
+             Link="Upstream\Workbench\File\FileEventArgs.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Workbench\File\FileRenameEventArgs.cs"
+             Link="Upstream\Workbench\File\FileRenameEventArgs.cs" />
+    <!-- Output pad data layer -->
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Gui\Pads\CompilerMessageView\TextEventHandler.cs"
+             Link="Upstream\Gui\Pads\CompilerMessageView\TextEventHandler.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Gui\Pads\CompilerMessageView\MessageViewCategory.cs"
+             Link="Upstream\Gui\Pads\CompilerMessageView\MessageViewCategory.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Project\IProjectChangeWatcher.cs"
+             Link="Upstream\Project\IProjectChangeWatcher.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Project\ProjectStartException.cs"
+             Link="Upstream\Project\ProjectStartException.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Project\ProjectPropertyChangedEventArgs.cs"
+             Link="Upstream\Project\ProjectPropertyChangedEventArgs.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Project\MSBuildConfigurationOrPlatformNameCollection.cs"
+             Link="Upstream\Project\MSBuildConfigurationOrPlatformNameCollection.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Project\MSBuildItemWrapper.cs"
+             Link="Upstream\Project\MSBuildItemWrapper.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Project\MSBuildBasedProject.cs"
+             Link="Upstream\Project\MSBuildBasedProject.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Project\AbstractProject.cs"
+             Link="Upstream\Project\AbstractProject.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Project\Behaviors\DefaultProjectBehavior.cs"
+             Link="Upstream\Project\Behaviors\DefaultProjectBehavior.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Services\AmbienceService\DefaultAmbience.cs"
+             Link="Upstream\Services\AmbienceService\DefaultAmbience.cs" />
+    <Compile Include="..\Src\Project\ProjectChangeWatcher.uno.cs" />
+    <Compile Include="..\Src\Util\StringExtensions.uno.cs" />
+  </ItemGroup>
+</Project>

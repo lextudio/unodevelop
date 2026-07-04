@@ -1,0 +1,27 @@
+<Project Sdk="Uno.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0-desktop</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <UnoSingleProject>true</UnoSingleProject>
+    <UnoFeatures>SkiaRenderer</UnoFeatures>
+    <AssemblyName>UnoDevelop.Core.Tests</AssemblyName>
+    <IsTestProject>true</IsTestProject>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <NoWarn>$(NoWarn);NU1507;CS0618;SYSLIB0051</NoWarn>
+    <GenerateTestingPlatformEntryPoint>false</GenerateTestingPlatformEntryPoint>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="NUnit" />
+    <PackageReference Include="NUnit3TestAdapter" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Main\Core\Project\ICSharpCode.Core.Uno.csproj" />
+    <ProjectReference Include="..\..\Main\SharpDevelop\SharpDevelop.csproj" />
+    <ProjectReference Include="..\..\Main\UnitTesting\UnoDevelop.UnitTesting.csproj" />
+    <ProjectReference Include="..\..\AddIns\Analysis\CodeCoverage\Project\CodeCoverage.csproj" />
+  </ItemGroup>
+</Project>

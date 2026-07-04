@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>LeXtudio.OpenDevelop.ResourceFiles</AssemblyName>
+    <RootNamespace>LeXtudio.OpenDevelop.ResourceFiles</RootNamespace>
+    <Nullable>enable</Nullable>
+    <Description>Resource file parsers and models for OpenDevelop.</Description>
+  </PropertyGroup>
+</Project>

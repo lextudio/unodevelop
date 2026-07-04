@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Fixture project used only by UnoDevelop.Core.Tests' integration tests
+    (UnitTestingCodeCoveragePadIntegrationTests). It is a real, buildable
+    Microsoft.Testing.Platform (MTP) test project so TestService/DotNetTestRunner
+    and CodeCoverageService/CoverletCoverageRunner can be exercised against it
+    exactly as they would be against a real user project. Not part of the
+    UnoDevelop.sln build graph and not shipped.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <EnableMSTestRunner>true</EnableMSTestRunner>
+    <Nullable>enable</Nullable>
+    <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MSTest" Version="3.9.3" />
+  </ItemGroup>
+</Project>

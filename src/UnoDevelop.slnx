@@ -1,0 +1,13 @@
+<Solution>
+  <Folder Name="/Main/">
+    <Project Path="Main/SharpDevelop/SharpDevelop.csproj" />
+  </Folder>
+  <Folder Name="/Main/Base/" />
+  <Folder Name="/Main/Base/Project/">
+    <Project Path="Main/Base/Project/ICSharpCode.SharpDevelop.Uno.csproj" />
+  </Folder>
+  <Folder Name="/Main/Core/" />
+  <Folder Name="/Main/Core/Project/">
+    <Project Path="Main/Core/Project/ICSharpCode.Core.Uno.csproj" />
+  </Folder>
+</Solution>

@@ -1,0 +1,12 @@
+<AddIn name="Package Management"
+       author="UnoDevelop"
+       description="AddIn and package management UI"
+       addInManagerHidden="preinstalled">
+  <Manifest>
+    <Identity name="UnoDevelop.PackageManagement" version="1.0"/>
+  </Manifest>
+
+  <Runtime>
+    <Import assembly="UnoDevelop.PackageManagement.dll"/>
+  </Runtime>
+</AddIn>

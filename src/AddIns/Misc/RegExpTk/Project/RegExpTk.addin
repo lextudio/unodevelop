@@ -1,0 +1,19 @@
+<AddIn name="Regular Expressions Toolkit"
+       author="UnoDevelop"
+       description="Testing toolkit for regular expressions"
+       addInManagerHidden="preinstalled">
+  <Manifest>
+    <Identity name="UnoDevelop.RegExpTk" version="1.0"/>
+  </Manifest>
+
+  <Runtime>
+    <Import assembly="UnoDevelop.RegExpTk.dll"/>
+  </Runtime>
+
+  <Path name="/UnoDevelop/MainMenu/Tools">
+    <MenuItem id="RegularExpressionToolkit"
+              label="Regular Expressions Toolkit"
+              insertbefore="Options"
+              class="UnoDevelop.AddIns.Misc.RegExpTk.ShowRegularExpressionToolkitCommand" />
+  </Path>
+</AddIn>

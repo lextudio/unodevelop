@@ -1,0 +1,65 @@
+<ContentDialog
+    x:Class="UnoDevelop.Templates.NewItemDialog"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="New Item"
+    PrimaryButtonText="Add"
+    CloseButtonText="Cancel"
+    DefaultButton="Primary"
+    PrimaryButtonClick="OnPrimaryButtonClick">
+
+  <ContentDialog.Resources>
+    <x:Double x:Key="ContentDialogMaxWidth">600</x:Double>
+    <x:Double x:Key="ContentDialogMinWidth">400</x:Double>
+  </ContentDialog.Resources>
+
+  <Grid Width="450" Height="460">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="*" />
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="Auto" />
+    </Grid.RowDefinitions>
+
+    <TextBox
+        x:Name="NameBox"
+        Grid.Row="0"
+        PlaceholderText="Item name"
+        TextChanged="OnNameChanged"
+        Margin="0,0,0,8" />
+
+    <ListView
+        x:Name="TemplateList"
+        Grid.Row="1"
+        SelectionMode="Single"
+        SelectionChanged="OnSelectionChanged">
+      <ListView.ItemTemplate>
+        <DataTemplate>
+          <StackPanel>
+            <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+            <TextBlock Text="{Binding Description}" Foreground="Gray"
+                       TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
+          </StackPanel>
+        </DataTemplate>
+      </ListView.ItemTemplate>
+    </ListView>
+
+    <TextBox
+        x:Name="ParametersBox"
+        Grid.Row="2"
+        Header="Template parameters (optional, one per line: key=value)"
+        AcceptsReturn="True"
+        TextWrapping="Wrap"
+      ScrollViewer.VerticalScrollBarVisibility="Auto"
+        PlaceholderText="ClassName=MyClass"
+        Margin="0,8,0,0"
+        MinHeight="84"
+        MaxHeight="120" />
+
+    <TextBlock
+        x:Name="StatusText"
+        Grid.Row="3"
+        Foreground="Gray"
+        Margin="0,8,0,0" />
+  </Grid>
+</ContentDialog>

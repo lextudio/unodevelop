@@ -1,0 +1,31 @@
+<AddIn name="Code Coverage"
+       author="UnoDevelop"
+       copyright="MIT"
+       description="Code coverage support using Coverlet and Microsoft.Testing.Platform."
+       addInManagerHidden="preinstalled">
+  <Manifest>
+    <Identity name="UnoDevelop.CodeCoverage" version="1.0"/>
+  </Manifest>
+
+  <Runtime>
+    <Import assembly="UnoDevelop.CodeCoverage.dll"/>
+  </Runtime>
+
+  <Path name="/SharpDevelop/Workbench/Pads">
+    <Pad id="CodeCoveragePad"
+         category="Tools"
+         title="Code Coverage"
+         insertafter="SearchResults"
+         class="UnoDevelop.AddIns.Analysis.CodeCoverage.CodeCoveragePad"
+         defaultPosition="Bottom" />
+  </Path>
+
+  <Path name="/UnoDevelop/MainMenu/Analysis">
+    <MenuItem id="RunAllWithCodeCoverage"
+              label="Run Tests with Coverage"
+              class="UnoDevelop.AddIns.Analysis.CodeCoverage.RunAllTestsWithCodeCoverageCommand"/>
+    <MenuItem id="OpenCoverageFile"
+              label="Open Coverage File..."
+              class="UnoDevelop.AddIns.Analysis.CodeCoverage.OpenCoverageFileCommand"/>
+  </Path>
+</AddIn>

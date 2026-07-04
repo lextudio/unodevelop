@@ -1,0 +1,112 @@
+<AddIn name="UnoDevelop Shell"
+       author="OpenAI"
+       description="Shell menus backed by AddInTree commands">
+  <Manifest>
+    <Identity name="UnoDevelop.Shell" version="1.0"/>
+  </Manifest>
+
+  <Runtime>
+    <Import assembly=":UnoDevelop">
+      <ConditionEvaluator name="ExecutionActive" class="UnoDevelop.Services.ExecutionActiveConditionEvaluator" />
+      <ConditionEvaluator name="Debugging" class="UnoDevelop.Services.DebuggingConditionEvaluator" />
+      <ConditionEvaluator name="Paused" class="UnoDevelop.Services.PausedConditionEvaluator" />
+      <ConditionEvaluator name="TestsRunning" class="UnoDevelop.Services.TestsRunningConditionEvaluator" />
+    </Import>
+  </Runtime>
+
+  <Path name="/UnoDevelop/MainMenu/File">
+    <MenuItem id="OpenSolutionOrProject" label="Open Solution or Project..." class="UnoDevelop.Commands.OpenSolutionOrProjectShellCommand" />
+    <MenuItem id="CloseSolution" label="Close Solution" class="UnoDevelop.Commands.CloseSolutionShellCommand" />
+    <MenuItem id="Separator0" type="Separator" />
+    <MenuItem id="Exit" label="Exit" class="UnoDevelop.Commands.ExitShellCommand" />
+  </Path>
+
+  <Path name="/UnoDevelop/MainMenu/Edit">
+  </Path>
+
+  <Path name="/UnoDevelop/MainMenu/Project">
+  </Path>
+
+  <Path name="/UnoDevelop/MainMenu/Build">
+    <MenuItem id="BuildSolution" label="Build Solution" class="UnoDevelop.Commands.BuildSolutionShellCommand" />
+    <MenuItem id="CancelBuild" label="Cancel Build" class="UnoDevelop.Commands.CancelBuildShellCommand" />
+    <MenuItem id="Separator0" type="Separator" />
+    <MenuItem id="RefreshTests" label="Refresh Tests" icon="Refresh_16x" class="UnoDevelop.Commands.RefreshTestsShellCommand" />
+    <MenuItem id="RunAllTests" label="Run All Tests" icon="RunTest_16x" class="UnoDevelop.Commands.RunAllTestsShellCommand" />
+    <MenuItem id="StopTests" label="Stop Tests" icon="Stop_16x" class="UnoDevelop.Commands.StopTestsShellCommand" />
+  </Path>
+
+  <Path name="/UnoDevelop/MainMenu/Debug">
+    <MenuItem id="RunWithoutDebugging" label="Run (without debugging)" class="UnoDevelop.Commands.RunWithoutDebuggingShellCommand" />
+    <MenuItem id="Stop" label="Stop" class="UnoDevelop.Commands.StopRunShellCommand" />
+    <MenuItem id="Separator0" type="Separator" />
+    <MenuItem id="Debug" label="Debug" class="UnoDevelop.Commands.DebugShellCommand" />
+    <MenuItem id="Separator1" type="Separator" />
+    <MenuItem id="Continue" label="Continue" class="UnoDevelop.Commands.ContinueDebugShellCommand" />
+    <MenuItem id="StepOver" label="Step Over" class="UnoDevelop.Commands.StepOverDebugShellCommand" />
+    <MenuItem id="StepInto" label="Step Into" class="UnoDevelop.Commands.StepIntoDebugShellCommand" />
+    <MenuItem id="StepOut" label="Step Out" class="UnoDevelop.Commands.StepOutDebugShellCommand" />
+  </Path>
+
+  <Path name="/UnoDevelop/MainMenu/Search">
+  </Path>
+
+  <Path name="/UnoDevelop/MainMenu/Analysis">
+    <MenuItem id="RefreshTests" label="Refresh Tests" icon="Refresh_16x" class="UnoDevelop.Commands.RefreshTestsShellCommand" />
+    <MenuItem id="RunAllTests" label="Run All Tests" icon="RunTest_16x" class="UnoDevelop.Commands.RunAllTestsShellCommand" />
+    <MenuItem id="StopTests" label="Stop Tests" icon="Stop_16x" class="UnoDevelop.Commands.StopTestsShellCommand" />
+  </Path>
+
+  <Path name="/UnoDevelop/MainMenu/Tools">
+    <MenuItem id="AddInManager" label="AddIn Manager" class="UnoDevelop.Commands.ShowAddInManagerCommand" />
+    <MenuItem id="Separator0" type="Separator" />
+    <MenuItem id="Options" label="Options" class="UnoDevelop.Commands.OptionsCommand" />
+  </Path>
+
+  <Path name="/UnoDevelop/MainMenu/Window">
+    <MenuItem id="ShowStartPage" label="Start Page" class="UnoDevelop.Commands.ShowStartPageShellCommand" />
+  </Path>
+
+  <Path name="/UnoDevelop/MainMenu/Help">
+  </Path>
+
+  <Path name="/SharpDevelop/Dialogs/OptionsDialog">
+    <OptionPanel id="UIOptions" label="UI Options">
+    </OptionPanel>
+    <OptionPanel id="TextEditorOptions" label="Text Editor">
+      <OptionPanel id="General" label="General"
+                   class="UnoDevelop.OptionPanels.GeneralEditorOptions" />
+      <OptionPanel id="Behavior" label="Behavior"
+                   class="UnoDevelop.OptionPanels.BehaviorOptions" />
+      <OptionPanel id="Markers" label="Markers"
+                   class="UnoDevelop.OptionPanels.TextViewOptions" />
+    </OptionPanel>
+    <OptionPanel id="ToolsOptions" label="Tools">
+    </OptionPanel>
+  </Path>
+
+  <Path name="/UnoDevelop/Workbench/ToolBar/Standard">
+    <!-- Run / Debug: require a loaded project and no active session (mirrors SharpDevelop's
+         <Condition name="SolutionOpen"> + <Condition name="IsProcessRunning" isdebugging="False">). -->
+    <Condition name="SolutionOpen" action="Disable">
+      <Condition name="ExecutionActive" active="False" action="Disable">
+        <ToolbarItem id="RunWithoutDebugging" tooltip="Run (without debugging)" icon="StartWithoutDebug_16x" class="UnoDevelop.Commands.RunWithoutDebuggingShellCommand" />
+        <ToolbarItem id="Debug" tooltip="Debug" icon="Run_16x" class="UnoDevelop.Commands.DebugShellCommand" />
+      </Condition>
+    </Condition>
+    <!-- Stop: only while something is executing. -->
+    <Condition name="ExecutionActive" active="True" action="Disable">
+      <ToolbarItem id="Stop" tooltip="Stop" icon="Cancel_16x" class="UnoDevelop.Commands.StopRunShellCommand" />
+    </Condition>
+    <ToolbarItem id="Separator0" type="Separator" />
+    <!-- Debug stepping: only while a debug session is attached AND paused (break mode). -->
+    <Condition name="Debugging" debugging="True" action="Disable">
+      <Condition name="Paused" paused="True" action="Disable">
+        <ToolbarItem id="Continue" tooltip="Continue (F5)" icon="StepForward_16x" class="UnoDevelop.Commands.ContinueDebugShellCommand" />
+        <ToolbarItem id="StepOver" tooltip="Step Over (F10)" icon="StepOver_16x" class="UnoDevelop.Commands.StepOverDebugShellCommand" />
+        <ToolbarItem id="StepInto" tooltip="Step Into (F11)" icon="StepIn_16x" class="UnoDevelop.Commands.StepIntoDebugShellCommand" />
+        <ToolbarItem id="StepOut" tooltip="Step Out (Shift+F11)" icon="StepOut_16x" class="UnoDevelop.Commands.StepOutDebugShellCommand" />
+      </Condition>
+    </Condition>
+  </Path>
+</AddIn>

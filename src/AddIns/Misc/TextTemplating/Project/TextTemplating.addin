@@ -1,0 +1,27 @@
+<AddIn name="UnoDevelop TextTemplating"
+       author="UnoDevelop Contributors"
+       description="T4 (Text Template Transformation Toolkit) support — process .tt files to generate code">
+  <Manifest>
+    <Identity name="UnoDevelop.TextTemplating" version="1.0"/>
+  </Manifest>
+
+  <Runtime>
+    <Import assembly="UnoDevelop.TextTemplating.dll"/>
+  </Runtime>
+
+  <Path name="/UnoDevelop/MainMenu/Tools">
+    <MenuItem id="ProcessT4Templates" label="Process T4 Templates..."
+              class="UnoDevelop.TextTemplating.GenerateT4Command" />
+  </Path>
+
+  <!-- docs/t4-templating.md: registered as real SharpDevelop CustomTools (auto-run-on-save via
+       CustomToolsService, not just the manual "Process T4 Templates..." command above). -->
+  <Path name="/SharpDevelop/CustomTools">
+    <CustomTool id="TextTemplatingFileGenerator"
+                fileNamePattern="\.tt$"
+                class="UnoDevelop.TextTemplating.TextTemplatingFileGeneratorCustomTool" />
+    <CustomTool id="TextTemplatingFilePreprocessor"
+                fileNamePattern="\.tt$"
+                class="UnoDevelop.TextTemplating.TextTemplatingFilePreprocessorCustomTool" />
+  </Path>
+</AddIn>

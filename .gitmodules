@@ -1,0 +1,16 @@
+[submodule "externals/SharpDevelop"]
+	path = externals/SharpDevelop
+	url = https://github.com/lextudio/SharpDevelop.git
+[submodule "externals/sharpdbg"]
+	path = externals/sharpdbg
+	url = https://github.com/MattParkerDev/SharpDbg.git
+[submodule "externals/project-system"]
+	path = externals/project-system
+	url = https://github.com/dotnet/project-system.git
+[submodule "externals/monodevelop-nuget-extensions"]
+	path = externals/monodevelop-nuget-extensions
+	url = https://github.com/mrward/monodevelop-nuget-extensions.git
+[submodule "externals/monodevelop"]
+	path = externals/monodevelop
+	url = https://github.com/mono/monodevelop.git
+	shallow = true

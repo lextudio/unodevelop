@@ -1,0 +1,25 @@
+<Project Sdk="Uno.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0-desktop</TargetFramework>
+    <OutputType>Library</OutputType>
+    <AssemblyName>UnoDevelop.TextTemplating</AssemblyName>
+    <RootNamespace>UnoDevelop.TextTemplating</RootNamespace>
+    <UnoSingleProject>true</UnoSingleProject>
+    <UnoFeatures>SkiaRenderer</UnoFeatures>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\Main\Core\Project\ICSharpCode.Core.Uno.csproj" />
+    <ProjectReference Include="..\..\..\..\Main\Base\Project\ICSharpCode.SharpDevelop.Uno.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Mono.TextTemplating" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\TextTemplating.xshd">
+      <LogicalName>UnoDevelop.TextTemplating.Resources.TextTemplating.xshd</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+</Project>

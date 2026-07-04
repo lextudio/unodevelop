@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Fixture project used only by UnoDevelop.Core.Tests' MtpServerProcess tests. A real,
+    buildable xUnit.net v3 Microsoft.Testing.Platform (MTP) project, to prove MtpServerProcess's
+    protocol workarounds (omitting "tests" for run-all, echoing full node shape for filtered
+    runs) hold for a host other than MSTest. Not part of the UnoDevelop.sln build graph.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <UseMicrosoftTestingPlatformRunner>true</UseMicrosoftTestingPlatformRunner>
+    <Nullable>enable</Nullable>
+    <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="xunit.v3" Version="1.0.1" />
+  </ItemGroup>
+</Project>

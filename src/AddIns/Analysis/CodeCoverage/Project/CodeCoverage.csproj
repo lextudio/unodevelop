@@ -1,0 +1,56 @@
+<Project Sdk="Uno.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0-desktop</TargetFramework>
+    <OutputType>Library</OutputType>
+    <AssemblyName>UnoDevelop.CodeCoverage</AssemblyName>
+    <RootNamespace>UnoDevelop.AddIns.Analysis.CodeCoverage</RootNamespace>
+    <UnoSingleProject>true</UnoSingleProject>
+    <UnoFeatures>SkiaRenderer</UnoFeatures>
+    <NoWarn>$(NoWarn);CS8632</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- coverlet.console is a DotnetTool-type package and cannot be a PackageReference;
+         PackageDownload fetches it into the NuGet cache without that restriction. -->
+    <PackageDownload Include="coverlet.console" Version="[6.0.4]" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\Main\Core\Project\ICSharpCode.Core.Uno.csproj" />
+    <ProjectReference Include="..\..\..\..\Main\Base\Project\ICSharpCode.SharpDevelop.Uno.csproj" />
+    <ProjectReference Include="..\..\..\..\Main\ProjectSystem\Microsoft.VisualStudio.ProjectSystem.Shim.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="$(SharpDevelopSourceRoot)\src\AddIns\Analysis\CodeCoverage\Project\Src\CodeCoverageResults.cs"
+             Link="Upstream\CodeCoverageResults.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\AddIns\Analysis\CodeCoverage\Project\Src\CodeCoverageResultsReader.cs"
+             Link="Upstream\CodeCoverageResultsReader.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\AddIns\Analysis\CodeCoverage\Project\Src\CodeCoverageModule.cs"
+             Link="Upstream\CodeCoverageModule.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\AddIns\Analysis\CodeCoverage\Project\Src\CodeCoverageMethod.cs"
+             Link="Upstream\CodeCoverageMethod.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\AddIns\Analysis\CodeCoverage\Project\Src\CodeCoverageMethodElement.cs"
+             Link="Upstream\CodeCoverageMethodElement.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\AddIns\Analysis\CodeCoverage\Project\Src\CodeCoverageSequencePoint.cs"
+             Link="Upstream\CodeCoverageSequencePoint.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\AddIns\Analysis\CodeCoverage\Project\Src\CodeCoverageStringTextSource.cs"
+             Link="Upstream\CodeCoverageStringTextSource.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\AddIns\Analysis\CodeCoverage\Project\Src\ICodeCoverageWithVisits.cs"
+             Link="Upstream\ICodeCoverageWithVisits.cs" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <CoverletConsolePackageRoot>$(NuGetPackageRoot)coverlet.console\6.0.4\</CoverletConsolePackageRoot>
+  </PropertyGroup>
+
+  <!-- Declared as None/CopyToOutputDirectory (rather than a Copy task dropping files straight
+       into this project's own bin folder) so the .NET SDK's transitive content-copy mechanism
+       also lands these files in the output of any project that references CodeCoverage.csproj
+       (e.g. UnoDevelop.Core.Tests), not just this project's own bin folder. -->
+  <ItemGroup Condition="Exists('$(CoverletConsolePackageRoot)')">
+    <None Include="$(CoverletConsolePackageRoot)tools\**\*.*"
+          Link="Coverlet\%(RecursiveDir)%(Filename)%(Extension)"
+          CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

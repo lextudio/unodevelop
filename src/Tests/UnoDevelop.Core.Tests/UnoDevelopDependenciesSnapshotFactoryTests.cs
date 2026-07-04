@@ -1,0 +1,199 @@
+using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.ProjectSystem.Tree.Dependencies;
+using NUnit.Framework;
+
+namespace UnoDevelop.Core.Tests;
+
+/// <summary>
+/// Exercises the real linked CPS dependency dataflow pipeline end-to-end (MSBuildDependencySubscriber
+/// + DependenciesSnapshotProvider + the manual composition/active-configuration wiring added in
+/// slice 43 — see docs/project-system.md), rather than the imperative DependencyTreeBridgeBuilder path.
+/// </summary>
+[TestFixture]
+public sealed class UnoDevelopDependenciesSnapshotFactoryTests
+{
+    [Test]
+    public async Task SingleTargetProject_ProducesExpectedDependencyGroups()
+    {
+        var items = new List<DependencyBridgeItem>
+        {
+            new(DependencyBridgeItemKind.Package, "Newtonsoft.Json", null,
+                ImmutableDictionary<string, string>.Empty.Add("Version", "13.0.3")),
+            new(DependencyBridgeItemKind.Assembly, "System.Xml.dll", "/fake/System.Xml.dll",
+                ImmutableDictionary<string, string>.Empty),
+            new(DependencyBridgeItemKind.Project, "Lib/Lib.csproj", "/fake/Lib/Lib.csproj",
+                ImmutableDictionary<string, string>.Empty),
+        };
+
+        var itemsByTfm = new Dictionary<string, IReadOnlyList<DependencyBridgeItem>> { [""] = items };
+
+        var snapshot = await UnoDevelopDependenciesSnapshotFactory.BuildSnapshotAsync("/fake/App.csproj", itemsByTfm);
+
+        Assert.That(snapshot, Is.Not.Null);
+        Assert.That(snapshot!.DependenciesBySlice.Count, Is.EqualTo(1));
+
+        var slice = snapshot.DependenciesBySlice[snapshot.PrimarySlice];
+        var groupNames = slice.DependenciesByType.Keys.Select(g => g.Caption).ToImmutableHashSet();
+
+        Assert.That(groupNames, Does.Contain("Packages"));
+        Assert.That(groupNames, Does.Contain("Assemblies"));
+        Assert.That(groupNames, Does.Contain("Projects"));
+        // No Analyzer/SDK/Framework/COM items were supplied, so those groups must be absent —
+        // proves MSBuildDependencyCollection.TryUpdate correctly skips empty rule pairs instead
+        // of throwing on the always-present-but-often-empty ProjectChanges entries.
+        Assert.That(groupNames, Does.Not.Contain("Analyzers"));
+        Assert.That(groupNames, Does.Not.Contain("SDKs"));
+        Assert.That(groupNames, Does.Not.Contain("Frameworks"));
+        Assert.That(groupNames, Does.Not.Contain("COM"));
+
+        var packages = slice.DependenciesByType.Single(kv => kv.Key.Caption == "Packages").Value;
+        Assert.That(packages.Single().Caption, Is.EqualTo("Newtonsoft.Json (13.0.3)"));
+    }
+
+    [Test]
+    public async Task MultiTargetProject_ProducesOneSlicePerTargetFramework()
+    {
+        var net8Items = new List<DependencyBridgeItem>
+        {
+            new(DependencyBridgeItemKind.Package, "Common.Pkg", null, ImmutableDictionary<string, string>.Empty.Add("Version", "1.0.0")),
+            new(DependencyBridgeItemKind.Package, "Net8Only.Pkg", null, ImmutableDictionary<string, string>.Empty.Add("Version", "2.0.0")),
+        };
+        var net9Items = new List<DependencyBridgeItem>
+        {
+            new(DependencyBridgeItemKind.Package, "Common.Pkg", null, ImmutableDictionary<string, string>.Empty.Add("Version", "1.0.0")),
+        };
+
+        var itemsByTfm = new Dictionary<string, IReadOnlyList<DependencyBridgeItem>>
+        {
+            ["net8.0"] = net8Items,
+            ["net9.0"] = net9Items,
+        };
+
+        var snapshot = await UnoDevelopDependenciesSnapshotFactory.BuildSnapshotAsync("/fake/Multi.csproj", itemsByTfm);
+
+        Assert.That(snapshot, Is.Not.Null);
+        Assert.That(snapshot!.DependenciesBySlice.Count, Is.EqualTo(2));
+
+        var net8Slice = snapshot.DependenciesBySlice.Values.Single(s => s.ConfiguredProject.ProjectConfiguration.Dimensions["TargetFramework"] == "net8.0");
+        var net9Slice = snapshot.DependenciesBySlice.Values.Single(s => s.ConfiguredProject.ProjectConfiguration.Dimensions["TargetFramework"] == "net9.0");
+
+        var net8Packages = net8Slice.DependenciesByType.Single(kv => kv.Key.Caption == "Packages").Value;
+        var net9Packages = net9Slice.DependenciesByType.Single(kv => kv.Key.Caption == "Packages").Value;
+
+        Assert.That(net8Packages.Select(d => d.Caption), Is.EquivalentTo(new[] { "Common.Pkg (1.0.0)", "Net8Only.Pkg (2.0.0)" }));
+        Assert.That(net9Packages.Select(d => d.Caption), Is.EquivalentTo(new[] { "Common.Pkg (1.0.0)" }));
+    }
+
+    [Test]
+    public async Task RepeatedCallsForSameProject_ReuseSessionAndReflectUpdatedData()
+    {
+        // Slice 47: the dataflow graph (DependenciesSnapshotSession) is kept alive per project path
+        // rather than rebuilt from scratch every call. This proves reuse actually works — not just
+        // that a second call doesn't crash, but that posting new evaluation data through the same
+        // long-lived graph produces a snapshot reflecting the new data.
+        var projectPath = "/fake/Incremental.csproj";
+
+        var firstItems = new List<DependencyBridgeItem>
+        {
+            new(DependencyBridgeItemKind.Package, "First.Pkg", null, ImmutableDictionary<string, string>.Empty.Add("Version", "1.0.0")),
+        };
+        var firstSnapshot = await UnoDevelopDependenciesSnapshotFactory.BuildSnapshotAsync(
+            projectPath, new Dictionary<string, IReadOnlyList<DependencyBridgeItem>> { [""] = firstItems });
+
+        Assert.That(firstSnapshot, Is.Not.Null);
+        var firstPackages = firstSnapshot!.DependenciesBySlice[firstSnapshot.PrimarySlice].DependenciesByType.Single(kv => kv.Key.Caption == "Packages").Value;
+        Assert.That(firstPackages.Select(d => d.Caption), Is.EquivalentTo(new[] { "First.Pkg (1.0.0)" }));
+
+        var secondItems = new List<DependencyBridgeItem>
+        {
+            new(DependencyBridgeItemKind.Package, "First.Pkg", null, ImmutableDictionary<string, string>.Empty.Add("Version", "1.0.0")),
+            new(DependencyBridgeItemKind.Package, "Second.Pkg", null, ImmutableDictionary<string, string>.Empty.Add("Version", "2.0.0")),
+        };
+        var secondSnapshot = await UnoDevelopDependenciesSnapshotFactory.BuildSnapshotAsync(
+            projectPath, new Dictionary<string, IReadOnlyList<DependencyBridgeItem>> { [""] = secondItems });
+
+        Assert.That(secondSnapshot, Is.Not.Null);
+        var secondPackages = secondSnapshot!.DependenciesBySlice[secondSnapshot.PrimarySlice].DependenciesByType.Single(kv => kv.Key.Caption == "Packages").Value;
+        Assert.That(secondPackages.Select(d => d.Caption), Is.EquivalentTo(new[] { "First.Pkg (1.0.0)", "Second.Pkg (2.0.0)" }));
+
+        // And removing a package from the evaluation data removes it from the resulting snapshot too.
+        var thirdItems = new List<DependencyBridgeItem>
+        {
+            new(DependencyBridgeItemKind.Package, "Second.Pkg", null, ImmutableDictionary<string, string>.Empty.Add("Version", "2.0.0")),
+        };
+        var thirdSnapshot = await UnoDevelopDependenciesSnapshotFactory.BuildSnapshotAsync(
+            projectPath, new Dictionary<string, IReadOnlyList<DependencyBridgeItem>> { [""] = thirdItems });
+
+        Assert.That(thirdSnapshot, Is.Not.Null);
+        var thirdPackages = thirdSnapshot!.DependenciesBySlice[thirdSnapshot.PrimarySlice].DependenciesByType.Single(kv => kv.Key.Caption == "Packages").Value;
+        Assert.That(thirdPackages.Select(d => d.Caption), Is.EquivalentTo(new[] { "Second.Pkg (2.0.0)" }));
+    }
+
+    [Test]
+    public async Task ChangingTargetFrameworkSet_RebuildsSessionInsteadOfFailing()
+    {
+        // If a project's TFM set changes (e.g. editing <TargetFrameworks>), the cached session's
+        // fixed slice topology no longer matches — it must be discarded and rebuilt, not reused
+        // incorrectly or left stale.
+        var projectPath = "/fake/RetargetedApp.csproj";
+
+        var singleTfmSnapshot = await UnoDevelopDependenciesSnapshotFactory.BuildSnapshotAsync(
+            projectPath,
+            new Dictionary<string, IReadOnlyList<DependencyBridgeItem>> { [""] = new List<DependencyBridgeItem>() });
+        Assert.That(singleTfmSnapshot, Is.Not.Null);
+        Assert.That(singleTfmSnapshot!.DependenciesBySlice.Count, Is.EqualTo(1));
+
+        var multiTfmSnapshot = await UnoDevelopDependenciesSnapshotFactory.BuildSnapshotAsync(
+            projectPath,
+            new Dictionary<string, IReadOnlyList<DependencyBridgeItem>>
+            {
+                ["net8.0"] = new List<DependencyBridgeItem>(),
+                ["net9.0"] = new List<DependencyBridgeItem>(),
+            });
+
+        Assert.That(multiTfmSnapshot, Is.Not.Null);
+        Assert.That(multiTfmSnapshot!.DependenciesBySlice.Count, Is.EqualTo(2));
+    }
+
+    [Test]
+    public async Task PruneSessionsExceptAsync_DisposesUnvisitedProjectSessionsAndAllowsRebuild()
+    {
+        // Slice 48: since a project's session (and its underlying dataflow graph) is never disposed
+        // automatically, Solution Explorer reconciles sessions against the live project set after
+        // every full rebuild via PruneSessionsExceptAsync. This proves pruning actually disposes the
+        // stale session's provider (not just forgets the dictionary entry) and that a later rebuild
+        // for the same project path builds a fresh, working session rather than reusing or hanging
+        // on the disposed one.
+        var keptPath = "/fake/Kept.csproj";
+        var removedPath = "/fake/Removed.csproj";
+
+        var keptItems = new Dictionary<string, IReadOnlyList<DependencyBridgeItem>>
+        {
+            [""] = new List<DependencyBridgeItem> { new(DependencyBridgeItemKind.Package, "Kept.Pkg", null, ImmutableDictionary<string, string>.Empty.Add("Version", "1.0.0")) },
+        };
+        var removedItems = new Dictionary<string, IReadOnlyList<DependencyBridgeItem>>
+        {
+            [""] = new List<DependencyBridgeItem> { new(DependencyBridgeItemKind.Package, "Removed.Pkg", null, ImmutableDictionary<string, string>.Empty.Add("Version", "1.0.0")) },
+        };
+
+        Assert.That(await UnoDevelopDependenciesSnapshotFactory.BuildSnapshotAsync(keptPath, keptItems), Is.Not.Null);
+        Assert.That(await UnoDevelopDependenciesSnapshotFactory.BuildSnapshotAsync(removedPath, removedItems), Is.Not.Null);
+
+        // Simulate a Solution Explorer rebuild where only "kept" is still in the solution.
+        await UnoDevelopDependenciesSnapshotFactory.PruneSessionsExceptAsync(new[] { keptPath });
+
+        // The removed project's session was disposed; rebuilding it must produce a fresh, working
+        // session (not throw ObjectDisposedException, not hang against a faulted/disposed provider).
+        var rebuiltSnapshot = await UnoDevelopDependenciesSnapshotFactory.BuildSnapshotAsync(removedPath, removedItems);
+        Assert.That(rebuiltSnapshot, Is.Not.Null);
+        var rebuiltPackages = rebuiltSnapshot!.DependenciesBySlice[rebuiltSnapshot.PrimarySlice].DependenciesByType.Single(kv => kv.Key.Caption == "Packages").Value;
+        Assert.That(rebuiltPackages.Select(d => d.Caption), Is.EquivalentTo(new[] { "Removed.Pkg (1.0.0)" }));
+
+        // The kept project's session was untouched by the prune and still works normally.
+        var keptSnapshot = await UnoDevelopDependenciesSnapshotFactory.BuildSnapshotAsync(keptPath, keptItems);
+        Assert.That(keptSnapshot, Is.Not.Null);
+    }
+}

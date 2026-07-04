@@ -1,0 +1,27 @@
+<AddIn name="Settings Editor"
+       author="UnoDevelop"
+       description="Edits project settings"
+       addInManagerHidden="preinstalled">
+  <Manifest>
+    <Identity name="UnoDevelop.SettingsEditor" version="1.0"/>
+  </Manifest>
+
+  <Runtime>
+    <Import assembly="UnoDevelop.SettingsEditor.dll"/>
+  </Runtime>
+
+  <Path name="/SharpDevelop/Workbench/FileFilter">
+    <FileFilter id="Settings"
+                insertbefore="AllFiles"
+                name="Settings (*.settings)"
+                extensions="*.settings"
+                mimeType="text/xml"/>
+  </Path>
+
+  <Path name="/SharpDevelop/Workbench/DisplayBindings">
+    <DisplayBinding id="SettingsEditor"
+                    class="UnoDevelop.AddIns.DisplayBindings.SettingsEditor.SettingsEditorDisplayBinding"
+                    fileNamePattern="\.settings$"
+                    title="Settings editor"/>
+  </Path>
+</AddIn>

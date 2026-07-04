@@ -1,0 +1,26 @@
+<AddIn name="Search and Replace"
+       author="UnoDevelop"
+       copyright="MIT"
+       description="Search and replace files in the current workspace."
+       addInManagerHidden="preinstalled">
+  <Manifest>
+    <Identity name="UnoDevelop.SearchAndReplace"/>
+  </Manifest>
+
+  <Runtime>
+    <Import assembly="UnoDevelop.SearchAndReplace.dll"/>
+  </Runtime>
+
+  <Path name="/UnoDevelop/MainMenu/Search">
+    <MenuItem id="Find"
+              label="Find"
+              class="UnoDevelop.AddIns.Misc.SearchAndReplace.FindCommand"/>
+    <MenuItem id="FindNext"
+              label="Find Next"
+              class="UnoDevelop.AddIns.Misc.SearchAndReplace.FindNextCommand"/>
+    <MenuItem id="Separator0" type="Separator" />
+    <MenuItem id="FindInFiles"
+              label="Find in Files..."
+              class="UnoDevelop.AddIns.Misc.SearchAndReplace.ShowSearchAndReplaceCommand"/>
+  </Path>
+</AddIn>

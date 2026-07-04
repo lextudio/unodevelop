@@ -1,0 +1,121 @@
+<AddIn name="UnoDevelop Pads"
+       author="OpenAI"
+       description="Built-in UnoDevelop pads registered through the SharpDevelop pad path">
+  <Manifest>
+    <Identity name="UnoDevelop.Pads" version="1.0"/>
+  </Manifest>
+
+  <Runtime>
+    <Import assembly=":UnoDevelop" />
+    <Import assembly=":UnoDevelop.Debugger" />
+    <Import assembly=":UnoDevelop.UnitTesting" />
+  </Runtime>
+
+  <Path name="/SharpDevelop/Workbench/Pads">
+    <Pad id="SolutionExplorer"
+         class="UnoDevelop.Workbench.SolutionExplorerPad"
+         title="Solution Explorer"
+         category="Main"
+         defaultPosition="Left" />
+    <Pad id="Properties"
+         class="UnoDevelop.Workbench.PropertiesPad"
+         title="Properties"
+         category="Main"
+         defaultPosition="Right" />
+    <Pad id="Locals"
+         class="UnoDevelop.Debugger.LocalsPad"
+         title="Locals"
+         category="Debugger"
+         defaultPosition="Bottom" />
+    <Pad id="CallStack"
+         class="UnoDevelop.Debugger.CallStackPad"
+         title="Call Stack"
+         category="Debugger"
+         defaultPosition="Bottom" />
+    <Pad id="Watch"
+         class="UnoDevelop.Debugger.WatchPad"
+         title="Watch"
+         category="Debugger"
+         defaultPosition="Bottom" />
+    <Pad id="Immediate"
+         class="UnoDevelop.Debugger.ImmediatePad"
+         title="Immediate"
+         category="Debugger"
+         defaultPosition="Bottom" />
+    <Pad id="Threads"
+         class="UnoDevelop.Debugger.ThreadsPad"
+         title="Threads"
+         category="Debugger"
+         defaultPosition="Bottom" />
+    <Pad id="Modules"
+         class="UnoDevelop.Debugger.ModulesPad"
+         title="Modules"
+         category="Debugger"
+         defaultPosition="Bottom" />
+    <Pad id="Tests"
+         class="UnoDevelop.UnitTesting.TestResultsPad"
+         title="Tests"
+         category="Main"
+         defaultPosition="Bottom" />
+    <Pad id="Errors"
+         class="UnoDevelop.Workbench.ErrorListPad"
+         title="Errors"
+         category="Main"
+         defaultPosition="Bottom" />
+    <Pad id="SearchResults"
+         class="UnoDevelop.Workbench.SearchResultsPad"
+         title="Search Results"
+         category="Main"
+         defaultPosition="Bottom" />
+    <Pad id="Output"
+         class="UnoDevelop.Workbench.OutputPad"
+         title="Output"
+         category="Main"
+         defaultPosition="Bottom" />
+  </Path>
+
+  <!-- Mirrors SharpDevelop /SharpDevelop/Pads/UnitTestsPad/Toolbar: RunAll/Run enabled while a
+       solution is open and no run is active; Stop while a run is active; the rest while a solution
+       is open. (SharpDevelop's AddNUnitReference has no dotnet-test equivalent; Refresh takes its
+       slot.) -->
+  <Path name="/SharpDevelop/Pads/TestsPad/Toolbar/Standard">
+    <Condition name="SolutionOpen" action="Disable">
+      <Condition name="TestsRunning" running="False" action="Disable">
+        <ToolbarItem id="RunAllTests"
+                     icon="RunTest_16x"
+                     tooltip="Run all tests"
+                     class="UnoDevelop.Commands.RunAllTestsShellCommand" />
+        <ToolbarItem id="RunSelectedTest"
+                     icon="Run_16x"
+                     tooltip="Run selected test"
+                     class="UnoDevelop.Commands.RunSelectedTestShellCommand" />
+      </Condition>
+      <Condition name="TestsRunning" running="True" action="Disable">
+        <ToolbarItem id="StopTests"
+                     icon="Stop_16x"
+                     tooltip="Stop tests"
+                     class="UnoDevelop.Commands.StopTestsShellCommand" />
+      </Condition>
+      <ToolbarItem id="Separator0" type="Separator" />
+      <ToolbarItem id="RefreshTests"
+                   icon="Refresh_16x"
+                   tooltip="Refresh tests"
+                   class="UnoDevelop.Commands.RefreshTestsShellCommand" />
+      <ToolbarItem id="Separator1" type="Separator" />
+      <ToolbarItem id="ExpandAllTests"
+                   icon="ExpandAll_16x"
+                   tooltip="Expand all"
+                   class="UnoDevelop.Commands.ExpandAllTestsShellCommand" />
+      <ToolbarItem id="CollapseAllTests"
+                   icon="CollapseAll_16x"
+                   tooltip="Collapse all"
+                   class="UnoDevelop.Commands.CollapseAllTestsShellCommand" />
+    </Condition>
+  </Path>
+
+  <Path name="/SharpDevelop/Workbench/ViewMenu">
+    <PadMenu id="MainPads" category="Main" />
+    <MenuItem id="Separator0" type="Separator" />
+    <PadMenu id="DebuggerPads" category="Debugger" />
+  </Path>
+</AddIn>

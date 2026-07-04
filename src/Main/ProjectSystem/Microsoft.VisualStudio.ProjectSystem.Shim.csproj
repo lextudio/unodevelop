@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Open-source, clean-room reimplementation of the CPS framework surface
+    (Microsoft.VisualStudio.ProjectSystem.*) that dotnet/project-system consumes.
+
+    LICENSING: this assembly is reconstructed ONLY from the MIT-licensed dotnet/project-system
+    sources and public Microsoft Learn API documentation. It must NOT be produced by decompiling,
+    disassembling, or redistributing the proprietary CPS SDK assemblies. See memory
+    opensource-cps-shim for the red lines.
+
+    AssemblyName intentionally matches the CPS assembly so upstream `using
+    Microsoft.VisualStudio.ProjectSystem;` binds to this shim instead of the closed SDK.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>Microsoft.VisualStudio.ProjectSystem</AssemblyName>
+    <RootNamespace>Microsoft.VisualStudio.ProjectSystem</RootNamespace>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- MIT — real MEF2 attribute types, so real VS MEF (Microsoft.VisualStudio.Composition)
+         can discover parts attributed with our Export/ImportingConstructor/ImportMany wrappers
+         via ordinary reflection subclass matching. See docs/project-system.md (Slice 44). -->
+    <PackageReference Include="System.Composition.AttributedModel" />
+  </ItemGroup>
+
+</Project>

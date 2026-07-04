@@ -1,0 +1,19 @@
+<AddIn name="Hex Editor"
+       author="UnoDevelop"
+       description="Hexadecimal editor display binding"
+       addInManagerHidden="preinstalled">
+  <Manifest>
+    <Identity name="UnoDevelop.HexEditor" version="1.0"/>
+  </Manifest>
+
+  <Runtime>
+    <Import assembly="UnoDevelop.HexEditor.dll"/>
+  </Runtime>
+
+  <Path name="/SharpDevelop/Workbench/DisplayBindings">
+    <DisplayBinding id="HexEditor"
+                    supportedformats="Binaries"
+                    title="Hex editor"
+                    class="UnoDevelop.AddIns.DisplayBindings.HexEditor.HexEditorDisplayBinding"/>
+  </Path>
+</AddIn>

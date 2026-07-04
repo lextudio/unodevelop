@@ -1,0 +1,13 @@
+<Project>
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <!-- <Nullable>enable</Nullable> -->
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <SharpDevelopSourceRoot>$(MSBuildThisFileDirectory)..\externals\SharpDevelop</SharpDevelopSourceRoot>
+    <ProjectSystemSourceRoot>$(MSBuildThisFileDirectory)..\externals\project-system</ProjectSystemSourceRoot>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <CentralPackageTransitivePinningEnabled>false</CentralPackageTransitivePinningEnabled>
+    <UseNuGetPackages>false</UseNuGetPackages>
+  </PropertyGroup>
+</Project>

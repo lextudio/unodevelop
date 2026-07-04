@@ -1,0 +1,163 @@
+<Project Sdk="Uno.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0-desktop</TargetFramework>
+    <AssemblyName>ICSharpCode.Core.Uno</AssemblyName>
+    <RootNamespace>ICSharpCode.Core</RootNamespace>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <DefineConstants>$(DefineConstants);HAS_UNO;UNODEVELOP</DefineConstants>
+    <NoWarn>$(NoWarn);CS8632</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="UnoDevelop.Core.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\Src\Migration\CoreMigrationBatch.cs" />
+    <Compile Include="..\Src\RevisionClass.uno.cs" />
+
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Core\Project\Src\CoreException.cs"
+             Link="Upstream\CoreException.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Core\Project\Src\Services\SDServiceAttribute.cs"
+             Link="Upstream\Services\SDServiceAttribute.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Core\Project\Src\Services\ServiceNotFoundException.cs"
+             Link="Upstream\Services\ServiceNotFoundException.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Core\Project\Src\Services\ServiceSingleton.cs"
+             Link="Upstream\Services\ServiceSingleton.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Core\Project\Src\Services\LoggingService\ILoggingService.cs"
+             Link="Upstream\Services\LoggingService\ILoggingService.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Core\Project\Src\Services\LoggingService\LoggingService.cs"
+             Link="Upstream\Services\LoggingService\LoggingService.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Core\Project\Src\Services\LoggingService\TextWriterLoggingService.cs"
+             Link="Upstream\Services\LoggingService\TextWriterLoggingService.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Core\Project\Src\Services\PropertyService\IPropertyService.cs"
+             Link="Upstream\Services\PropertyService\IPropertyService.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Core\Project\Src\Services\PropertyService\PropertyService.cs"
+             Link="Upstream\Services\PropertyService\PropertyService.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Core\Project\Src\Services\PropertyService\PropertyServiceImpl.cs"
+             Link="Upstream\Services\PropertyService\PropertyServiceImpl.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Core\Project\Src\Services\ApplicationStateInfoService.cs"
+             Link="Upstream\Services\ApplicationStateInfoService.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Core\Project\Src\Services\AnalyticsMonitorService.cs"
+             Link="Upstream\Services\AnalyticsMonitorService.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Core\Project\Src\Services\MessageService\IMessageService.cs"
+         Link="Upstream\Services\MessageService\IMessageService.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Core\Project\Src\Services\MessageService\MessageService.cs"
+         Link="Upstream\Services\MessageService\MessageService.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Core\Project\Src\Services\MessageService\TextWriterMessageService.cs"
+         Link="Upstream\Services\MessageService\TextWriterMessageService.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Core\Project\Src\Services\ResourceService\IResourceService.cs"
+         Link="Upstream\Services\ResourceService\IResourceService.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Core\Project\Src\Services\ResourceService\ResourceService.cs"
+         Link="Upstream\Services\ResourceService\ResourceService.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Core\Project\Src\Services\ResourceService\ResourceNotFoundException.cs"
+         Link="Upstream\Services\ResourceService\ResourceNotFoundException.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Core\Project\Src\Services\StringParser\IStringTagProvider.cs"
+         Link="Upstream\Services\StringParser\IStringTagProvider.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Core\Project\Src\Services\StringParser\PropertyObjectTagProvider.cs"
+         Link="Upstream\Services\StringParser\PropertyObjectTagProvider.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Core\Project\Src\Util\CallbackOnDispose.cs"
+             Link="Upstream\Util\CallbackOnDispose.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Core\Project\Src\Util\WeakCollection.cs"
+             Link="Upstream\Util\WeakCollection.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Core\Project\Src\Util\EmptyList.cs"
+             Link="Upstream\Util\EmptyList.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Core\Project\Src\Services\FileUtility\FileNameEventHandler.cs"
+             Link="Upstream\Services\FileUtility\FileNameEventHandler.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Core\Project\Src\Util\AbstractCommand.cs"
+             Link="Upstream\Util\AbstractCommand.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Core\Project\Src\Util\CommandWrapper.cs"
+             Link="Upstream\Util\CommandWrapper.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Core\Project\Src\Util\TraceTextWriter.cs"
+             Link="Upstream\Util\TraceTextWriter.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Core\Project\Src\AddInTree\IAddInTree.cs"
+             Link="Upstream\AddInTree\IAddInTree.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Core\Project\Src\AddInTree\TreePathNotFoundException.cs"
+             Link="Upstream\AddInTree\TreePathNotFoundException.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Core\Project\Src\AddInTree\TopologicalSort.cs"
+             Link="Upstream\AddInTree\TopologicalSort.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Core\Project\Src\AddInTree\AddInManager.cs"
+             Link="Upstream\AddInTree\AddInManager.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Core\Project\Src\AddInTree\AddInTreeNode.cs"
+             Link="Upstream\AddInTree\AddInTreeNode.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Core\Project\Src\AddInTree\AddInTree.cs"
+             Link="Upstream\AddInTree\AddInTree.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Core\Project\Src\AddInTree\AddIn\AddIn.cs"
+             Link="Upstream\AddInTree\AddIn\AddIn.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Core\Project\Src\AddInTree\AddIn\AddInLoadException.cs"
+             Link="Upstream\AddInTree\AddIn\AddInLoadException.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Core\Project\Src\AddInTree\AddIn\AddInReference.cs"
+             Link="Upstream\AddInTree\AddIn\AddInReference.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Core\Project\Src\AddInTree\AddIn\AssemblyLocator.cs"
+             Link="Upstream\AddInTree\AddIn\AssemblyLocator.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Core\Project\Src\AddInTree\AddIn\BuildItemArgs.cs"
+             Link="Upstream\AddInTree\AddIn\BuildItemArgs.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Core\Project\Src\AddInTree\AddIn\Codon.cs"
+             Link="Upstream\AddInTree\AddIn\Codon.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Core\Project\Src\AddInTree\AddIn\ComplexCondition.cs"
+             Link="Upstream\AddInTree\AddIn\ComplexCondition.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Core\Project\Src\AddInTree\AddIn\Condition.cs"
+             Link="Upstream\AddInTree\AddIn\Condition.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Core\Project\Src\AddInTree\AddIn\ExtensionPath.cs"
+             Link="Upstream\AddInTree\AddIn\ExtensionPath.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Core\Project\Src\AddInTree\AddIn\IBuildItemsModifier.cs"
+             Link="Upstream\AddInTree\AddIn\IBuildItemsModifier.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Core\Project\Src\AddInTree\AddIn\ICondition.cs"
+             Link="Upstream\AddInTree\AddIn\ICondition.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Core\Project\Src\AddInTree\AddIn\IConditionEvaluator.cs"
+             Link="Upstream\AddInTree\AddIn\IConditionEvaluator.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Core\Project\Src\AddInTree\AddIn\IDoozer.cs"
+             Link="Upstream\AddInTree\AddIn\IDoozer.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Core\Project\Src\AddInTree\AddIn\Manifest.cs"
+             Link="Upstream\AddInTree\AddIn\Manifest.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Core\Project\Src\AddInTree\AddIn\Runtime.cs"
+             Link="Upstream\AddInTree\AddIn\Runtime.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Core\Project\Src\AddInTree\AddIn\DefaultConditionEvaluators\CompareConditionEvaluator.cs"
+             Link="Upstream\AddInTree\AddIn\DefaultConditionEvaluators\CompareConditionEvaluator.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Core\Project\Src\AddInTree\AddIn\DefaultConditionEvaluators\LazyConditionEvaluator.cs"
+             Link="Upstream\AddInTree\AddIn\DefaultConditionEvaluators\LazyConditionEvaluator.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Core\Project\Src\AddInTree\AddIn\DefaultConditionEvaluators\OwnerStateConditionEvaluator.cs"
+             Link="Upstream\AddInTree\AddIn\DefaultConditionEvaluators\OwnerStateConditionEvaluator.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Core\Project\Src\AddInTree\AddIn\DefaultDoozers\ClassDoozer.cs"
+             Link="Upstream\AddInTree\AddIn\DefaultDoozers\ClassDoozer.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Core\Project\Src\AddInTree\AddIn\DefaultDoozers\FileFilterDoozer.cs"
+             Link="Upstream\AddInTree\AddIn\DefaultDoozers\FileFilterDoozer.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Core\Project\Src\AddInTree\AddIn\DefaultDoozers\IncludeDoozer.cs"
+             Link="Upstream\AddInTree\AddIn\DefaultDoozers\IncludeDoozer.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Core\Project\Src\AddInTree\AddIn\DefaultDoozers\LazyDoozer.cs"
+             Link="Upstream\AddInTree\AddIn\DefaultDoozers\LazyDoozer.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Core\Project\Src\AddInTree\AddIn\DefaultDoozers\ServiceDoozer.cs"
+             Link="Upstream\AddInTree\AddIn\DefaultDoozers\ServiceDoozer.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Core\Project\Src\AddInTree\AddIn\DefaultDoozers\StaticDoozer.cs"
+             Link="Upstream\AddInTree\AddIn\DefaultDoozers\StaticDoozer.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Core\Project\Src\AddInTree\AddIn\DefaultDoozers\StringDoozer.cs"
+             Link="Upstream\AddInTree\AddIn\DefaultDoozers\StringDoozer.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Core\Project\Src\AddInTree\AddIn\DefaultDoozers\Icon\IconDescriptor.cs"
+             Link="Upstream\AddInTree\AddIn\DefaultDoozers\Icon\IconDescriptor.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Core\Project\Src\AddInTree\AddIn\DefaultDoozers\Icon\IconDoozer.cs"
+             Link="Upstream\AddInTree\AddIn\DefaultDoozers\Icon\IconDoozer.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Core\Project\Src\AddInTree\AddIn\DefaultDoozers\MenuItem\ICheckableMenuCommand.cs"
+             Link="Upstream\AddInTree\AddIn\DefaultDoozers\MenuItem\ICheckableMenuCommand.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Core\Project\Src\AddInTree\AddIn\DefaultDoozers\MenuItem\IMenuItemBuilder.cs"
+             Link="Upstream\AddInTree\AddIn\DefaultDoozers\MenuItem\IMenuItemBuilder.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Core\Project\Src\AddInTree\AddIn\DefaultDoozers\MenuItem\MenuItemDoozer.cs"
+             Link="Upstream\AddInTree\AddIn\DefaultDoozers\MenuItem\MenuItemDoozer.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Core\Project\Src\AddInTree\AddIn\DefaultDoozers\ToolBarItem\ToolBarItemDoozer.cs"
+             Link="Upstream\AddInTree\AddIn\DefaultDoozers\ToolBarItem\ToolBarItemDoozer.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Core\Project\Src\Services\FileUtility\PathName.cs"
+             Link="Upstream\Services\FileUtility\PathName.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Core\Project\Src\Services\FileUtility\DirectoryName.cs"
+             Link="Upstream\Services\FileUtility\DirectoryName.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Core\Project\Src\Services\FileUtility\FileName.cs"
+             Link="Upstream\Services\FileUtility\FileName.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Core\Project\Src\Services\FileUtility\FileUtility.Minimal.cs"
+             Link="Upstream\Services\FileUtility\FileUtility.Minimal.cs" />
+    <Compile Include="..\Src\Services\FileUtility\FileUtility.ObservedSave.uno.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Core\Project\Src\ExtensionMethods.cs"
+             Link="Upstream\ExtensionMethods.cs" />
+
+    <Compile Include="..\Src\Services\PropertyService\Properties.uno.cs" />
+    <Compile Include="..\Src\Services\FileUtility\FileUtility.uno.cs" />
+    <Compile Include="..\Src\Services\StringParser\StringParser.uno.cs" />
+  </ItemGroup>
+</Project>

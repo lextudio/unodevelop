@@ -1,0 +1,195 @@
+<Project Sdk="Uno.Sdk">
+	<PropertyGroup>
+		<TargetFramework>net10.0-desktop</TargetFramework>
+		<!-- <RuntimeIdentifiers>win-x64;linux-x64;osx-arm64;osx-x64</RuntimeIdentifiers> -->
+		<OutputType>Exe</OutputType>
+		<UnoSingleProject>true</UnoSingleProject>
+		<UnoFeatures>SkiaRenderer;Svg</UnoFeatures>
+		<AssemblyName>UnoDevelop</AssemblyName>
+		<RootNamespace>UnoDevelop</RootNamespace>
+		<ApplicationTitle>UnoDevelop</ApplicationTitle>
+		<ApplicationId>com.lextudio.unodevelop</ApplicationId>
+		<ApplicationDisplayVersion>0.1.0</ApplicationDisplayVersion>
+		<ApplicationVersion>1</ApplicationVersion>
+		<Description>UnoDevelop, a SharpDevelop evolution based on Uno Platform.</Description>
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+		<NoWarn>$(NoWarn);CS8632</NoWarn>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<InternalsVisibleTo Include="UnoDevelop.Core.Tests" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\ProjectSystem\Microsoft.VisualStudio.ProjectSystem.Shim.csproj" />
+		<ProjectReference Include="..\ProjectSystemManaged\Microsoft.VisualStudio.ProjectSystem.Managed.csproj" />
+		<ProjectReference Include="..\Base\Project\ICSharpCode.SharpDevelop.Uno.csproj" />
+		<ProjectReference Include="..\Core\Project\ICSharpCode.Core.Uno.csproj" />
+		<ProjectReference Include="..\Debugger\UnoDevelop.Debugger.csproj" />
+		<ProjectReference Include="..\UnitTesting\UnoDevelop.UnitTesting.csproj" />
+		<ProjectReference Include="..\..\Libraries\ResourceFiles\LeXtudio.OpenDevelop.ResourceFiles.csproj" />
+		<ProjectReference Include="..\..\AddIns\Misc\AddinScout\Project\AddinScout.csproj"
+		                  ReferenceOutputAssembly="false"
+		                  PrivateAssets="all" />
+		<ProjectReference Include="..\..\AddIns\Misc\RegExpTk\Project\RegExpTk.csproj"
+		                  ReferenceOutputAssembly="false"
+		                  PrivateAssets="all" />
+		<ProjectReference Include="..\..\AddIns\DisplayBindings\SettingsEditor\Project\SettingsEditor.csproj"
+		                  ReferenceOutputAssembly="false"
+		                  PrivateAssets="all" />
+		<ProjectReference Include="..\..\AddIns\DisplayBindings\HexEditor\Project\HexEditor.csproj"
+		                  ReferenceOutputAssembly="false"
+		                  PrivateAssets="all" />
+		<ProjectReference Include="..\..\AddIns\Analysis\CodeCoverage\Project\CodeCoverage.csproj"
+		                  ReferenceOutputAssembly="false"
+		                  PrivateAssets="all" />
+		<ProjectReference Include="..\..\AddIns\Misc\TextTemplating\Project\TextTemplating.csproj"
+		                  ReferenceOutputAssembly="false"
+		                  PrivateAssets="all" />
+		<ProjectReference Include="..\..\AddIns\Misc\PackageManagement\Project\PackageManagement.csproj"
+		                  ReferenceOutputAssembly="false"
+		                  PrivateAssets="all" />
+		<ProjectReference Include="..\..\AddIns\Misc\SearchAndReplace\Project\SearchAndReplace.csproj"
+		                  ReferenceOutputAssembly="false"
+		                  PrivateAssets="all" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Compile Include="$(SharpDevelopSourceRoot)\src\Main\SharpDevelop\Services\FileSystem.cs"
+		         Link="Upstream\Services\FileSystem.cs" />
+		<Compile Include="$(SharpDevelopSourceRoot)\src\Main\SharpDevelop\Services\DispatcherMessageLoop.cs"
+		         Link="Upstream\Services\DispatcherMessageLoop.cs" />
+		<Compile Include="$(SharpDevelopSourceRoot)\src\Main\SharpDevelop\Project\Build\BuildEngine.cs"
+		         Link="Upstream\Project\Build\BuildEngine.cs" />
+		<Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Util\MimeTypeDetection.cs"
+		         Link="Upstream\Util\MimeTypeDetection.cs" />
+		<Compile Include="$(SharpDevelopSourceRoot)\src\AddIns\Debugger\Debugger.AddIn\Visualizers\Common\IVisualizerCommand.cs"
+		         Link="Upstream\Debugger\Visualizers\IVisualizerCommand.cs" />
+		<Compile Include="$(SharpDevelopSourceRoot)\src\Main\SharpDevelop\Workbench\RecentOpen.cs"
+		         Link="Upstream\Workbench\RecentOpen.cs" />
+		<Compile Include="$(SharpDevelopSourceRoot)\src\Main\SharpDevelop\Workbench\DisplayBinding\AutoDetectDisplayBinding.cs"
+		         Link="Upstream\Workbench\DisplayBinding\AutoDetectDisplayBinding.cs" />
+		<Compile Include="$(SharpDevelopSourceRoot)\src\Main\SharpDevelop\Workbench\DisplayBinding\DisplayBindingDoozer.cs"
+		         Link="Upstream\Workbench\DisplayBinding\DisplayBindingDoozer.cs" />
+		<Compile Include="$(SharpDevelopSourceRoot)\src\Main\SharpDevelop\Workbench\DisplayBinding\DisplayBindingService.cs"
+		         Link="Upstream\Workbench\DisplayBinding\DisplayBindingService.cs" />
+		<Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Project\Build\MultipleProjectBuildable.cs"
+		         Link="Upstream\Project\Build\MultipleProjectBuildable.cs" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Content Include="Icons\*.svg">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Content>
+	</ItemGroup>
+
+	<ItemGroup>
+		<Content Include="AddIns\**\*.addin">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<Link>AddIns\%(RecursiveDir)%(Filename)%(Extension)</Link>
+		</Content>
+		<Content Include="..\..\AddIns\**\*.addin">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<Link>AddIns\%(RecursiveDir)%(Filename)%(Extension)</Link>
+		</Content>
+	</ItemGroup>
+
+	<ItemGroup>
+		<Content Include="Templates\Bundled\**\*">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<Link>Templates\Bundled\%(RecursiveDir)%(Filename)%(Extension)</Link>
+		</Content>
+	</ItemGroup>
+
+	<!-- SharpDbg debug adapter: build from submodule, copy output to Debugger/ -->
+	<PropertyGroup>
+		<SharpDbgProject>$(MSBuildThisFileDirectory)..\..\..\externals\sharpdbg\src\SharpDbg.Cli\SharpDbg.Cli.csproj</SharpDbgProject>
+		<SharpDbgBinDir>$(MSBuildThisFileDirectory)..\..\..\externals\sharpdbg\artifacts\bin\SharpDbg.Cli\$([System.String]::Copy('$(Configuration)').ToLower())\</SharpDbgBinDir>
+	</PropertyGroup>
+
+	<Target Name="BuildSharpDbg" BeforeTargets="Build"
+	        Condition="!Exists('$(SharpDbgBinDir)SharpDbg.Cli.dll')">
+		<Exec Command="dotnet build &quot;$(SharpDbgProject)&quot; -c $(Configuration) -tl:off"
+		      ConsoleToMSBuild="true"
+		      IgnoreExitCode="false" />
+	</Target>
+
+	<Target Name="CopySharpDbgToOutput" AfterTargets="Build">
+		<ItemGroup>
+			<SharpDbgFiles Include="$(SharpDbgBinDir)**\*.*" />
+		</ItemGroup>
+		<MakeDir Directories="$(OutputPath)Debugger\" />
+		<Copy SourceFiles="@(SharpDbgFiles)"
+		      DestinationFolder="$(OutputPath)Debugger\%(RecursiveDir)"
+		      SkipUnchangedFiles="true" />
+	</Target>
+
+	<Target Name="CopyAddInAssembliesToOutput" AfterTargets="Build">
+		<ItemGroup>
+			<AddInScoutOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\Misc\AddinScout\Project\bin\$(Configuration)\net10.0-desktop\UnoDevelop.AddInScout.*" />
+			<RegExpTkOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\Misc\RegExpTk\Project\bin\$(Configuration)\net10.0-desktop\UnoDevelop.RegExpTk.*" />
+			<SettingsEditorOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\DisplayBindings\SettingsEditor\Project\bin\$(Configuration)\net10.0-desktop\UnoDevelop.SettingsEditor.*" />
+			<HexEditorOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\DisplayBindings\HexEditor\Project\bin\$(Configuration)\net10.0-desktop\UnoDevelop.HexEditor.*" />
+			<CodeCoverageOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\Analysis\CodeCoverage\Project\bin\$(Configuration)\net10.0-desktop\UnoDevelop.CodeCoverage.*" />
+			<CodeCoverageAltCoverOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\Analysis\CodeCoverage\Project\bin\$(Configuration)\net10.0-desktop\AltCover\**\*.*" />
+			<TextTemplatingOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\Misc\TextTemplating\Project\bin\$(Configuration)\net10.0-desktop\UnoDevelop.TextTemplating.*" />
+			<PackageManagementOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\Misc\PackageManagement\Project\bin\$(Configuration)\net10.0-desktop\UnoDevelop.PackageManagement.*" />
+			<SearchAndReplaceOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\Misc\SearchAndReplace\Project\bin\$(Configuration)\net10.0-desktop\UnoDevelop.SearchAndReplace.*" />
+		</ItemGroup>
+		<MakeDir Directories="$(OutputPath)AddIns\Misc\AddinScout\Project\" />
+		<MakeDir Directories="$(OutputPath)AddIns\Misc\RegExpTk\Project\" />
+		<MakeDir Directories="$(OutputPath)AddIns\DisplayBindings\SettingsEditor\Project\" />
+		<MakeDir Directories="$(OutputPath)AddIns\DisplayBindings\HexEditor\Project\" />
+		<MakeDir Directories="$(OutputPath)AddIns\Analysis\CodeCoverage\Project\" />
+		<MakeDir Directories="$(OutputPath)AddIns\Analysis\CodeCoverage\Project\AltCover\" />
+		<MakeDir Directories="$(OutputPath)AddIns\Misc\TextTemplating\Project\" />
+		<MakeDir Directories="$(OutputPath)AddIns\Misc\PackageManagement\Project\" />
+		<MakeDir Directories="$(OutputPath)AddIns\Misc\SearchAndReplace\Project\" />
+		<Copy SourceFiles="@(AddInScoutOutput)"
+		      DestinationFolder="$(OutputPath)AddIns\Misc\AddinScout\Project\"
+		      SkipUnchangedFiles="true" />
+		<Copy SourceFiles="@(RegExpTkOutput)"
+		      DestinationFolder="$(OutputPath)AddIns\Misc\RegExpTk\Project\"
+		      SkipUnchangedFiles="true" />
+		<Copy SourceFiles="@(SettingsEditorOutput)"
+		      DestinationFolder="$(OutputPath)AddIns\DisplayBindings\SettingsEditor\Project\"
+		      SkipUnchangedFiles="true" />
+		<Copy SourceFiles="@(HexEditorOutput)"
+		      DestinationFolder="$(OutputPath)AddIns\DisplayBindings\HexEditor\Project\"
+		      SkipUnchangedFiles="true" />
+		<Copy SourceFiles="@(CodeCoverageOutput)"
+		      DestinationFolder="$(OutputPath)AddIns\Analysis\CodeCoverage\Project\"
+		      SkipUnchangedFiles="true" />
+		<Copy SourceFiles="@(CodeCoverageAltCoverOutput)"
+		      DestinationFolder="$(OutputPath)AddIns\Analysis\CodeCoverage\Project\AltCover\%(RecursiveDir)"
+		      SkipUnchangedFiles="true" />
+		<Copy SourceFiles="@(TextTemplatingOutput)"
+		      DestinationFolder="$(OutputPath)AddIns\Misc\TextTemplating\Project\"
+		      SkipUnchangedFiles="true" />
+		<Copy SourceFiles="@(PackageManagementOutput)"
+		      DestinationFolder="$(OutputPath)AddIns\Misc\PackageManagement\Project\"
+		      SkipUnchangedFiles="true" />
+		<Copy SourceFiles="@(SearchAndReplaceOutput)"
+		      DestinationFolder="$(OutputPath)AddIns\Misc\SearchAndReplace\Project\"
+		      SkipUnchangedFiles="true" />
+	</Target>
+
+	<!-- UnoDock and UnoEdit only when not using local project builds -->
+	<ItemGroup>
+		<PackageReference Include="LeXtudio.DevFlow.Agent.Uno" />
+		<PackageReference Include="Tmds.DBus.Protocol" />
+		<PackageReference Include="Mono.TextTemplating" />
+	</ItemGroup>
+	<ItemGroup Condition=" '$(UseNuGetPackages)' == 'true' ">
+		<PackageReference Include="LeXtudio.UnoEdit" />
+		<PackageReference Include="LeXtudio.UnoDock" />
+		<PackageReference Include="LeXtudio.UnoDock.Themes.VS2013" />
+		<PackageReference Include="LeXtudio.UnoPropertyGrid" />
+	</ItemGroup>
+	<ItemGroup Condition=" '$(UseNuGetPackages)' != 'true' ">
+		<ProjectReference Include="..\..\..\..\UnoDock\src\UnoDock\UnoDock.csproj" />
+		<ProjectReference Include="..\..\..\..\UnoDock\src\UnoDock.Themes.VS2013\UnoDock.Themes.VS2013.csproj" />
+		<ProjectReference Include="..\..\..\..\WindowsShims\src\LeXtudio.Windows\LeXtudio.Windows.csproj" />
+		<ProjectReference Include="..\..\..\..\UnoPropertyGrid\src\UnoPropertyGrid\UnoPropertyGrid.csproj" />
+	</ItemGroup>
+</Project>

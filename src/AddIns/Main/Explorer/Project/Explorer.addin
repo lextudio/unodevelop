@@ -1,0 +1,193 @@
+<AddIn name="UnoDevelop Explorer"
+       author="OpenAI"
+       description="AddInTree-backed Solution Explorer commands for UnoDevelop">
+  <Manifest>
+    <Identity name="UnoDevelop.Explorer" version="1.1"/>
+  </Manifest>
+
+  <Runtime>
+    <Import assembly=":UnoDevelop">
+      <ConditionEvaluator name="SolutionOpen"
+                          class="UnoDevelop.Conditions.SolutionOpenConditionEvaluator" />
+    </Import>
+  </Runtime>
+
+  <Path name="/SharpDevelop/Services">
+    <Service id="UnoDevelop.Services.IUnoSolutionExplorerController"
+             class="UnoDevelop.Services.UnoSolutionExplorerController" />
+  </Path>
+
+  <!-- Required by DisplayBindingService constructor (throwOnNotFound=true) -->
+  <Path name="/SharpDevelop/Workbench/DisplayBindings">
+  </Path>
+
+  <Path name="/SharpDevelop/Pads/ProjectBrowser/ContextMenu/Common/Add">
+    <MenuItem id="NewProject" label="New Project..." class="UnoDevelop.Commands.NewProjectSolutionExplorerCommand" />
+    <MenuItem id="NewItem" label="New Item..." class="UnoDevelop.Commands.NewItemSolutionExplorerCommand" />
+    <MenuItem id="NewFolder" label="New Folder" class="UnoDevelop.Commands.NewFolderSolutionExplorerCommand" />
+    <MenuItem id="NewFile" label="New File" class="UnoDevelop.Commands.NewFileSolutionExplorerCommand" />
+    <MenuItem id="ExistingFile" label="Add Existing File" class="UnoDevelop.Commands.AddExistingFileSolutionExplorerCommand">
+      <Condition name="Ownerstate" ownerstate="AddExisting" />
+    </MenuItem>
+    <MenuItem id="ExistingFolder" label="Add Existing Folder" class="UnoDevelop.Commands.AddExistingFolderSolutionExplorerCommand">
+      <Condition name="Ownerstate" ownerstate="AddExisting" />
+    </MenuItem>
+  </Path>
+
+  <Path name="/SharpDevelop/Pads/ProjectBrowser/ContextMenu/Common/Open">
+    <MenuItem id="Open" label="Open" class="UnoDevelop.Commands.OpenSolutionExplorerItemCommand">
+      <Condition name="Ownerstate" ownerstate="Openable" />
+    </MenuItem>
+    <MenuItem id="OpenWith" label="Open With" class="UnoDevelop.Commands.OpenWithSolutionExplorerCommand">
+      <Condition name="Ownerstate" ownerstate="OpenWith" />
+    </MenuItem>
+    <MenuItem id="OpenFolder" label="Open Folder" class="UnoDevelop.Commands.OpenFolderSolutionExplorerCommand" />
+  </Path>
+
+  <Path name="/SharpDevelop/Pads/ProjectBrowser/ContextMenu/Common/Edit">
+    <MenuItem id="Rename" label="Rename" class="UnoDevelop.Commands.RenameSolutionExplorerItemCommand">
+      <Condition name="Ownerstate" ownerstate="Renameable" />
+    </MenuItem>
+    <MenuItem id="Delete" label="Delete" class="UnoDevelop.Commands.DeleteSolutionExplorerItemCommand">
+      <Condition name="Ownerstate" ownerstate="Deletable" />
+    </MenuItem>
+    <MenuItem id="RemoveFromProject" label="Remove From Project" class="UnoDevelop.Commands.RemoveFromProjectSolutionExplorerCommand">
+      <Condition name="Ownerstate" ownerstate="RemovableFromSolution" />
+    </MenuItem>
+    <MenuItem id="CopyPath" label="Copy Path" class="UnoDevelop.Commands.CopyPathSolutionExplorerCommand" />
+  </Path>
+
+  <Path name="/SharpDevelop/Pads/ProjectBrowser/ContextMenu/Common/Membership">
+    <MenuItem id="IncludeInProject" label="Include In Project" class="UnoDevelop.Commands.IncludeInProjectSolutionExplorerCommand">
+      <Condition name="Ownerstate" ownerstate="IncludeInProject" />
+    </MenuItem>
+    <MenuItem id="ExcludeFromProject" label="Exclude From Project" class="UnoDevelop.Commands.ExcludeFromProjectSolutionExplorerCommand">
+      <Condition name="Ownerstate" ownerstate="ExcludeFromProject" />
+    </MenuItem>
+  </Path>
+
+  <Path name="/SharpDevelop/Pads/ProjectBrowser/ContextMenu/SolutionNode">
+    <MenuItem id="Build" label="Build Solution" class="UnoDevelop.Commands.BuildSolutionCommand" />
+    <MenuItem id="CancelBuild" label="Cancel Build" class="UnoDevelop.Commands.CancelBuildCommand" />
+    <MenuItem id="Separator0" type="Separator" />
+    <MenuItem id="Refresh" label="Refresh" class="UnoDevelop.Commands.RefreshSolutionExplorerCommand" />
+    <MenuItem id="Add" label="Add" type="Menu">
+      <Include path="/SharpDevelop/Pads/ProjectBrowser/ContextMenu/Common/Add" />
+    </MenuItem>
+    <MenuItem id="Separator1" type="Separator" />
+    <MenuItem id="CopyPath" label="Copy Path" class="UnoDevelop.Commands.CopyPathSolutionExplorerCommand" />
+    <MenuItem id="OpenFolder" label="Open Folder" class="UnoDevelop.Commands.OpenFolderSolutionExplorerCommand" />
+  </Path>
+
+  <Path name="/SharpDevelop/Pads/ProjectBrowser/ContextMenu/ProjectNode">
+    <Include path="/SharpDevelop/Pads/ProjectBrowser/ContextMenu/Common/Open" />
+    <MenuItem id="Separator1" type="Separator" />
+    <MenuItem id="Refresh" label="Refresh" class="UnoDevelop.Commands.RefreshSolutionExplorerCommand" />
+    <MenuItem id="Add" label="Add" type="Menu">
+      <Include path="/SharpDevelop/Pads/ProjectBrowser/ContextMenu/Common/Add" />
+    </MenuItem>
+    <MenuItem id="SetStartup" label="Set Startup Project" class="UnoDevelop.Commands.SetStartupProjectSolutionExplorerCommand">
+      <Condition name="Ownerstate" ownerstate="StartupProject" />
+    </MenuItem>
+    <MenuItem id="Separator2" type="Separator" />
+    <MenuItem id="ManageNuGetPackages" label="Manage NuGet Packages..." class="UnoDevelop.Commands.ManageNuGetPackagesSolutionExplorerCommand" />
+    <MenuItem id="Separator3" type="Separator" />
+    <Include path="/SharpDevelop/Pads/ProjectBrowser/ContextMenu/Common/Edit" />
+  </Path>
+
+  <Path name="/SharpDevelop/Pads/ProjectBrowser/ContextMenu/FolderNode">
+    <Include path="/SharpDevelop/Pads/ProjectBrowser/ContextMenu/Common/Open" />
+    <MenuItem id="Separator1" type="Separator" />
+    <MenuItem id="Add" label="Add" type="Menu">
+      <Include path="/SharpDevelop/Pads/ProjectBrowser/ContextMenu/Common/Add" />
+    </MenuItem>
+    <MenuItem id="Separator2" type="Separator" />
+    <Include path="/SharpDevelop/Pads/ProjectBrowser/ContextMenu/Common/Edit" />
+  </Path>
+
+  <Path name="/SharpDevelop/Pads/ProjectBrowser/ContextMenu/FileNode">
+    <Include path="/SharpDevelop/Pads/ProjectBrowser/ContextMenu/Common/Open" />
+    <MenuItem id="Separator1" type="Separator" />
+    <MenuItem id="RunCustomTool" label="Run Custom Tool" class="UnoDevelop.Commands.RunT4CustomToolSolutionExplorerCommand" />
+    <MenuItem id="Separator1b" type="Separator" />
+    <Include path="/SharpDevelop/Pads/ProjectBrowser/ContextMenu/Common/Membership" />
+    <MenuItem id="Separator2" type="Separator" />
+    <Include path="/SharpDevelop/Pads/ProjectBrowser/ContextMenu/Common/Edit" />
+  </Path>
+
+  <Path name="/SharpDevelop/Pads/ProjectBrowser/ContextMenu/ReferenceNode">
+    <MenuItem id="OpenProjectReference" label="Open" class="UnoDevelop.Commands.OpenProjectReferenceSolutionExplorerCommand">
+      <Condition name="Ownerstate" ownerstate="OpenReference" />
+    </MenuItem>
+    <MenuItem id="Separator0" type="Separator" />
+    <MenuItem id="RemoveReference" label="Remove" class="UnoDevelop.Commands.RemoveReferenceSolutionExplorerCommand">
+      <Condition name="Ownerstate" ownerstate="RemovableReference" />
+    </MenuItem>
+    <MenuItem id="CopyPath" label="Copy Path" class="UnoDevelop.Commands.CopyPathSolutionExplorerCommand" />
+  </Path>
+
+  <Path name="/SharpDevelop/Pads/ProjectBrowser/ContextMenu/PackageReferenceNode">
+    <MenuItem id="RemoveReference" label="Remove" class="UnoDevelop.Commands.RemoveReferenceSolutionExplorerCommand">
+      <Condition name="Ownerstate" ownerstate="RemovableReference" />
+    </MenuItem>
+  </Path>
+
+  <!-- Strictly mirrors WPF SharpDevelop /SharpDevelop/Pads/ProjectBrowser/ToolBar/Standard:
+       Properties | (sep) | ShowAll toggle | Refresh | (sep) | Collapse All. -->
+  <Path name="/SharpDevelop/Pads/ProjectBrowser/ToolBar/Standard">
+    <Condition name="SolutionOpen" action="Disable">
+      <ToolbarItem id="Properties" tooltip="Properties" icon="Property_16x" class="UnoDevelop.Commands.ShowPropertiesForNodeCommand" />
+      <ToolbarItem id="Separator0" type="Separator" />
+      <ToolbarItem id="ShowAll" type="CheckBox" tooltip="Show All Files" icon="ShowAllCode_16x" class="UnoDevelop.Commands.ToggleShowAllFilesCommand" />
+      <ToolbarItem id="Refresh" tooltip="Refresh" icon="Refresh_16x" class="UnoDevelop.Commands.RefreshSolutionExplorerCommand" />
+      <ToolbarItem id="Separator1" type="Separator" />
+      <ToolbarItem id="CollapseAll" tooltip="Collapse All" icon="CollapseAll_16x" class="UnoDevelop.Commands.CollapseAllSolutionExplorerCommand" />
+    </Condition>
+  </Path>
+
+  <Path name="/UnoDevelop/MainMenu/Explorer">
+    <Condition name="SolutionOpen" action="Disable">
+      <MenuItem id="Refresh" label="Refresh" class="UnoDevelop.Commands.RefreshSolutionExplorerCommand" />
+      <MenuItem id="Add" label="Add" type="Menu">
+        <Include path="/SharpDevelop/Pads/ProjectBrowser/ContextMenu/Common/Add" />
+      </MenuItem>
+      <MenuItem id="Separator0" type="Separator" />
+      <Include path="/SharpDevelop/Pads/ProjectBrowser/ContextMenu/Common/Open" />
+      <MenuItem id="Separator1" type="Separator" />
+      <Include path="/SharpDevelop/Pads/ProjectBrowser/ContextMenu/Common/Membership" />
+      <MenuItem id="SeparatorMembership" type="Separator" />
+      <Include path="/SharpDevelop/Pads/ProjectBrowser/ContextMenu/Common/Edit" />
+      <MenuItem id="SetStartup" label="Set Startup Project" class="UnoDevelop.Commands.SetStartupProjectSolutionExplorerCommand">
+        <Condition name="Ownerstate" ownerstate="StartupProject" />
+      </MenuItem>
+      <MenuItem id="Separator2" type="Separator" />
+      <MenuItem id="CollapseAll" label="Collapse All" class="UnoDevelop.Commands.CollapseAllSolutionExplorerCommand" />
+    </Condition>
+  </Path>
+
+  <Path name="/SharpDevelop/Workbench/MainMenu">
+    <MenuItem id="File" label="File" type="Menu">
+      <MenuItem id="OpenSolutionOrProject" label="Open Solution or Project..." class="UnoDevelop.Commands.OpenSolutionOrProjectShellCommand" />
+      <MenuItem id="CloseSolution" label="Close Solution" class="UnoDevelop.Commands.CloseSolutionShellCommand" />
+      <MenuItem id="Separator1" type="Separator" />
+      <MenuItem id="Exit" label="Exit" class="UnoDevelop.Commands.ExitShellCommand" />
+    </MenuItem>
+    <MenuItem id="Explorer" label="Explorer" type="Menu">
+      <Condition name="SolutionOpen" action="Disable">
+        <MenuItem id="Refresh" label="Refresh" class="UnoDevelop.Commands.RefreshSolutionExplorerCommand" />
+        <MenuItem id="Add" label="Add" type="Menu">
+          <Include path="/SharpDevelop/Pads/ProjectBrowser/ContextMenu/Common/Add" />
+        </MenuItem>
+        <MenuItem id="OpenWith" label="Open With" class="UnoDevelop.Commands.OpenWithSolutionExplorerCommand">
+          <Condition name="Ownerstate" ownerstate="OpenWith" />
+        </MenuItem>
+        <MenuItem id="RemoveFromProject" label="Remove From Project" class="UnoDevelop.Commands.RemoveFromProjectSolutionExplorerCommand">
+          <Condition name="Ownerstate" ownerstate="RemovableFromSolution" />
+        </MenuItem>
+        <MenuItem id="SetStartup" label="Set Startup Project" class="UnoDevelop.Commands.SetStartupProjectSolutionExplorerCommand">
+          <Condition name="Ownerstate" ownerstate="StartupProject" />
+        </MenuItem>
+      </Condition>
+    </MenuItem>
+  </Path>
+</AddIn>
