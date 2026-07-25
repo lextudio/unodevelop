@@ -9,6 +9,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="..\Src\GlobalUsings.uno.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\Core\Project\ICSharpCode.Core.Uno.csproj" />
     <ProjectReference Include="..\..\..\Libraries\ICSharpCode.TypeSystem.Abstractions\ICSharpCode.TypeSystem.Abstractions.Uno.csproj" />
   </ItemGroup>
@@ -75,10 +79,14 @@
     <Compile Include="..\Src\Gui\ErrorListPadStub.uno.cs" />
     <Compile Include="..\Src\Workbench\WorkbenchPlatformBridge.cs" />
     <Compile Include="..\Src\Workbench\WorkbenchPlatformBridge.uno.cs" />
+    <Compile Include="..\Src\Workbench\AbstractPadContent.uno.cs" />
     <Compile Include="..\Src\Workbench\IViewContent.uno.cs" />
+    <Compile Include="..\Src\Workbench\AbstractViewContent.uno.cs" />
     <Compile Include="..\Src\Workbench\IWorkbenchWindow.uno.cs" />
     <Compile Include="..\Src\Workbench\IWorkbench.uno.cs" />
     <Compile Include="..\Src\Workbench\ViewContentEventArgs.uno.cs" />
+    <Compile Include="..\Src\Editor\ITextMarker.uno.cs" />
+    <Compile Include="..\Src\Internal\Doozers\IOptionPanel.uno.cs" />
     <!-- Editor Bookmarks -->
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Editor\Bookmarks\IBookmark.cs"
              Link="Upstream\Editor\Bookmarks\IBookmark.cs" />
@@ -120,8 +128,12 @@
     <Compile Include="..\Src\Editor\AvalonEditTextEditorAdapter.uno.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Editor\ITextEditorExtension.cs"
              Link="Upstream\Editor\ITextEditorExtension.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Editor\ITextAreaToolTipProvider.cs"
+             Link="Upstream\Editor\ITextAreaToolTipProvider.cs" />
+    <Compile Include="..\Src\Editor\ToolTipRequestEventArgs.uno.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Editor\Search\ISearchResult.cs"
              Link="Upstream\Editor\Search\ISearchResult.cs" />
+    <Compile Include="..\Src\Editor\Search\SearchResultMatch.uno.cs" />
     <Compile Include="..\Src\Editor\Search\UnoSearchResultsService.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Editor\IEditorControlService.cs"
              Link="Upstream\Editor\IEditorControlService.cs" />
@@ -337,5 +349,9 @@
              Link="Upstream\Services\AmbienceService\DefaultAmbience.cs" />
     <Compile Include="..\Src\Project\ProjectChangeWatcher.uno.cs" />
     <Compile Include="..\Src\Util\StringExtensions.uno.cs" />
+    <Compile Include="..\Src\Gui\WorkbenchSingleton.uno.cs" />
+    <Compile Include="..\Src\Services\ClassBrowserIcons\ClassBrowserIconService.uno.cs" />
+    <Compile Include="..\Src\Services\ProjectService\ProjectService.uno.cs" />
+    <Compile Include="..\Src\Editor\Search\SearchResultsPad.uno.cs" />
   </ItemGroup>
 </Project>
