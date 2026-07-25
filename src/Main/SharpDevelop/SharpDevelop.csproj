@@ -23,8 +23,8 @@
 	<ItemGroup>
 		<ProjectReference Include="..\..\..\externals\cps-shims\src\ProjectSystem\Microsoft.VisualStudio.ProjectSystem.Shim.csproj" />
 		<ProjectReference Include="..\..\..\externals\cps-shims\src\ProjectSystemManaged\Microsoft.VisualStudio.ProjectSystem.Managed.csproj" />
-		<ProjectReference Include="..\Base\Project\ICSharpCode.SharpDevelop.Uno.csproj" />
-		<ProjectReference Include="..\Core\Project\ICSharpCode.Core.Uno.csproj" />
+		<ProjectReference Include="..\Base\Project\ICSharpCode.SharpDevelop.csproj" />
+		<ProjectReference Include="..\Core\Project\ICSharpCode.Core.csproj" />
 		<ProjectReference Include="..\Debugger\Project\UnoDevelop.Debugger.csproj" />
 		<ProjectReference Include="..\UnitTesting\Project\UnoDevelop.UnitTesting.csproj" />
 		<ProjectReference Include="..\..\Libraries\ResourceFiles\LeXtudio.OpenDevelop.ResourceFiles.csproj" />
@@ -95,6 +95,10 @@
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 			<Link>AddIns\%(RecursiveDir)%(Filename)%(Extension)</Link>
 		</Content>
+		<Content Include="..\..\..\..\UnoEdit\src\UnoEdit\ICSharpCode.AvalonEdit.addin">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<Link>AddIns\ICSharpCode.AvalonEdit.addin</Link>
+		</Content>
 	</ItemGroup>
 
 	<ItemGroup>
@@ -129,16 +133,19 @@
 
 	<Target Name="CopyAddInAssembliesToOutput" AfterTargets="Build">
 		<ItemGroup>
-			<AddInScoutOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\Misc\AddinScout\Project\bin\$(Configuration)\net10.0-desktop\UnoDevelop.AddInScout.*" />
-			<RegExpTkOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\Misc\RegExpTk\Project\bin\$(Configuration)\net10.0-desktop\UnoDevelop.RegExpTk.*" />
-			<SettingsEditorOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\DisplayBindings\SettingsEditor\Project\bin\$(Configuration)\net10.0-desktop\UnoDevelop.SettingsEditor.*" />
-			<HexEditorOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\DisplayBindings\HexEditor\Project\bin\$(Configuration)\net10.0-desktop\UnoDevelop.HexEditor.*" />
-			<CodeCoverageOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\Analysis\CodeCoverage\Project\bin\$(Configuration)\net10.0-desktop\UnoDevelop.CodeCoverage.*" />
+			<AddInScoutOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\Misc\AddinScout\Project\bin\$(Configuration)\net10.0-desktop\UnoDevelop.AddInScout.*" Exclude="**\*.addin" />
+			<RegExpTkOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\Misc\RegExpTk\Project\bin\$(Configuration)\net10.0-desktop\UnoDevelop.RegExpTk.*" Exclude="**\*.addin" />
+			<SettingsEditorOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\DisplayBindings\SettingsEditor\Project\bin\$(Configuration)\net10.0-desktop\UnoDevelop.SettingsEditor.*" Exclude="**\*.addin" />
+			<HexEditorOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\DisplayBindings\HexEditor\Project\bin\$(Configuration)\net10.0-desktop\UnoDevelop.HexEditor.*" Exclude="**\*.addin" />
+			<CodeCoverageOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\Analysis\CodeCoverage\Project\bin\$(Configuration)\net10.0-desktop\UnoDevelop.CodeCoverage.*" Exclude="**\*.addin" />
 			<CodeCoverageAltCoverOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\Analysis\CodeCoverage\Project\bin\$(Configuration)\net10.0-desktop\AltCover\**\*.*" />
-			<TextTemplatingOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\Misc\TextTemplating\Project\bin\$(Configuration)\net10.0-desktop\UnoDevelop.TextTemplating.*" />
-			<PackageManagementOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\Misc\PackageManagement\Project\bin\$(Configuration)\net10.0-desktop\UnoDevelop.PackageManagement.*" />
-			<SearchAndReplaceOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\Misc\SearchAndReplace\Project\bin\$(Configuration)\net10.0-desktop\UnoDevelop.SearchAndReplace.*" />
-			<StartPageOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\Misc\StartPage\Project\bin\$(Configuration)\net10.0-desktop\UnoDevelop.StartPage.*" />
+			<TextTemplatingOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\Misc\TextTemplating\Project\bin\$(Configuration)\net10.0-desktop\UnoDevelop.TextTemplating.*" Exclude="**\*.addin" />
+			<PackageManagementOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\Misc\PackageManagement\Project\bin\$(Configuration)\net10.0-desktop\UnoDevelop.PackageManagement.*" Exclude="**\*.addin" />
+			<SearchAndReplaceOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\Misc\SearchAndReplace\Project\bin\$(Configuration)\net10.0-desktop\UnoDevelop.SearchAndReplace.*" Exclude="**\*.addin" />
+			<StartPageOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\Misc\StartPage\Project\bin\$(Configuration)\net10.0-desktop\UnoDevelop.StartPage.*" Exclude="**\*.addin" />
+			<XmlEditorOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\DisplayBindings\XmlEditor\Project\bin\$(Configuration)\net10.0-desktop\UnoDevelop.XmlEditor.*" Exclude="**\*.addin" />
+			<IconEditorOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\DisplayBindings\IconEditor\Project\bin\$(Configuration)\net10.0-desktop\UnoDevelop.IconEditor.*" Exclude="**\*.addin" />
+			<GitAddInOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\VersionControl\GitAddIn\Project\bin\$(Configuration)\net10.0-desktop\UnoDevelop.GitAddIn.*" Exclude="**\*.addin" />
 		</ItemGroup>
 		<MakeDir Directories="$(OutputPath)AddIns\Misc\AddinScout\Project\" />
 		<MakeDir Directories="$(OutputPath)AddIns\Misc\RegExpTk\Project\" />
@@ -150,6 +157,9 @@
 		<MakeDir Directories="$(OutputPath)AddIns\Misc\PackageManagement\Project\" />
 		<MakeDir Directories="$(OutputPath)AddIns\Misc\SearchAndReplace\Project\" />
 		<MakeDir Directories="$(OutputPath)AddIns\Misc\StartPage\Project\" />
+		<MakeDir Directories="$(OutputPath)AddIns\DisplayBindings\XmlEditor\Project\" />
+		<MakeDir Directories="$(OutputPath)AddIns\DisplayBindings\IconEditor\Project\" />
+		<MakeDir Directories="$(OutputPath)AddIns\VersionControl\GitAddIn\Project\" />
 		<Copy SourceFiles="@(AddInScoutOutput)"
 		      DestinationFolder="$(OutputPath)AddIns\Misc\AddinScout\Project\"
 		      SkipUnchangedFiles="true" />
@@ -180,6 +190,24 @@
 		<Copy SourceFiles="@(StartPageOutput)"
 		      DestinationFolder="$(OutputPath)AddIns\Misc\StartPage\Project\"
 		      SkipUnchangedFiles="true" />
+		<Copy SourceFiles="@(XmlEditorOutput)"
+		      DestinationFolder="$(OutputPath)AddIns\DisplayBindings\XmlEditor\Project\"
+		      SkipUnchangedFiles="true" />
+		<Copy SourceFiles="@(IconEditorOutput)"
+		      DestinationFolder="$(OutputPath)AddIns\DisplayBindings\IconEditor\Project\"
+		      SkipUnchangedFiles="true" />
+		<Copy SourceFiles="@(GitAddInOutput)"
+		      DestinationFolder="$(OutputPath)AddIns\VersionControl\GitAddIn\Project\"
+		      SkipUnchangedFiles="true" />
+	</Target>
+	
+	<!-- Remove duplicate .addin files (from AddIn project CopyToOutputDirectory) under bin/ subdirectories -->
+	<Target Name="CleanDuplicateAddInFiles" AfterTargets="CopyAddInAssembliesToOutput">
+		<ItemGroup>
+			<_DupAddIns Include="$(OutputPath)AddIns\**\bin\**\*.addin" />
+			<_DupAddIns Include="$(OutputPath)*.addin" />
+		</ItemGroup>
+		<Delete Files="@(_DupAddIns)" />
 	</Target>
 
 	<!-- UnoDock and UnoEdit only when not using local project builds -->

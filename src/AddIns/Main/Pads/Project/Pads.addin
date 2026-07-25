@@ -52,7 +52,7 @@
          title="Modules"
          category="Debugger"
          defaultPosition="Bottom" />
-    <Pad id="Tests"
+    <Pad id="UnitTestingPad"
          class="UnoDevelop.UnitTesting.TestResultsPad"
          title="Tests"
          category="Main"

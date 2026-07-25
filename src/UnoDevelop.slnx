@@ -5,11 +5,11 @@
   </Folder>
   <Folder Name="/Main/Core/" />
   <Folder Name="/Main/Core/Project/">
-    <Project Path="Main/Core/Project/ICSharpCode.Core.Uno.csproj" />
+    <Project Path="Main/Core/Project/ICSharpCode.Core.csproj" />
   </Folder>
   <Folder Name="/Main/Base/" />
   <Folder Name="/Main/Base/Project/">
-    <Project Path="Main/Base/Project/ICSharpCode.SharpDevelop.Uno.csproj" />
+    <Project Path="Main/Base/Project/ICSharpCode.SharpDevelop.csproj" />
   </Folder>
   <Folder Name="/Main/Debugger/" />
   <Folder Name="/Main/Debugger/Project/">
@@ -33,7 +33,7 @@
     <Project Path="Libraries/ResourceFiles/LeXtudio.OpenDevelop.ResourceFiles.csproj" />
   </Folder>
   <Folder Name="/Libraries/ICSharpCode.TypeSystem.Abstractions/">
-    <Project Path="Libraries/ICSharpCode.TypeSystem.Abstractions/ICSharpCode.TypeSystem.Abstractions.Uno.csproj" />
+    <Project Path="Libraries/ICSharpCode.TypeSystem.Abstractions/ICSharpCode.TypeSystem.Abstractions.csproj" />
   </Folder>
 
   <!-- AddIn projects -->

@@ -1,4 +1,6 @@
 using System;
+using System.Collections.ObjectModel;
+using System.Xml;
 using ICSharpCode.SharpDevelop.Workbench;
 
 namespace ICSharpCode.XmlEditor
@@ -26,14 +28,21 @@ namespace ICSharpCode.XmlEditor
 		public void CollapseAll() { }
 	}
 
+	public class XmlTreeViewControl
+	{
+		public ObservableCollection<XmlTreeNode> Nodes { get; } = new();
+	}
+
 	public class SelectXmlSchemaWindow
 	{
 		public SelectXmlSchemaWindow(string[] namespaces) { }
 		public string SelectedNamespaceUri { get; set; }
 	}
+}
 
-	public static class XPathNodeTextMarker
+namespace ICSharpCode.SharpDevelop.Gui
+{
+	public class OptionPanel
 	{
-		public static void RemoveMarkers(object textEditor) { }
 	}
 }

@@ -1,7 +1,7 @@
 <Project Sdk="Uno.Sdk">
   <PropertyGroup>
     <TargetFramework>net10.0-desktop</TargetFramework>
-    <AssemblyName>ICSharpCode.Core.Uno</AssemblyName>
+    <AssemblyName>ICSharpCode.Core</AssemblyName>
     <RootNamespace>ICSharpCode.Core</RootNamespace>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <DefineConstants>$(DefineConstants);HAS_UNO;UNODEVELOP</DefineConstants>

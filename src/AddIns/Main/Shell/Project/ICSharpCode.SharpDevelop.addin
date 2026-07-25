@@ -1,0 +1,18 @@
+<AddIn name = "SharpDevelop Core"
+       author = "SharpDevelop Team"
+       addInManagerHidden="preinstalled">
+	
+	<Manifest>
+		<Identity name="ICSharpCode.SharpDevelop" />
+	</Manifest>
+	
+	<Runtime>
+		<Import assembly=":ICSharpCode.SharpDevelop">
+			<Doozer name="ProjectBinding" class="ICSharpCode.SharpDevelop.Project.ProjectBindingDoozer" />
+			<Doozer name="LanguageBinding" class="ICSharpCode.SharpDevelop.LanguageBindingDoozer" />
+			<Doozer name="TextEditorExtension" class="ICSharpCode.SharpDevelop.Editor.TextEditorExtensionDoozer" />
+			<Doozer name="CodeCompletionBinding" class="ICSharpCode.SharpDevelop.Editor.CodeCompletion.CodeCompletionBindingDoozer" />
+			<Doozer name="Menu" class="ICSharpCode.SharpDevelop.MenuDoozer" />
+		</Import>
+	</Runtime>
+</AddIn>

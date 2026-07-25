@@ -12,7 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Base\Project\ICSharpCode.SharpDevelop.Uno.csproj" />
+    <ProjectReference Include="..\..\Base\Project\ICSharpCode.SharpDevelop.csproj" />
     <ProjectReference Include="..\..\..\..\UnoRichText\src\LeXtudio.RichText\LeXtudio.RichText.csproj" />
   </ItemGroup>
 </Project>

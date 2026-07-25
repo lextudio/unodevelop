@@ -131,7 +131,7 @@ public sealed class UnoDevelopAppFixture : IAsyncLifetime
     public async Task<JsonElement> InvokeAsync(string action, params object[] args)
     {
         var state = await InvokeRawAsync(action, args);
-        if (state.TryGetProperty("error", out var probeErr))
+        if (state.ValueKind == JsonValueKind.Object && state.TryGetProperty("error", out var probeErr))
             throw new InvalidOperationException($"Probe '{action}' reported error: {probeErr.GetString()}");
         return state;
     }
@@ -163,10 +163,13 @@ public sealed class UnoDevelopAppFixture : IAsyncLifetime
             throw new InvalidOperationException($"Probe '{action}' failed ({(int)resp.StatusCode}): {err}");
         }
         var envelope = await resp.Content.ReadFromJsonAsync<JsonElement>();
-        var raw = envelope.TryGetProperty("returnValue", out var rv) ? rv.GetString() : null;
-        if (string.IsNullOrEmpty(raw))
-            throw new InvalidOperationException($"Probe '{action}' returned no value: {envelope}");
-        return JsonDocument.Parse(raw).RootElement.Clone();
+        if (envelope.TryGetProperty("returnValue", out var rv))
+        {
+            if (rv.ValueKind == JsonValueKind.String)
+                return JsonDocument.Parse(rv.GetString()!).RootElement.Clone();
+            return rv.Clone();
+        }
+        throw new InvalidOperationException($"Probe '{action}' returned no returnValue: {envelope}");
     }
 
     public async Task<JsonElement> PollAsync(

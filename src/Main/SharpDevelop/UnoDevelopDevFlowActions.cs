@@ -792,6 +792,35 @@ public static class UnoDevelopDevFlowActions
     }
 #endif
 
+    [DevFlowAction("ide-get-project-property", Description = "Read a property from a .csproj file. Args: [projectPath, propertyName]. Returns the property value or empty string.")]
+    public static string GetProjectProperty(string projectPath, string propertyName)
+    {
+        var val = MsBuildProjectHelper.GetProperty(projectPath, propertyName);
+        return val ?? "";
+    }
+
+    [DevFlowAction("ide-set-project-property", Description = "Set a property in a .csproj file. Args: [projectPath, propertyName, value]. Returns 'OK' or 'ERROR'.")]
+    public static string SetProjectProperty(string projectPath, string propertyName, string value)
+    {
+        return MsBuildProjectHelper.SetProperty(projectPath, propertyName, value)
+            ? "OK"
+            : "ERROR: File not found: " + projectPath;
+    }
+
+    [DevFlowAction("ide-get-target-framework", Description = "Read TargetFramework from a project. Args: [projectPath]. Returns the TFM or empty string.")]
+    public static string GetTargetFramework(string projectPath)
+    {
+        return MsBuildProjectHelper.GetTargetFramework(projectPath) ?? "";
+    }
+
+    [DevFlowAction("ide-set-target-framework", Description = "Set TargetFramework in a project. Args: [projectPath, tfm]. Returns 'OK' or 'ERROR'.")]
+    public static string SetTargetFramework(string projectPath, string tfm)
+    {
+        return MsBuildProjectHelper.SetTargetFramework(projectPath, tfm)
+            ? "OK"
+            : "ERROR: File not found: " + projectPath;
+    }
+
     private sealed class NavPoint : INavigationPoint
     {
         public NavPoint(string name) { Description = name; FullDescription = name; ToolTip = name; }

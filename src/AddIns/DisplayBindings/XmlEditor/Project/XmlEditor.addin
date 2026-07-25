@@ -1,172 +1,313 @@
-<AddIn name        = "XmlEditor"
-       author      = "Matt Ward"
-       copyright   = "SharpDevelop Team"
-       url         = "http://www.sharpdevelop.net"
-       description = "Adds XML completion and formatting support"
-       version     = "6.0.0.0">
-	
-	<Manifest>
-		<Identity name = "ICSharpCode.XmlEditor" />
-		<Dependency addin = "ICSharpCode.SharpDevelop" />
-		<Dependency addin = "ICSharpCode.AvalonEdit" requirePreload = "true" />
-	</Manifest>
+﻿<AddIn
+	name="XML Editor"
+	author="Matt Ward"
+	copyright="prj:///doc/copyright.txt"
+	description="Adds XML completion and formatting support"
+	addInManagerHidden="preinstalled">
 	
 	<Runtime>
-		<Import assembly = "XmlEditor.dll" />
+		<Import assembly=":ICSharpCode.Core">
+			<Doozer name="XmlFormattingStrategy" class="ICSharpCode.Core.ClassDoozer" />
+			<Doozer name="XmlCodeCompletionBinding" class="ICSharpCode.Core.ClassDoozer" />
+			<Doozer name="DefaultSchemaFileAssociations" class="ICSharpCode.Core.ClassDoozer" />
+			<Doozer name="XmlTextEditorExtension" class="ICSharpCode.Core.ClassDoozer" />
+			<Doozer name="XmlFileIcon" class="ICSharpCode.Core.ClassDoozer" />
+			<Doozer name="XmlFileFilter" class="ICSharpCode.Core.ClassDoozer" />
+			<Doozer name="XmlMenu" class="ICSharpCode.Core.ClassDoozer" />
+			<Doozer name="XmlEditorOptionsPanel" class="ICSharpCode.Core.ClassDoozer" />
+			<Doozer name="AddAttributeCommand" class="ICSharpCode.Core.ClassDoozer" />
+			<Doozer name="RemoveAttributeCommand" class="ICSharpCode.Core.ClassDoozer" />
+			<Doozer name="CutXmlTreeNode" class="ICSharpCode.Core.ClassDoozer" />
+			<Doozer name="CopyXmlTreeNode" class="ICSharpCode.Core.ClassDoozer" />
+			<Doozer name="PasteXmlTreeNode" class="ICSharpCode.Core.ClassDoozer" />
+			<Doozer name="DeleteXmlTreeNode" class="ICSharpCode.Core.ClassDoozer" />
+			<Doozer name="InsertElementBeforeCommand" class="ICSharpCode.Core.ClassDoozer" />
+			<Doozer name="InsertElementAfterCommand" class="ICSharpCode.Core.ClassDoozer" />
+			<Doozer name="InsertCommentBeforeCommand" class="ICSharpCode.Core.ClassDoozer" />
+			<Doozer name="InsertCommentAfterCommand" class="ICSharpCode.Core.ClassDoozer" />
+			<Doozer name="InsertTextNodeBeforeCommand" class="ICSharpCode.Core.ClassDoozer" />
+			<Doozer name="InsertTextNodeAfterCommand" class="ICSharpCode.Core.ClassDoozer" />
+			<Doozer name="AddChildElementCommand" class="ICSharpCode.Core.ClassDoozer" />
+			<Doozer name="AddChildCommentCommand" class="ICSharpCode.Core.ClassDoozer" />
+			<Doozer name="AddChildTextNodeCommand" class="ICSharpCode.Core.ClassDoozer" />
+			<Doozer name="ExpandAllCommand" class="ICSharpCode.Core.ClassDoozer" />
+			<Doozer name="CollapseAllCommand" class="ICSharpCode.Core.ClassDoozer" />
+			<Doozer name="MenuSeparator" class="ICSharpCode.Core.ClassDoozer" />
+			<Doozer name="RemoveXPathHighlightingCommand" class="ICSharpCode.Core.ClassDoozer" />
+		</Import>
+		<Import assembly="UnoDevelop.XmlEditor.dll" />
 	</Runtime>
 	
-	<!-- Code completion -->
-	<Path name = "/AddIns/DefaultTextEditor/Formatter">
-		<XmlFormattingStrategy
-			class = "ICSharpCode.XmlEditor.XmlFormattingStrategy"
-			extensions = ".xml;.xsl;*.xslt;.xsd;.config;.csproj;.xaml;.wxs;.nuspec;.slnx" />
+	<Manifest>
+		<Identity name="ICSharpCode.XmlEditor"/>
+		<Dependency addin="ICSharpCode.AvalonEdit" requirePreload="true"/>
+	</Manifest>
+	
+	<Path name="/AddIns/DefaultTextEditor/Formatter/XML">
+		<Class id="XmlFormatter" class="ICSharpCode.XmlEditor.XmlFormattingStrategy"/>
 	</Path>
 	
-	<Path name = "/SharpDevelop/ViewContent/TextEditor/CodeCompletion">
-		<XmlCodeCompletionBinding
-			class = "ICSharpCode.XmlEditor.XmlCodeCompletionBinding"
-			extensions = ".xml;.xsl;.xslt;.xsd;.config;.csproj;.xaml;.wxs;.nuspec;.targets;.props;.build;.manifest;.slnx" />
+	<Path name="/SharpDevelop/ViewContent/TextEditor/CodeCompletion">
+		<CodeCompletionBinding
+			id="Xml"
+			extensions=".xml;.xsl;.xslt;.xsd;.manifest;.config;.addin;.xshd;.wxs;.wxi;.wxl;.proj;.csproj;.vbproj;.ilproj;.build;.xfrm;.targets;.xpt;.xft;.map;.wsdl;.disco;.nuspec;.booproj;.fsproj;.pyproj;.rbproj;.vcxproj;.wixproj;.ps1xml;.xaml"
+			class="ICSharpCode.XmlEditor.XmlCodeCompletionBinding"/>
 	</Path>
 	
-	<Path name = "/AddIns/XmlEditor/DefaultSchemaFileAssociations">
-		<DefaultSchemaFileAssociations
-			class = "ICSharpCode.XmlEditor.DefaultXmlSchemaFileAssociations" />
+	<Path name="/AddIns/XmlEditor/DefaultSchemaFileAssociations">
+		<SchemaFileAssociation id=".addin" namespaceUri="http://www.icsharpcode.net/2005/addin"/>
+		<SchemaFileAssociation id=".booproj" namespaceUri="http://schemas.microsoft.com/developer/msbuild/2003"/>
+		<SchemaFileAssociation id=".config" namespaceUri="urn:app-config" />
+		<SchemaFileAssociation id=".csproj" namespaceUri="http://schemas.microsoft.com/developer/msbuild/2003"/>
+		<SchemaFileAssociation id=".fsproj" namespaceUri="http://schemas.microsoft.com/developer/msbuild/2003"/>
+		<SchemaFileAssociation id=".manifest" namespaceUri="urn:schemas-microsoft-com:asm.v1"/>
+		<SchemaFileAssociation id=".nuspec" namespaceUri="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd"/>
+		<SchemaFileAssociation id=".proj" namespaceUri="http://schemas.microsoft.com/developer/msbuild/2003"/>
+		<SchemaFileAssociation id=".pyproj" namespaceUri="http://schemas.microsoft.com/developer/msbuild/2003"/>
+		<SchemaFileAssociation id=".rbproj" namespaceUri="http://schemas.microsoft.com/developer/msbuild/2003"/>
+		<SchemaFileAssociation id=".vbproj" namespaceUri="http://schemas.microsoft.com/developer/msbuild/2003"/>
+		<SchemaFileAssociation id=".vcxproj" namespaceUri="http://schemas.microsoft.com/developer/msbuild/2003"/>
+		<SchemaFileAssociation id=".wixproj" namespaceUri="http://schemas.microsoft.com/developer/msbuild/2003"/>
+		<SchemaFileAssociation id=".wxi" namespaceUri="http://schemas.microsoft.com/wix/2003/01/wi"/>
+		<SchemaFileAssociation id=".wxl" namespaceUri="http://schemas.microsoft.com/wix/2006/localization"/>
+		<SchemaFileAssociation id=".wxs" namespaceUri="http://schemas.microsoft.com/wix/2003/01/wi"/>
+		<SchemaFileAssociation id=".xaml" namespaceUri="http://schemas.microsoft.com/winfx/avalon/2005"/>
+		<SchemaFileAssociation id=".xsd" namespacePrefix="xs" namespaceUri="http://www.w3.org/2001/XMLSchema"/>
+		<SchemaFileAssociation id=".xsl" namespaceUri="http://www.w3.org/1999/XSL/Transform"/>
 	</Path>
 	
-	<!-- Language binding for XML files -->
-	<Path name = "/SharpDevelop/Workbench/LanguageBindings">
-		<XmlLanguageBinding
-			class = "ICSharpCode.XmlEditor.XmlLanguageBinding"
-			extensions = ".xml;.xsl;.xslt;.xsd;.config;.csproj;.xaml;.wxs;.nuspec;.targets;.props;.build;.manifest;.resx;.resources;.slnx" />
+	<Path name="/SharpDevelop/Workbench/LanguageBindings">
+		<LanguageBinding
+			id="XML"
+			class="ICSharpCode.XmlEditor.XmlLanguageBinding"
+			extensions=".xml;.xsl;.xslt;.xsd;.manifest;.config;.addin;.xshd;.wxs;.wxi;.wxl;.proj;.csproj;.vbproj;.ilproj;.build;.xfrm;.targets;.xpt;.xft;.map;.wsdl;.disco;.nuspec;.booproj;.fsproj;.pyproj;.rbproj;.vcxproj;.wixproj;.ps1xml" />
 	</Path>
 	
-	<!-- Text editor extensions (folding) -->
-	<Path name = "/SharpDevelop/ViewContent/TextEditor/Extensions">
-		<XmlTextEditorExtension
-			class = "ICSharpCode.XmlEditor.XmlFoldingManager"
-			extensions = ".xml;.xsl;.xslt;.xsd;.config;.csproj;.xaml;.wxs;.nuspec;.targets;.props;.build;.slnx" />
+	<Path name="/SharpDevelop/ViewContent/TextEditor/Extensions">
+		<TextEditorExtension
+			id="XML"
+			class="ICSharpCode.XmlEditor.XmlTextEditorExtension"
+			extensions=".xml;.xsl;.xslt;.xsd;.manifest;.config;.addin;.xshd;.wxs;.wxi;.wxl;.proj;.csproj;.vbproj;.ilproj;.build;.xfrm;.targets;.xpt;.xft;.map;.wsdl;.disco;.nuspec;.booproj;.fsproj;.pyproj;.rbproj;.vcxproj;.wixproj;.ps1xml;.xaml" />
 	</Path>
 	
-	<!-- Display binding (tree view) -->
-	<Path name = "/SharpDevelop/Workbench/DisplayBindings">
-		<XmlDisplayBinding
-			class = "ICSharpCode.XmlEditor.XmlDisplayBinding" />
+	<Path name="/SharpDevelop/Workbench/DisplayBindings">
+		<DisplayBinding id="XmlTreeView"
+		                type="Secondary"
+		                insertbefore="Text"
+		                class="ICSharpCode.XmlEditor.XmlDisplayBinding"/>
 	</Path>
 	
-	<!-- Extra file icons for project browser -->
-	<Path name = "/Workspace/Icons">
-		<XmlFileIcon
-			class = "ICSharpCode.XmlEditor.XmlFileIcon"
-			extensions = ".xml;.xsl;.xslt;.xsd;.config;.csproj;.xaml;.nuspec;.targets;.props;.build" />
+	<!-- Extra project browser icons -->
+	<Path name="/Workspace/Icons">
+		<Icon id="ExtraXmlFileIcon"
+		      extensions=".manifest;.config;.xshd;.wxs;.wxi;.wxl;.proj;.csproj;.vbproj;.ilproj;.xfrm;.targets;.xpt;.xft;.map;.wsdl;.disco;.xaml;.nuspec;.booproj;.fsproj;.pyproj;.rbproj;.vcxproj;.wixproj;.ps1xml"
+		      resource="FileIcons.XmlIcon" />
 	</Path>
 	
-	<!-- File filter -->
-	<Path name = "/SharpDevelop/Workbench/FileFilter">
-		<XmlFileFilter
-			class = "ICSharpCode.XmlEditor.XmlFileFilter"
-			insertAfter = "AllFiles" />
+	<!-- Xml file filter -->
+	<Path name="/SharpDevelop/Workbench/FileFilter">
+		<FileFilter id="Xml"
+		            insertbefore="AllFiles"
+		            name="${res:SharpDevelop.FileFilter.XmlFiles}"
+		            extensions="*.xml"/>
+		<FileFilter id="Xsl"
+		            insertbefore="AllFiles"
+		            name="${res:SharpDevelop.FileFilter.XslFiles} (*.xsl;*.xslt)"
+		            extensions="*.xsl;*.xslt"/>
 	</Path>
 	
-	<!-- Main menu -->
-	<Path name = "/SharpDevelop/Workbench/MainMenu">
-		<XmlMenu
-			class = "ICSharpCode.XmlEditor.XmlMenu"
-			insertafter = "Tools" />
+	<!-- XML menu -->
+	<Path name="/SharpDevelop/Workbench/MainMenu">
+		<ComplexCondition>
+			<Or>
+				<Condition name="WindowActive" activewindow="ICSharpCode.XmlEditor.XmlTreeView"/>
+				<Condition name="TextContent" textcontent="XML"/>
+			</Or>
+			<MenuItem id="Xml" insertafter="View" insertbefore="Tools" label="&amp;XML" type="Menu">
+				<MenuItem id="CreateSchema"
+				          label="${res:ICSharpCode.XmlEditor.CreateSchemaMenuLabel}"
+				          class="ICSharpCode.XmlEditor.CreateSchemaCommand"/>
+				<MenuItem id="ValidateXml"
+				          label="${res:ICSharpCode.XmlEditor.ValidateXmlMenuLabel}"
+				          class="ICSharpCode.XmlEditor.ValidateXmlCommand"/>
+				<MenuItem id="GoToDefinition"
+				          label="${res:ICSharpCode.NAntAddIn.GotoDefinitionMenuLabel}"
+				          class="ICSharpCode.XmlEditor.GoToSchemaDefinitionCommand"/>
+				<MenuItem id="Separator1" type="Separator"/>
+				<ComplexCondition action="Disable">
+					<Not>
+						<Condition name="WindowActive" activewindow="ICSharpCode.XmlEditor.XslOutputView"/>
+					</Not>
+					<MenuItem id="AssignStylesheet"
+					          label="${res:ICSharpCode.XmlEditor.AssignXSLT}"
+					          class="ICSharpCode.XmlEditor.AssignStylesheetCommand"/>
+					<ComplexCondition action="Disable">
+						<!-- evaluate StylesheetAssigned only when XmlView is active - important for lazy loading! -->
+						<And>
+							<Condition name="WindowActive" activewindow="ICSharpCode.XmlEditor.XmlView"/>
+							<Condition name="StylesheetAssigned" action="Disable"/>
+						</And>
+						<MenuItem id="OpenStylesheet"
+						          label="${res:ICSharpCode.XmlEditor.OpenXSLT}"
+						          class="ICSharpCode.XmlEditor.OpenStylesheetCommand"/>
+					</ComplexCondition>
+					<MenuItem id="RunTransform"
+					          label="${res:ICSharpCode.XmlEditor.RunXSLT}"
+					          class="ICSharpCode.XmlEditor.RunXslTransformCommand"
+					          shortcut="Control|Shift|T"/>
+				</ComplexCondition>
+				<MenuItem id="Separator2" type="Separator"/>
+				<MenuItem id="HideXPathResults"
+				          label="${res:ICSharpCode.XmlEditor.HideXPathResults}"
+				          class="ICSharpCode.XmlEditor.RemoveXPathHighlightingCommand"/>
+				<MenuItem id="Format"
+				          label="${res:XML.MainMenu.EditMenu.FormatMenu}"
+				          class="ICSharpCode.XmlEditor.FormatXmlCommand"/>
+			</MenuItem>
+		</ComplexCondition>
 	</Path>
 	
-	<!-- Options panels -->
-	<Path name = "/SharpDevelop/Dialogs/OptionsDialog/TextEditorOptions">
-		<XmlEditorOptionsPanel
-			class = "ICSharpCode.XmlEditor.XmlSchemasPanel"
-			label = "XmlSchema" />
-	</Path>
-	<Path name = "/SharpDevelop/Dialogs/OptionsDialog/TextEditorOptions">
-		<XmlEditorOptionsPanel
-			class = "ICSharpCode.XmlEditor.XmlEditorOptionsPanel"
-			label = "Xml" />
-	</Path>
-	
-	<!-- Tool pads -->
-	<Path name = "/SharpDevelop/Workbench/Pads">
-		<XPathQueryPad
-			class = "ICSharpCode.XmlEditor.XPathQueryPad" />
+	<!-- Options panel -->
+	<Path path="/SharpDevelop/Dialogs/OptionsDialog/TextEditorOptions">
+		<OptionPanel id="XmlSchemasPanel"
+		             insertafter="Markers"
+		             label="${res:ICSharpCode.XmlEditor.XmlSchemasPanel.Title}"
+		             class="ICSharpCode.XmlEditor.XmlSchemasPanel"/>
+		<OptionPanel id="XmlEditorOptionsPanel"
+		             insertafter="Markers"
+		             insertbefore="XmlSchemasPanel"
+		             label="${res:ICSharpCode.XmlEditor.XmlEditorOptionsPanel.Title}"
+		             class="ICSharpCode.XmlEditor.XmlEditorOptionsPanel"/>
 	</Path>
 	
-	<!-- Context menus for tree -->
-	<Path name = "/AddIns/XmlEditor/XmlTree/AttributesGrid/ContextMenu">
-		<AddAttributeCommand
-			class = "ICSharpCode.XmlEditor.AddAttributeCommand"
-			label = "Add attribute"
-			description = "Add attribute" />
-		<RemoveAttributeCommand
-			class = "ICSharpCode.XmlEditor.RemoveAttributeCommand"
-			label = "Remove attribute"
-			description = "Remove attribute" />
+	<!-- XPath Query pad -->
+	<Path name="/SharpDevelop/Workbench/Pads">
+		<Pad id="XPathQueryPad"
+		     category="Tools"
+		     icon="PadIcons.XPathQuery"
+		     title="${res:ICSharpCode.XmlEditor.XPathQueryPad.Title}"
+		     insertafter="UnitTestingPad"
+		     class="ICSharpCode.XmlEditor.XPathQueryPad"
+		     defaultPosition="Bottom, Hidden"/>
 	</Path>
 	
-	<Path name = "/AddIns/XmlEditor/XmlTree/ContextMenu">
-		<CutXmlTreeNode
-			class = "ICSharpCode.XmlEditor.CutXmlTreeNode"
-			label = "Cut" />
-		<CopyXmlTreeNode
-			class = "ICSharpCode.XmlEditor.CopyXmlTreeNode"
-			label = "Copy" />
-		<PasteXmlTreeNode
-			class = "ICSharpCode.XmlEditor.PasteXmlTreeNode"
-			label = "Paste" />
-		<DeleteXmlTreeNode
-			class = "ICSharpCode.XmlEditor.DeleteXmlTreeNode"
-			label = "Delete" />
-		<Separator class = "MenuSeparator" />
-		<InsertElementBeforeCommand
-			class = "ICSharpCode.XmlEditor.InsertElementBeforeCommand"
-			label = "Insert element before"
-			description = "Insert element before selected node" />
-		<InsertElementAfterCommand
-			class = "ICSharpCode.XmlEditor.InsertElementAfterCommand"
-			label = "Insert element after"
-			description = "Insert element after selected node" />
-		<InsertCommentBeforeCommand
-			class = "ICSharpCode.XmlEditor.InsertCommentBeforeCommand"
-			label = "Insert comment before"
-			description = "Insert comment before selected node" />
-		<InsertCommentAfterCommand
-			class = "ICSharpCode.XmlEditor.InsertCommentAfterCommand"
-			label = "Insert comment after"
-			description = "Insert comment after selected node" />
-		<InsertTextNodeBeforeCommand
-			class = "ICSharpCode.XmlEditor.InsertTextNodeBeforeCommand"
-			label = "Insert text node before"
-			description = "Insert text node before selected node" />
-		<InsertTextNodeAfterCommand
-			class = "ICSharpCode.XmlEditor.InsertTextNodeAfterCommand"
-			label = "Insert text node after"
-			description = "Insert text node after selected node" />
-		<AddChildElementCommand
-			class = "ICSharpCode.XmlEditor.AddChildElementCommand"
-			label = "Add child element"
-			description = "Add child element to selected element" />
-		<AddChildCommentCommand
-			class = "ICSharpCode.XmlEditor.AddChildCommentCommand"
-			label = "Add child comment"
-			description = "Add child comment to selected element" />
-		<AddChildTextNodeCommand
-			class = "ICSharpCode.XmlEditor.AddChildTextNodeCommand"
-			label = "Add child text"
-			description = "Add child text to selected element" />
-		<Separator class = "MenuSeparator" />
-		<ExpandAllCommand
-			class = "ICSharpCode.XmlEditor.ExpandAllCommand"
-			label = "Expand All" />
-		<CollapseAllCommand
-			class = "ICSharpCode.XmlEditor.CollapseAllCommand"
-			label = "Collapse All" />
+	<!-- Menu options to turn off XPath Query result highlighting -->
+	<Path name="/SharpDevelop/Workbench/MainMenu/Edit/Format">
+		<Condition name="WindowActive" activewindow="ICSharpCode.XmlEditor.XmlView">
+			<MenuItem id="RemoveXPathHighlighting"
+			          insertafter="ShowCodeCoverage"
+			          label="${res:ICSharpCode.XmlEditor.HideXPathResults}"
+			          class="ICSharpCode.XmlEditor.RemoveXPathHighlightingCommand"/>
+		</Condition>
 	</Path>
 	
-	<!-- Edit Format menu -->
-	<Path name = "/SharpDevelop/Workbench/MainMenu/Edit/Format">
-		<RemoveXPathHighlightingCommand
-			class = "ICSharpCode.XmlEditor.RemoveXPathHighlightingCommand"
-			label = "Remove XPath highlighting" />
+	<!-- XML Tree context menu options -->
+	<Path name="/AddIns/XmlEditor/XmlTree/AttributesGrid/ContextMenu">
+		<Condition name="Ownerstate" ownerstate="ElementSelected" action="Disable">
+			<MenuItem id="AddAttribute"
+			          label="${res:ICSharpCode.XmlEditor.XmlTreeView.AddAttributeMenuLabel}"
+			          class="ICSharpCode.XmlEditor.AddAttributeCommand"/>
+		</Condition>
+		<Condition name="Ownerstate" ownerstate="AttributeSelected" action="Disable">
+			<MenuItem id="RemoveAttribute"
+			          label="${res:ICSharpCode.XmlEditor.XmlTreeView.RemoveAttributeMenuLabel}"
+			          icon="Icons.16x16.DeleteIcon"
+			          class="ICSharpCode.XmlEditor.RemoveAttributeCommand"/>
+		</Condition>
+	</Path>
+	
+	<Path name="/AddIns/XmlEditor/XmlTree/ContextMenu">
+		<MenuItem id="Cut"
+		          label="${res:XML.TextAreaContextMenu.Cut}"
+		          icon="Icons.16x16.CutIcon"
+		          shortcut="Control|X"
+		          class="ICSharpCode.XmlEditor.CutXmlTreeNode"/>
+		<MenuItem id="Copy"
+		          label="${res:XML.TextAreaContextMenu.Copy}"
+		          icon="Icons.16x16.CopyIcon"
+		          shortcut="Control|C"
+		          class="ICSharpCode.XmlEditor.CopyXmlTreeNode"/>
+		<MenuItem id="Paste"
+		          label="${res:XML.TextAreaContextMenu.Paste}"
+		          icon="Icons.16x16.PasteIcon"
+		          shortcut="Control|V"
+		          class="ICSharpCode.XmlEditor.PasteXmlTreeNode"/>
+		<MenuItem id="Delete"
+		          label="${res:XML.MainMenu.EditMenu.Delete}"
+		          icon="Icons.16x16.DeleteIcon"
+		          class="ICSharpCode.XmlEditor.DeleteXmlTreeNode"/>
+		<MenuItem id="EditItemsSeparator" type="Separator"/>
+		<MenuItem id="ExpandAll"
+		          label="${res:MainWindow.Windows.SearchResultPanel.ExpandAll.ToolTip}"
+		          class="ICSharpCode.XmlEditor.ExpandAllCommand"/>
+		<MenuItem id="CollapseAll"
+		          label="${res:MainWindow.Windows.SearchResultPanel.CollapseAll.ToolTip}"
+		          class="ICSharpCode.XmlEditor.CollapseAllCommand"/>
+		<MenuItem id="EditItemsSeparator" type="Separator"/>
+		<ComplexCondition action="Disable">
+			<Or>
+				<Condition name="Ownerstate" ownerstate="CommentSelected"/>
+				<And>
+					<Condition name="Ownerstate" ownerstate="ElementSelected"/>
+					<Not>
+						<Condition name="Ownerstate" ownerstate="RootElementSelected"/>
+					</Not>
+				</And>
+			</Or>
+			<MenuItem id="InsertElementBefore"
+			          label="${res:ICSharpCode.XmlEditor.XmlTreeView.InsertElementBeforeMenuLabel}"
+			          class="ICSharpCode.XmlEditor.InsertElementBeforeCommand"/>
+			<MenuItem id="InsertElementAfter"
+			          label="${res:ICSharpCode.XmlEditor.XmlTreeView.InsertElementAfterMenuLabel}"
+			          class="ICSharpCode.XmlEditor.InsertElementAfterCommand"/>
+		</ComplexCondition>
+		<Condition name="Ownerstate" ownerstate="ElementSelected" action="Disable">
+			<MenuItem id="AddChildElement"
+			          label="${res:ICSharpCode.XmlEditor.XmlTreeView.AddChildElementMenuLabel}"
+			          class="ICSharpCode.XmlEditor.AddChildElementCommand"/>
+		</Condition>
+		<ComplexCondition action="Disable">
+			<Or>
+				<Condition name="Ownerstate" ownerstate="TextNodeSelected"/>
+				<Condition name="Ownerstate" ownerstate="CommentSelected"/>
+				<And>
+					<Condition name="Ownerstate" ownerstate="ElementSelected"/>
+					<Not>
+						<Condition name="Ownerstate" ownerstate="RootElementSelected"/>
+					</Not>
+				</And>
+			</Or>
+			<MenuItem id="TextNodeCommandsSeparator" type="Separator"/>
+			<MenuItem id="InsertTextNodeBefore"
+			          label="${res:ICSharpCode.XmlEditor.XmlTreeView.InsertTextNodeBeforeMenuLabel}"
+			          class="ICSharpCode.XmlEditor.InsertTextNodeBeforeCommand"/>
+			<MenuItem id="InsertTextNodeAfter"
+			          label="${res:ICSharpCode.XmlEditor.XmlTreeView.InsertTextNodeAfterMenuLabel}"
+			          class="ICSharpCode.XmlEditor.InsertTextNodeAfterCommand"/>
+		</ComplexCondition>
+		<Condition name="Ownerstate" ownerstate="ElementSelected" action="Disable">
+			<MenuItem id="AddChildTextNode"
+			          label="${res:ICSharpCode.XmlEditor.XmlTreeView.AddChildTextNodeAfterMenuLabel}"
+			          class="ICSharpCode.XmlEditor.AddChildTextNodeCommand"/>
+		</Condition>
+		<ComplexCondition action="Disable">
+			<Or>
+				<Condition name="Ownerstate" ownerstate="TextNodeSelected"/>
+				<Condition name="Ownerstate" ownerstate="ElementSelected"/>
+				<Condition name="Ownerstate" ownerstate="CommentSelected"/>
+			</Or>
+			<MenuItem id="CommentNodeCommandsSeparator" type="Separator"/>
+			<MenuItem id="InsertCommentBefore"
+			          label="${res:ICSharpCode.XmlEditor.XmlTreeView.InsertCommentBeforeMenuLabel}"
+			          class="ICSharpCode.XmlEditor.InsertCommentBeforeCommand"/>
+			<MenuItem id="InsertCommentAfter"
+			          label="${res:ICSharpCode.XmlEditor.XmlTreeView.InsertCommentAfterMenuLabel}"
+			          class="ICSharpCode.XmlEditor.InsertCommentAfterCommand"/>
+		</ComplexCondition>
+		<Condition name="Ownerstate" ownerstate="ElementSelected" action="Disable">
+			<MenuItem id="AddChildCommentNode"
+			          label="${res:ICSharpCode.XmlEditor.XmlTreeView.AddChildCommentMenuLabel}"
+			          class="ICSharpCode.XmlEditor.AddChildCommentCommand"/>
+		</Condition>
 	</Path>
 </AddIn>

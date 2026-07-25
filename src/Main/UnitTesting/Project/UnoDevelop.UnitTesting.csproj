@@ -16,6 +16,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Base\Project\ICSharpCode.SharpDevelop.Uno.csproj" />
+    <ProjectReference Include="..\..\Base\Project\ICSharpCode.SharpDevelop.csproj" />
   </ItemGroup>
 </Project>

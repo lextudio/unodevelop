@@ -23,5 +23,6 @@ namespace ICSharpCode.SharpDevelop
 	public class FileEventArgs : EventArgs
 	{
 		public FileName FileName => null!;
+		public FileName TargetFile => null!;
 	}
 }

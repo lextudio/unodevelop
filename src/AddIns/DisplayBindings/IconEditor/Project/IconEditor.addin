@@ -22,7 +22,6 @@
 	<Path name = "/SharpDevelop/Workbench/DisplayBindings">
 		<DisplayBinding id    = "IconEditor"
 		                class = "ICSharpCode.IconEditor.IconDisplayBinding"
-		                insertbefore    = "Text"
 		                fileNamePattern = "\.(ico|cur)$"
 		                title = "${res:Gui.ProjectBrowser.OpenWith.Bindings.IconEditor}"/>
 	</Path>
