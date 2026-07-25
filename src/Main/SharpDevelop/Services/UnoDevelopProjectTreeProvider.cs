@@ -98,7 +98,7 @@ internal sealed class UnoDevelopProjectTreeProvider : ProjectTreeProviderBase
 
     /// <summary>
     /// Async counterpart of <see cref="AddSpecialNodes"/> that routes through the real CPS
-    /// dataflow pipeline (<see cref="UnoDevelopDependenciesSnapshotFactory.BuildTreeAsync"/>,
+    /// dataflow pipeline (<see cref="SharpDevelopDependenciesSnapshotFactory.BuildTreeAsync"/>,
     /// slice 46) instead of the imperative <see cref="DependencyTreeBridgeBuilder"/> — falling back
     /// to that same imperative path if the dataflow pipeline doesn't produce a snapshot in time.
     /// See docs/project-system.md (Slice 46).
@@ -108,7 +108,7 @@ internal sealed class UnoDevelopProjectTreeProvider : ProjectTreeProviderBase
         var (dependencies, projectItemsByInclude, targetFrameworks) = GatherDependencyItems(projectFile, projectDir);
         var itemsByTargetFramework = GroupItemsByTargetFramework(dependencies, targetFrameworks);
 
-        var dependenciesNode = await UnoDevelopDependenciesSnapshotFactory.BuildTreeAsync(projectFile, itemsByTargetFramework)
+        var dependenciesNode = await SharpDevelopDependenciesSnapshotFactory.BuildTreeAsync(projectFile, itemsByTargetFramework)
             ?? DependencyTreeBridgeBuilder.BuildDependenciesTree(projectFile, dependencies, targetFrameworks);
 
         AttachDependenciesNode(root, dependenciesNode, projectItemsByInclude);
@@ -184,7 +184,7 @@ internal sealed class UnoDevelopProjectTreeProvider : ProjectTreeProviderBase
 
     /// <summary>
     /// Buckets the flat, per-item-TFM-filtered dependency list into one list per target framework,
-    /// the shape <see cref="UnoDevelopDependenciesSnapshotFactory.BuildTreeAsync"/> expects. An item
+    /// the shape <see cref="SharpDevelopDependenciesSnapshotFactory.BuildTreeAsync"/> expects. An item
     /// with a null <see cref="DependencyBridgeItem.TargetFrameworks"/> applies to every slice; a
     /// project with no target frameworks gets a single empty-string ("no TFM slicing") bucket.
     /// </summary>

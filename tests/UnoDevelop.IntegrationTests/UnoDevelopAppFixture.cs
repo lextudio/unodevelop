@@ -7,26 +7,18 @@ using Xunit;
 
 namespace UnoDevelop.IntegrationTests;
 
-// Launches UnoDevelop once per test collection, waits for the DevFlow agent (port 9227),
-// and exposes helpers to invoke "uno.probe.*" actions. Disposing kills the app.
-//
-// Prerequisites:
-//   1. Build UnoDevelop in Debug:
-//        dotnet build <SharpDevelop.csproj> -c Debug -f net10.0-desktop
-//   2. Build the fixture project that UnoDevelop opens:
-//        dotnet build <SampleTestProject.csproj>
 public sealed class UnoDevelopAppFixture : IAsyncLifetime
 {
-    // App.xaml.cs hard-wires 9227; override via env var DEVFLOW_AGENT_PORT.
     static readonly int Port = int.TryParse(
         Environment.GetEnvironmentVariable("DEVFLOW_AGENT_PORT"), out var p) && p > 0 ? p : 9227;
     static readonly string BaseUrl = $"http://localhost:{Port}";
 
-    readonly HttpClient _http = new() { Timeout = TimeSpan.FromSeconds(30) };
+    readonly HttpClient _http = new() { Timeout = TimeSpan.FromSeconds(240) };
     Process? _app;
 
     public string UnoDevelopProjectPath { get; } = LocateUnoDevelopProject();
-    public string FixtureSolutionPath { get; } = LocateFixtureSolution();
+    public string FixtureSolutionPath { get; } = LocateFixture("SampleTestProject", "SampleTestProject.csproj");
+    public string DebugTestProjectPath { get; } = LocateFixture("DebugTestApp", "DebugTestApp.csproj");
 
     public async Task InitializeAsync()
     {
@@ -44,8 +36,6 @@ public sealed class UnoDevelopAppFixture : IAsyncLifetime
 
     async Task StartAsync()
     {
-        // Run pre-built to avoid the rebuild cost. Redirect and drain stdout/stderr continuously
-        // to prevent the OS pipe buffer from filling up and blocking the child process.
         var psi = new ProcessStartInfo("dotnet")
         {
             WorkingDirectory = Path.GetDirectoryName(UnoDevelopProjectPath)!,
@@ -56,7 +46,6 @@ public sealed class UnoDevelopAppFixture : IAsyncLifetime
         foreach (var a in new[] { "run", "--project", UnoDevelopProjectPath, "-f", "net10.0-desktop", "--no-build" })
             psi.ArgumentList.Add(a);
 
-        // Pass the fixture solution so UnoDevelop opens it on startup.
         psi.Environment["UNODEVELOP_OPEN_ON_START"] = FixtureSolutionPath;
 
         _app = Process.Start(psi) ?? throw new InvalidOperationException("Failed to start UnoDevelop");
@@ -69,7 +58,6 @@ public sealed class UnoDevelopAppFixture : IAsyncLifetime
         await WarmUpAsync(TimeSpan.FromSeconds(60));
     }
 
-    // Poll a lightweight probe until the UI is responsive (not just the HTTP layer).
     async Task WarmUpAsync(TimeSpan timeout)
     {
         var deadline = DateTime.UtcNow + timeout;
@@ -88,8 +76,11 @@ public sealed class UnoDevelopAppFixture : IAsyncLifetime
 
     void StopApp()
     {
+        foreach (var name in new[] { "UnoDevelop", "SharpDbg.Cli", "DebugTestApp" })
+        {
+            try { foreach (var proc in Process.GetProcessesByName(name)) { try { proc.Kill(true); } catch { } } } catch { }
+        }
         try { if (_app is { HasExited: false }) _app.Kill(entireProcessTree: true); } catch { }
-        try { foreach (var proc in Process.GetProcessesByName("UnoDevelop")) { try { proc.Kill(true); } catch { } } } catch { }
         _app = null;
     }
 
@@ -130,13 +121,35 @@ public sealed class UnoDevelopAppFixture : IAsyncLifetime
         catch { return false; }
     }
 
-    // Invokes a probe action and returns the parsed JSON from 'returnValue'.
+    public async Task<JsonElement> GetStatusAsync()
+    {
+        using var resp = await _http.GetAsync($"{BaseUrl}/api/v1/agent/status");
+        resp.EnsureSuccessStatusCode();
+        return await resp.Content.ReadFromJsonAsync<JsonElement>();
+    }
+
     public async Task<JsonElement> InvokeAsync(string action, params object[] args)
     {
         var state = await InvokeRawAsync(action, args);
         if (state.TryGetProperty("error", out var probeErr))
             throw new InvalidOperationException($"Probe '{action}' reported error: {probeErr.GetString()}");
         return state;
+    }
+
+    // Invoke an action and return the raw string from returnValue (for plain-text results).
+    public async Task<string> InvokeStringAsync(string action, params object[] args)
+    {
+        var body = JsonSerializer.Serialize(new { args });
+        using var content = new StringContent(body, System.Text.Encoding.UTF8, "application/json");
+        using var resp = await _http.PostAsync($"{BaseUrl}/api/v1/invoke/actions/{action}", content);
+        if (!resp.IsSuccessStatusCode)
+        {
+            var err = await resp.Content.ReadAsStringAsync();
+            throw new InvalidOperationException($"Probe '{action}' failed ({(int)resp.StatusCode}): {err}");
+        }
+        var envelope = await resp.Content.ReadFromJsonAsync<JsonElement>();
+        var raw = envelope.TryGetProperty("returnValue", out var rv) ? rv.GetString() : null;
+        return raw ?? "";
     }
 
     async Task<JsonElement> InvokeRawAsync(string action, params object[] args)
@@ -156,7 +169,6 @@ public sealed class UnoDevelopAppFixture : IAsyncLifetime
         return JsonDocument.Parse(raw).RootElement.Clone();
     }
 
-    // Polls a probe until 'predicate' holds or it times out.
     public async Task<JsonElement> PollAsync(
         string action, Func<JsonElement, bool> predicate,
         int timeoutMs = 30_000, params object[] args)
@@ -185,17 +197,17 @@ public sealed class UnoDevelopAppFixture : IAsyncLifetime
             "Could not locate src/Main/SharpDevelop/SharpDevelop.csproj by walking up from " + AppContext.BaseDirectory);
     }
 
-    static string LocateFixtureSolution()
+    static string LocateFixture(string fixtureDir, string projectFile)
     {
         var dir = AppContext.BaseDirectory;
         while (dir is not null)
         {
-            var candidate = Path.Combine(dir, "tests", "fixtures", "SampleTestProject", "SampleTestProject.csproj");
+            var candidate = Path.Combine(dir, "tests", "fixtures", fixtureDir, projectFile);
             if (File.Exists(candidate)) return candidate;
             dir = Path.GetDirectoryName(dir);
         }
         throw new FileNotFoundException(
-            "Could not locate tests/fixtures/SampleTestProject/SampleTestProject.csproj by walking up from " + AppContext.BaseDirectory);
+            $"Could not locate tests/fixtures/{fixtureDir}/{projectFile} by walking up from " + AppContext.BaseDirectory);
     }
 }
 

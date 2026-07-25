@@ -67,7 +67,7 @@ internal static class SolutionExplorerTreeBuilder
             }
         }
 
-        await Microsoft.VisualStudio.ProjectSystem.Tree.Dependencies.UnoDevelopDependenciesSnapshotFactory.PruneSessionsExceptAsync(VisitedProjectPaths);
+        await Microsoft.VisualStudio.ProjectSystem.Tree.Dependencies.SharpDevelopDependenciesSnapshotFactory.PruneSessionsExceptAsync(VisitedProjectPaths);
 
         return rootNode;
     }
@@ -106,7 +106,7 @@ internal static class SolutionExplorerTreeBuilder
             rootNode.Children.Add(await CreateProjectNodeAsync(projectPath));
         }
 
-        await Microsoft.VisualStudio.ProjectSystem.Tree.Dependencies.UnoDevelopDependenciesSnapshotFactory.PruneSessionsExceptAsync(VisitedProjectPaths);
+        await Microsoft.VisualStudio.ProjectSystem.Tree.Dependencies.SharpDevelopDependenciesSnapshotFactory.PruneSessionsExceptAsync(VisitedProjectPaths);
 
         return rootNode;
     }

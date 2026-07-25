@@ -70,7 +70,7 @@ public partial class MainPage : Page, IUnoSolutionExplorerHost
     private ModulesPad? _modulesPad;
     private SolutionExplorerPad? _solutionExplorerPad;
     private TestResultsPad? _testResultsPad;
-    private ErrorListPad? _errorListPad;
+    private UnoDevelop.Workbench.ErrorListPad? _errorListPad;
     private OutputPad? _outputPad;
     private PropertiesPad? _propertiesPad;
     private WpfButton? RunToolbarButton;
@@ -226,7 +226,7 @@ public partial class MainPage : Page, IUnoSolutionExplorerHost
 
     private void ShowErrorsPad()
     {
-        var pad = _workbench?.GetPad(typeof(ErrorListPad));
+        var pad = _workbench?.GetPad(typeof(UnoDevelop.Workbench.ErrorListPad));
         if (pad is not null)
             ShowPad(pad);
     }
@@ -441,7 +441,7 @@ public partial class MainPage : Page, IUnoSolutionExplorerHost
         // Reclaim this solution's per-project dataflow sessions (slice 47) up front — the refresh
         // below may fall back to a plain directory listing with no resolvable solution file, which
         // never runs the prune-after-rebuild reconciliation in SolutionExplorerTreeBuilder.
-        await Microsoft.VisualStudio.ProjectSystem.Tree.Dependencies.UnoDevelopDependenciesSnapshotFactory.ClearAllAsync();
+        await Microsoft.VisualStudio.ProjectSystem.Tree.Dependencies.SharpDevelopDependenciesSnapshotFactory.ClearAllAsync();
         await RefreshSolutionTreeAsync();
         UpdateShellChrome();
         UpdateExecutionButtonsEnabled();
@@ -1070,7 +1070,7 @@ public partial class MainPage : Page, IUnoSolutionExplorerHost
                     testResultsPad.Attach(_testService);
                 PopulateTestsPadChrome();
                 break;
-            case ErrorListPad errorListPad:
+            case UnoDevelop.Workbench.ErrorListPad errorListPad:
                 _errorListPad = errorListPad;
                 errorListPad.ItemActivated += (file, line, column) =>
                     DispatcherQueue.TryEnqueue(() => NavigateToSource(file, line, column));
