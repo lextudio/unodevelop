@@ -8,10 +8,9 @@ using ICSharpCode.SharpDevelop.Project;
 using ICSharpCode.SharpDevelop.Workbench;
 using Microsoft.UI;
 using Microsoft.UI.Xaml;
-using Windows.UI;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
-using UnoDevelop.Services;
+using Windows.UI;
 
 namespace UnoDevelop.StartPage;
 
@@ -127,7 +126,7 @@ public sealed class StartPageViewContent : IViewContent
             Content = "Open Solution or Project...",
             Margin = new Thickness(0, 8, 0, 0),
         };
-        openButton.Click += (_, _) => new UnoDevelop.Commands.OpenSolutionOrProjectShellCommand().Run();
+        openButton.Click += (_, _) => OpenProjectDialog();
 
         var sectionBody = new Border
         {
@@ -249,6 +248,17 @@ public sealed class StartPageViewContent : IViewContent
         if (fn is null) return;
         if (!projectService.OpenSolutionOrProject(fn))
             ServiceSingleton.GetRequiredService<IMessageService>().ShowError("Failed to open: " + path);
+    }
+
+    private static void OpenProjectDialog()
+    {
+        var dialog = new Microsoft.Win32.OpenFileDialog
+        {
+            Filter = "Solution and Project Files (*.sln;*.slnx;*.csproj)|*.sln;*.slnx;*.csproj|All Files (*.*)|*.*",
+            Multiselect = false,
+        };
+        if (dialog.ShowDialog() == true)
+            OpenProject(dialog.FileName);
     }
 
     private async Task LoadRecentProjectsAsync()

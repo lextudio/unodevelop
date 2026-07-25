@@ -62,6 +62,9 @@
   <Folder Name="/AddIns/Misc/SearchAndReplace/">
     <Project Path="AddIns/Misc/SearchAndReplace/Project/SearchAndReplace.csproj" />
   </Folder>
+  <Folder Name="/AddIns/Misc/StartPage/">
+    <Project Path="AddIns/Misc/StartPage/Project/StartPage.csproj" />
+  </Folder>
   <Folder Name="/AddIns/Misc/TextTemplating/">
     <Project Path="AddIns/Misc/TextTemplating/Project/TextTemplating.csproj" />
   </Folder>

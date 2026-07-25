@@ -422,11 +422,6 @@ public partial class MainPage : Page, IUnoSolutionExplorerHost
     private async void OnSolutionOpened(object? sender, SolutionEventArgs e)
     {
         (ServiceSingleton.ServiceProvider.GetService(typeof(UnoTaskService)) as UnoTaskService)?.ClearExceptCommentTasks();
-        // Close all open Start Page tabs when a solution loads (mirrors SharpDevelop).
-        foreach (var v in _workbench?.ViewContentCollection
-                     .OfType<StartPage.StartPageViewContent>()
-                     .ToList() ?? [])
-            v.WorkbenchWindow?.CloseWindow(force: true);
         ICSharpCode.Core.PropertyService.Save();
         await LoadLanguageServiceProjectsAsync(e.Solution);
         await RefreshSolutionTreeAsync();
@@ -635,21 +630,6 @@ public partial class MainPage : Page, IUnoSolutionExplorerHost
         {
             _isRefreshingSolutionTree = false;
         }
-    }
-
-    internal void ShowStartPage()
-    {
-        if (_workbench is null) return;
-        // If a Start Page tab already exists, select it — don't open a second one (mirrors SharpDevelop).
-        var existing = _workbench.ViewContentCollection
-            .OfType<StartPage.StartPageViewContent>()
-            .FirstOrDefault();
-        if (existing is not null)
-        {
-            _workbench.ActivateView(existing);
-            return;
-        }
-        _workbench.ShowView(new StartPage.StartPageViewContent(), true);
     }
 
     private void SeedInitialDocument()
@@ -1062,7 +1042,13 @@ public partial class MainPage : Page, IUnoSolutionExplorerHost
                 _ = RefreshSolutionTreeAsync();
                 PopulateExplorerChrome();
                 if ((_projectService?.CurrentSolution?.Projects?.Count ?? 0) == 0)
-                    ShowStartPage();
+                {
+                    foreach (System.Windows.Input.ICommand command in ICSharpCode.Core.AddInTree.BuildItems<System.Windows.Input.ICommand>(
+                        "/SharpDevelop/Workbench/AutostartNothingLoaded", null, false))
+                    {
+                        command.Execute(null);
+                    }
+                }
                 break;
             case TestResultsPad testResultsPad:
                 _testResultsPad = testResultsPad;

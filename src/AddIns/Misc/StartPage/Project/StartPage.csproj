@@ -1,0 +1,19 @@
+<Project Sdk="Uno.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0-desktop</TargetFramework>
+    <RootNamespace>UnoDevelop.StartPage</RootNamespace>
+    <AssemblyName>UnoDevelop.StartPage</AssemblyName>
+    <UnoSingleProject>true</UnoSingleProject>
+    <UnoFeatures>SkiaRenderer</UnoFeatures>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\Main\Core\Project\ICSharpCode.Core.Uno.csproj" />
+    <ProjectReference Include="..\..\..\..\Main\Base\Project\ICSharpCode.SharpDevelop.Uno.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="StartPage.addin" CopyToOutputDirectory="Always" />
+  </ItemGroup>
+</Project>

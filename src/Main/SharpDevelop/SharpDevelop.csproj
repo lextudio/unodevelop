@@ -52,6 +52,9 @@
 		<ProjectReference Include="..\..\AddIns\Misc\SearchAndReplace\Project\SearchAndReplace.csproj"
 		                  ReferenceOutputAssembly="false"
 		                  PrivateAssets="all" />
+		<ProjectReference Include="..\..\AddIns\Misc\StartPage\Project\StartPage.csproj"
+		                  ReferenceOutputAssembly="false"
+		                  PrivateAssets="all" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -135,6 +138,7 @@
 			<TextTemplatingOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\Misc\TextTemplating\Project\bin\$(Configuration)\net10.0-desktop\UnoDevelop.TextTemplating.*" />
 			<PackageManagementOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\Misc\PackageManagement\Project\bin\$(Configuration)\net10.0-desktop\UnoDevelop.PackageManagement.*" />
 			<SearchAndReplaceOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\Misc\SearchAndReplace\Project\bin\$(Configuration)\net10.0-desktop\UnoDevelop.SearchAndReplace.*" />
+			<StartPageOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\Misc\StartPage\Project\bin\$(Configuration)\net10.0-desktop\UnoDevelop.StartPage.*" />
 		</ItemGroup>
 		<MakeDir Directories="$(OutputPath)AddIns\Misc\AddinScout\Project\" />
 		<MakeDir Directories="$(OutputPath)AddIns\Misc\RegExpTk\Project\" />
@@ -145,6 +149,7 @@
 		<MakeDir Directories="$(OutputPath)AddIns\Misc\TextTemplating\Project\" />
 		<MakeDir Directories="$(OutputPath)AddIns\Misc\PackageManagement\Project\" />
 		<MakeDir Directories="$(OutputPath)AddIns\Misc\SearchAndReplace\Project\" />
+		<MakeDir Directories="$(OutputPath)AddIns\Misc\StartPage\Project\" />
 		<Copy SourceFiles="@(AddInScoutOutput)"
 		      DestinationFolder="$(OutputPath)AddIns\Misc\AddinScout\Project\"
 		      SkipUnchangedFiles="true" />
@@ -171,6 +176,9 @@
 		      SkipUnchangedFiles="true" />
 		<Copy SourceFiles="@(SearchAndReplaceOutput)"
 		      DestinationFolder="$(OutputPath)AddIns\Misc\SearchAndReplace\Project\"
+		      SkipUnchangedFiles="true" />
+		<Copy SourceFiles="@(StartPageOutput)"
+		      DestinationFolder="$(OutputPath)AddIns\Misc\StartPage\Project\"
 		      SkipUnchangedFiles="true" />
 	</Target>
 

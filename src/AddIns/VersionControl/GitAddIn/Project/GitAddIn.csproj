@@ -1,0 +1,26 @@
+<Project Sdk="Uno.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0-desktop</TargetFramework>
+    <RootNamespace>ICSharpCode.GitAddIn</RootNamespace>
+    <AssemblyName>UnoDevelop.GitAddIn</AssemblyName>
+    <UnoSingleProject>true</UnoSingleProject>
+    <UnoFeatures>SkiaRenderer</UnoFeatures>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="_WpfToPort\**\*.*" />
+    <Content Remove="_WpfToPort\**\*.*" />
+    <Page Remove="_WpfToPort\**\*.*" />
+    <None Remove="_WpfToPort\**\*.*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\Main\Core\Project\ICSharpCode.Core.Uno.csproj" />
+    <ProjectReference Include="..\..\..\..\Main\Base\Project\ICSharpCode.SharpDevelop.Uno.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="GitAddIn.addin" CopyToOutputDirectory="Always" />
+  </ItemGroup>
+</Project>

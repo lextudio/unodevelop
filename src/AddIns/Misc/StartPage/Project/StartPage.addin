@@ -1,0 +1,34 @@
+<AddIn name="Start Page"
+       author="LeXtudio"
+       copyright="MIT"
+       url="https://github.com/lextudio/SharpDevelop"
+       description="Welcome / start page shown when no solution is loaded."
+       addInManagerHidden="preinstalled">
+	
+	<Manifest>
+		<Identity name="UnoDevelop.StartPage" />
+		<Dependency addin="ICSharpCode.SharpDevelop" />
+	</Manifest>
+	
+	<Runtime>
+		<Import assembly="UnoDevelop.StartPage.dll" />
+	</Runtime>
+	
+	<!-- Autostart when no solution is loaded -->
+	<Path name="/SharpDevelop/Workbench/AutostartNothingLoaded">
+		<Class id="ShowStartPageCommand"
+		       class="UnoDevelop.StartPage.ShowStartPageCommand" />
+	</Path>
+	
+	<!-- View > Show Start Page menu -->
+	<Path name="/SharpDevelop/Workbench/MainMenu/View">
+		<MenuItem id="ShowStartPage"
+		          label="Show Start Page"
+		          class="UnoDevelop.StartPage.ShowStartPageCommand" />
+	</Path>
+	
+	<!-- Items displayed on the StartPage -->
+	<Path name="/SharpDevelop/ViewContent/StartPage/Items">
+		<Class id="RecentProjects" class="UnoDevelop.StartPage.StartPageViewContent" />
+	</Path>
+</AddIn>

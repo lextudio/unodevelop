@@ -107,11 +107,6 @@ internal sealed class StepOutDebugShellCommand : AbstractMenuCommand
     public override void Run() => _ = MainPage.Current?.StepOutDebugAsync();
 }
 
-internal sealed class ShowStartPageShellCommand : AbstractMenuCommand
-{
-    public override void Run() => MainPage.Current?.ShowStartPage();
-}
-
 internal sealed class RefreshTestsShellCommand : AbstractMenuCommand
 {
     public override void Run() => _ = MainPage.Current?.RefreshTestsAsync();
