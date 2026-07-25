@@ -10,7 +10,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Core\Project\ICSharpCode.Core.Uno.csproj" />
-    <ProjectReference Include="$(SharpDevelopSourceRoot)\src\Libraries\ICSharpCode.TypeSystem.Abstractions\ICSharpCode.TypeSystem.Abstractions.Uno.csproj" />
+    <ProjectReference Include="..\..\..\Libraries\ICSharpCode.TypeSystem.Abstractions\ICSharpCode.TypeSystem.Abstractions.Uno.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -71,6 +71,8 @@
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Project\ProjectCustomToolOptions.cs"
              Link="Upstream\Project\ProjectCustomToolOptions.cs" />
     <Compile Include="..\Src\Gui\PadDescriptor.uno.cs" />
+    <Compile Include="..\Src\Gui\PadExtensions.uno.cs" />
+    <Compile Include="..\Src\Gui\ErrorListPadStub.uno.cs" />
     <Compile Include="..\Src\Workbench\WorkbenchPlatformBridge.cs" />
     <Compile Include="..\Src\Workbench\WorkbenchPlatformBridge.uno.cs" />
     <Compile Include="..\Src\Workbench\IViewContent.uno.cs" />
@@ -111,7 +113,13 @@
              Link="Upstream\Editor\CodeCompletion\IInsightWindow.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Editor\ITextEditor.cs"
              Link="Upstream\Editor\ITextEditor.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Editor\IFileDocumentProvider.cs"
+             Link="Upstream\Editor\IFileDocumentProvider.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\WinForms\IClipboardHandler.cs"
+             Link="Upstream\WinForms\IClipboardHandler.cs" />
     <Compile Include="..\Src\Editor\AvalonEditTextEditorAdapter.uno.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Editor\ITextEditorExtension.cs"
+             Link="Upstream\Editor\ITextEditorExtension.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Editor\Search\ISearchResult.cs"
              Link="Upstream\Editor\Search\ISearchResult.cs" />
     <Compile Include="..\Src\Editor\Search\UnoSearchResultsService.cs" />
@@ -134,6 +142,8 @@
     <!-- Parser -->
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Services\Tasks\TagComment.cs"
              Link="Upstream\Services\Tasks\TagComment.cs" />
+    <Compile Include="..\Src\Services\Tasks\TaskService.uno.cs" />
+    <Compile Include="..\Src\Services\FileService.uno.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Parser\ParseInformation.cs"
              Link="Upstream\Parser\ParseInformation.cs" />
     <!-- LanguageBinding -->
@@ -306,6 +316,7 @@
              Link="Upstream\Gui\Pads\CompilerMessageView\TextEventHandler.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Gui\Pads\CompilerMessageView\MessageViewCategory.cs"
              Link="Upstream\Gui\Pads\CompilerMessageView\MessageViewCategory.cs" />
+    <Compile Include="..\Src\Gui\Pads\CompilerMessageView\CompilerMessageView.uno.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Project\IProjectChangeWatcher.cs"
              Link="Upstream\Project\IProjectChangeWatcher.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Project\ProjectStartException.cs"

@@ -21,7 +21,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\Main\Core\Project\ICSharpCode.Core.Uno.csproj" />
     <ProjectReference Include="..\..\Main\SharpDevelop\SharpDevelop.csproj" />
-    <ProjectReference Include="..\..\Main\UnitTesting\UnoDevelop.UnitTesting.csproj" />
+    <ProjectReference Include="..\..\Main\UnitTesting\Project\UnoDevelop.UnitTesting.csproj" />
     <ProjectReference Include="..\..\AddIns\Analysis\CodeCoverage\Project\CodeCoverage.csproj" />
   </ItemGroup>
 </Project>

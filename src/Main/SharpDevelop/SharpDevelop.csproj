@@ -21,12 +21,12 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\ProjectSystem\Microsoft.VisualStudio.ProjectSystem.Shim.csproj" />
-		<ProjectReference Include="..\ProjectSystemManaged\Microsoft.VisualStudio.ProjectSystem.Managed.csproj" />
+		<ProjectReference Include="..\..\..\externals\cps-shims\src\ProjectSystem\Microsoft.VisualStudio.ProjectSystem.Shim.csproj" />
+		<ProjectReference Include="..\..\..\externals\cps-shims\src\ProjectSystemManaged\Microsoft.VisualStudio.ProjectSystem.Managed.csproj" />
 		<ProjectReference Include="..\Base\Project\ICSharpCode.SharpDevelop.Uno.csproj" />
 		<ProjectReference Include="..\Core\Project\ICSharpCode.Core.Uno.csproj" />
-		<ProjectReference Include="..\Debugger\UnoDevelop.Debugger.csproj" />
-		<ProjectReference Include="..\UnitTesting\UnoDevelop.UnitTesting.csproj" />
+		<ProjectReference Include="..\Debugger\Project\UnoDevelop.Debugger.csproj" />
+		<ProjectReference Include="..\UnitTesting\Project\UnoDevelop.UnitTesting.csproj" />
 		<ProjectReference Include="..\..\Libraries\ResourceFiles\LeXtudio.OpenDevelop.ResourceFiles.csproj" />
 		<ProjectReference Include="..\..\AddIns\Misc\AddinScout\Project\AddinScout.csproj"
 		                  ReferenceOutputAssembly="false"

@@ -1,0 +1,172 @@
+<AddIn name        = "XmlEditor"
+       author      = "Matt Ward"
+       copyright   = "SharpDevelop Team"
+       url         = "http://www.sharpdevelop.net"
+       description = "Adds XML completion and formatting support"
+       version     = "6.0.0.0">
+	
+	<Manifest>
+		<Identity name = "ICSharpCode.XmlEditor" />
+		<Dependency addin = "ICSharpCode.SharpDevelop" />
+		<Dependency addin = "ICSharpCode.AvalonEdit" requirePreload = "true" />
+	</Manifest>
+	
+	<Runtime>
+		<Import assembly = "XmlEditor.dll" />
+	</Runtime>
+	
+	<!-- Code completion -->
+	<Path name = "/AddIns/DefaultTextEditor/Formatter">
+		<XmlFormattingStrategy
+			class = "ICSharpCode.XmlEditor.XmlFormattingStrategy"
+			extensions = ".xml;.xsl;*.xslt;.xsd;.config;.csproj;.xaml;.wxs;.nuspec;.slnx" />
+	</Path>
+	
+	<Path name = "/SharpDevelop/ViewContent/TextEditor/CodeCompletion">
+		<XmlCodeCompletionBinding
+			class = "ICSharpCode.XmlEditor.XmlCodeCompletionBinding"
+			extensions = ".xml;.xsl;.xslt;.xsd;.config;.csproj;.xaml;.wxs;.nuspec;.targets;.props;.build;.manifest;.slnx" />
+	</Path>
+	
+	<Path name = "/AddIns/XmlEditor/DefaultSchemaFileAssociations">
+		<DefaultSchemaFileAssociations
+			class = "ICSharpCode.XmlEditor.DefaultXmlSchemaFileAssociations" />
+	</Path>
+	
+	<!-- Language binding for XML files -->
+	<Path name = "/SharpDevelop/Workbench/LanguageBindings">
+		<XmlLanguageBinding
+			class = "ICSharpCode.XmlEditor.XmlLanguageBinding"
+			extensions = ".xml;.xsl;.xslt;.xsd;.config;.csproj;.xaml;.wxs;.nuspec;.targets;.props;.build;.manifest;.resx;.resources;.slnx" />
+	</Path>
+	
+	<!-- Text editor extensions (folding) -->
+	<Path name = "/SharpDevelop/ViewContent/TextEditor/Extensions">
+		<XmlTextEditorExtension
+			class = "ICSharpCode.XmlEditor.XmlFoldingManager"
+			extensions = ".xml;.xsl;.xslt;.xsd;.config;.csproj;.xaml;.wxs;.nuspec;.targets;.props;.build;.slnx" />
+	</Path>
+	
+	<!-- Display binding (tree view) -->
+	<Path name = "/SharpDevelop/Workbench/DisplayBindings">
+		<XmlDisplayBinding
+			class = "ICSharpCode.XmlEditor.XmlDisplayBinding" />
+	</Path>
+	
+	<!-- Extra file icons for project browser -->
+	<Path name = "/Workspace/Icons">
+		<XmlFileIcon
+			class = "ICSharpCode.XmlEditor.XmlFileIcon"
+			extensions = ".xml;.xsl;.xslt;.xsd;.config;.csproj;.xaml;.nuspec;.targets;.props;.build" />
+	</Path>
+	
+	<!-- File filter -->
+	<Path name = "/SharpDevelop/Workbench/FileFilter">
+		<XmlFileFilter
+			class = "ICSharpCode.XmlEditor.XmlFileFilter"
+			insertAfter = "AllFiles" />
+	</Path>
+	
+	<!-- Main menu -->
+	<Path name = "/SharpDevelop/Workbench/MainMenu">
+		<XmlMenu
+			class = "ICSharpCode.XmlEditor.XmlMenu"
+			insertafter = "Tools" />
+	</Path>
+	
+	<!-- Options panels -->
+	<Path name = "/SharpDevelop/Dialogs/OptionsDialog/TextEditorOptions">
+		<XmlEditorOptionsPanel
+			class = "ICSharpCode.XmlEditor.XmlSchemasPanel"
+			label = "XmlSchema" />
+	</Path>
+	<Path name = "/SharpDevelop/Dialogs/OptionsDialog/TextEditorOptions">
+		<XmlEditorOptionsPanel
+			class = "ICSharpCode.XmlEditor.XmlEditorOptionsPanel"
+			label = "Xml" />
+	</Path>
+	
+	<!-- Tool pads -->
+	<Path name = "/SharpDevelop/Workbench/Pads">
+		<XPathQueryPad
+			class = "ICSharpCode.XmlEditor.XPathQueryPad" />
+	</Path>
+	
+	<!-- Context menus for tree -->
+	<Path name = "/AddIns/XmlEditor/XmlTree/AttributesGrid/ContextMenu">
+		<AddAttributeCommand
+			class = "ICSharpCode.XmlEditor.AddAttributeCommand"
+			label = "Add attribute"
+			description = "Add attribute" />
+		<RemoveAttributeCommand
+			class = "ICSharpCode.XmlEditor.RemoveAttributeCommand"
+			label = "Remove attribute"
+			description = "Remove attribute" />
+	</Path>
+	
+	<Path name = "/AddIns/XmlEditor/XmlTree/ContextMenu">
+		<CutXmlTreeNode
+			class = "ICSharpCode.XmlEditor.CutXmlTreeNode"
+			label = "Cut" />
+		<CopyXmlTreeNode
+			class = "ICSharpCode.XmlEditor.CopyXmlTreeNode"
+			label = "Copy" />
+		<PasteXmlTreeNode
+			class = "ICSharpCode.XmlEditor.PasteXmlTreeNode"
+			label = "Paste" />
+		<DeleteXmlTreeNode
+			class = "ICSharpCode.XmlEditor.DeleteXmlTreeNode"
+			label = "Delete" />
+		<Separator class = "MenuSeparator" />
+		<InsertElementBeforeCommand
+			class = "ICSharpCode.XmlEditor.InsertElementBeforeCommand"
+			label = "Insert element before"
+			description = "Insert element before selected node" />
+		<InsertElementAfterCommand
+			class = "ICSharpCode.XmlEditor.InsertElementAfterCommand"
+			label = "Insert element after"
+			description = "Insert element after selected node" />
+		<InsertCommentBeforeCommand
+			class = "ICSharpCode.XmlEditor.InsertCommentBeforeCommand"
+			label = "Insert comment before"
+			description = "Insert comment before selected node" />
+		<InsertCommentAfterCommand
+			class = "ICSharpCode.XmlEditor.InsertCommentAfterCommand"
+			label = "Insert comment after"
+			description = "Insert comment after selected node" />
+		<InsertTextNodeBeforeCommand
+			class = "ICSharpCode.XmlEditor.InsertTextNodeBeforeCommand"
+			label = "Insert text node before"
+			description = "Insert text node before selected node" />
+		<InsertTextNodeAfterCommand
+			class = "ICSharpCode.XmlEditor.InsertTextNodeAfterCommand"
+			label = "Insert text node after"
+			description = "Insert text node after selected node" />
+		<AddChildElementCommand
+			class = "ICSharpCode.XmlEditor.AddChildElementCommand"
+			label = "Add child element"
+			description = "Add child element to selected element" />
+		<AddChildCommentCommand
+			class = "ICSharpCode.XmlEditor.AddChildCommentCommand"
+			label = "Add child comment"
+			description = "Add child comment to selected element" />
+		<AddChildTextNodeCommand
+			class = "ICSharpCode.XmlEditor.AddChildTextNodeCommand"
+			label = "Add child text"
+			description = "Add child text to selected element" />
+		<Separator class = "MenuSeparator" />
+		<ExpandAllCommand
+			class = "ICSharpCode.XmlEditor.ExpandAllCommand"
+			label = "Expand All" />
+		<CollapseAllCommand
+			class = "ICSharpCode.XmlEditor.CollapseAllCommand"
+			label = "Collapse All" />
+	</Path>
+	
+	<!-- Edit Format menu -->
+	<Path name = "/SharpDevelop/Workbench/MainMenu/Edit/Format">
+		<RemoveXPathHighlightingCommand
+			class = "ICSharpCode.XmlEditor.RemoveXPathHighlightingCommand"
+			label = "Remove XPath highlighting" />
+	</Path>
+</AddIn>

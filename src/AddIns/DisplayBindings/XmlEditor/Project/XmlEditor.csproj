@@ -1,0 +1,40 @@
+<Project Sdk="Uno.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0-desktop</TargetFramework>
+    <RootNamespace>ICSharpCode.XmlEditor</RootNamespace>
+    <AssemblyName>UnoDevelop.XmlEditor</AssemblyName>
+    <UnoSingleProject>true</UnoSingleProject>
+    <UnoFeatures>SkiaRenderer</UnoFeatures>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <NoWarn>$(NoWarn);CA1416;WFO1000;CS0104;CS0109</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Src\**\*.cs" />
+    <Content Remove="_WpfToPort\**\*.*" />
+    <Compile Remove="_WpfToPort\**\*.*" />
+    <Page Remove="_WpfToPort\**\*.*" />
+    <None Remove="_WpfToPort\**\*.*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\Main\Core\Project\ICSharpCode.Core.Uno.csproj" />
+    <ProjectReference Include="..\..\..\..\Main\Base\Project\ICSharpCode.SharpDevelop.Uno.csproj" />
+    <ProjectReference Include="..\..\..\..\Libraries\ICSharpCode.TypeSystem.Abstractions\ICSharpCode.TypeSystem.Abstractions.Uno.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(UseNuGetPackages)' != 'true' ">
+    <ProjectReference Include="..\..\..\..\..\WindowsShims\src\LeXtudio.Windows\LeXtudio.Windows.csproj" />
+    <ProjectReference Include="..\..\..\..\..\UnoEdit\src\UnoEdit\UnoEdit.csproj" />
+    <ProjectReference Include="..\..\..\..\..\UnoPropertyGrid\src\UnoPropertyGrid\UnoPropertyGrid.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="XmlEditor.addin" CopyToOutputDirectory="Always" />
+    <None Include="Resources\license.txt" />
+    <EmbeddedResource Include="Resources\XmlCommentTreeNodeIcon.png" />
+    <EmbeddedResource Include="Resources\XmlElementTreeNodeIcon.png" />
+    <EmbeddedResource Include="Resources\XmlTextTreeNodeIcon.png" />
+  </ItemGroup>
+</Project>

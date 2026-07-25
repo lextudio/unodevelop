@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>ICSharpCode.TypeSystem.Abstractions</AssemblyName>
+    <RootNamespace>ICSharpCode.TypeSystem</RootNamespace>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <Nullable>enable</Nullable>
+    <NoWarn>$(NoWarn);1591;CS8600;CS8601;CS8602;CS8603;CS8604;CS8618;CS8619;CS8620;CS8625;CS8765</NoWarn>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+  </PropertyGroup>
+
+  <!-- TypeSystem interfaces linked from the SharpDevelop submodule -->
+  <ItemGroup>
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Libraries\ICSharpCode.TypeSystem.Abstractions\TypeSystem\**\*.cs"
+             Link="TypeSystem\%(RecursiveDir)%(Filename)%(Extension)" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Libraries\ICSharpCode.TypeSystem.Abstractions\Utils\**\*.cs"
+             Link="Utils\%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <!-- MVP mocks and replacements (local additions not in upstream SharpDevelop) -->
+  <ItemGroup>
+    <Compile Include="Mocks\**\*.cs" />
+    <Compile Include="XmlDocumentationElement.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Libraries\ICSharpCode.TypeSystem.Abstractions\Properties\**\*.cs"
+             Link="Properties\%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+</Project>

@@ -18,6 +18,7 @@ namespace ICSharpCode.SharpDevelop.Editor
         private readonly FileName _fileName;
 
         public ITextEditor PrimaryView => this;
+        public TextEditor TextEditor => _editor;
         public IDocument Document => _editor.Document;
         public ITextEditorCaret Caret => _caret;
         public ITextEditorOptions Options { get; } = new DefaultOptions();

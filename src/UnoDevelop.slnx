@@ -1,13 +1,87 @@
 <Solution>
+  <!-- Main IDE projects -->
   <Folder Name="/Main/">
     <Project Path="Main/SharpDevelop/SharpDevelop.csproj" />
+  </Folder>
+  <Folder Name="/Main/Core/" />
+  <Folder Name="/Main/Core/Project/">
+    <Project Path="Main/Core/Project/ICSharpCode.Core.Uno.csproj" />
   </Folder>
   <Folder Name="/Main/Base/" />
   <Folder Name="/Main/Base/Project/">
     <Project Path="Main/Base/Project/ICSharpCode.SharpDevelop.Uno.csproj" />
   </Folder>
-  <Folder Name="/Main/Core/" />
-  <Folder Name="/Main/Core/Project/">
-    <Project Path="Main/Core/Project/ICSharpCode.Core.Uno.csproj" />
+  <Folder Name="/Main/Debugger/" />
+  <Folder Name="/Main/Debugger/Project/">
+    <Project Path="Main/Debugger/Project/UnoDevelop.Debugger.csproj" />
+  </Folder>
+  <Folder Name="/Main/UnitTesting/" />
+  <Folder Name="/Main/UnitTesting/Project/">
+    <Project Path="Main/UnitTesting/Project/UnoDevelop.UnitTesting.csproj" />
+  </Folder>
+
+  <!-- External projects (submodules) -->
+  <Folder Name="/Externals/" />
+  <Folder Name="/Externals/cps-shims/">
+    <Project Path="..\externals\cps-shims\src\ProjectSystem\Microsoft.VisualStudio.ProjectSystem.Shim.csproj" />
+    <Project Path="..\externals\cps-shims\src\ProjectSystemManaged\Microsoft.VisualStudio.ProjectSystem.Managed.csproj" />
+  </Folder>
+
+  <!-- Library projects -->
+  <Folder Name="/Libraries/" />
+  <Folder Name="/Libraries/ResourceFiles/">
+    <Project Path="Libraries/ResourceFiles/LeXtudio.OpenDevelop.ResourceFiles.csproj" />
+  </Folder>
+  <Folder Name="/Libraries/ICSharpCode.TypeSystem.Abstractions/">
+    <Project Path="Libraries/ICSharpCode.TypeSystem.Abstractions/ICSharpCode.TypeSystem.Abstractions.Uno.csproj" />
+  </Folder>
+
+  <!-- AddIn projects -->
+  <Folder Name="/AddIns/" />
+  <Folder Name="/AddIns/Analysis/" />
+  <Folder Name="/AddIns/Analysis/CodeCoverage/">
+    <Project Path="AddIns/Analysis/CodeCoverage/Project/CodeCoverage.csproj" />
+  </Folder>
+  <Folder Name="/AddIns/DisplayBindings/" />
+  <Folder Name="/AddIns/DisplayBindings/HexEditor/">
+    <Project Path="AddIns/DisplayBindings/HexEditor/Project/HexEditor.csproj" />
+  </Folder>
+  <Folder Name="/AddIns/DisplayBindings/SettingsEditor/">
+    <Project Path="AddIns/DisplayBindings/SettingsEditor/Project/SettingsEditor.csproj" />
+  </Folder>
+  <Folder Name="/AddIns/Misc/" />
+  <Folder Name="/AddIns/Misc/AddinScout/">
+    <Project Path="AddIns/Misc/AddinScout/Project/AddinScout.csproj" />
+  </Folder>
+  <Folder Name="/AddIns/Misc/PackageManagement/">
+    <Project Path="AddIns/Misc/PackageManagement/Project/PackageManagement.csproj" />
+  </Folder>
+  <Folder Name="/AddIns/Misc/RegExpTk/">
+    <Project Path="AddIns/Misc/RegExpTk/Project/RegExpTk.csproj" />
+  </Folder>
+  <Folder Name="/AddIns/Misc/SearchAndReplace/">
+    <Project Path="AddIns/Misc/SearchAndReplace/Project/SearchAndReplace.csproj" />
+  </Folder>
+  <Folder Name="/AddIns/Misc/TextTemplating/">
+    <Project Path="AddIns/Misc/TextTemplating/Project/TextTemplating.csproj" />
+  </Folder>
+
+  <!-- Test projects -->
+  <Folder Name="/Tests/" />
+  <Folder Name="/Tests/UnoDevelop.Core.Tests/">
+    <Project Path="Tests/UnoDevelop.Core.Tests/UnoDevelop.Core.Tests.csproj" />
+  </Folder>
+  <Folder Name="/Tests/DebugTestApp/">
+    <Project Path="Tests/DebugTestApp/DebugTestApp.csproj" />
+  </Folder>
+  <Folder Name="/Tests/Fixtures/" />
+  <Folder Name="/Tests/Fixtures/SampleMtpTests/">
+    <Project Path="Tests/Fixtures/SampleMtpTests/SampleMtpTests.csproj" />
+  </Folder>
+  <Folder Name="/Tests/Fixtures/SampleNUnitMtpTests/">
+    <Project Path="Tests/Fixtures/SampleNUnitMtpTests/SampleNUnitMtpTests.csproj" />
+  </Folder>
+  <Folder Name="/Tests/Fixtures/SampleXunitMtpTests/">
+    <Project Path="Tests/Fixtures/SampleXunitMtpTests/SampleXunitMtpTests.csproj" />
   </Folder>
 </Solution>
