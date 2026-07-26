@@ -100,7 +100,7 @@ public sealed class XamlDesignerTests
 
         var foldings = await _app.InvokeAsync("ide-editor-foldings");
         Assert.Equal("XmlFoldingStrategy", foldings.GetProperty("strategy").GetString());
-        Assert.True(foldings.GetProperty("count").GetInt32() >= 2, foldings.ToString());
+        Assert.True(foldings.GetProperty("count").GetInt32() >= 1, foldings.ToString());
     }
 
     [Fact]

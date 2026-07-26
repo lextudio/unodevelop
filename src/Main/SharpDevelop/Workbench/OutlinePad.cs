@@ -31,6 +31,8 @@ public sealed class OutlinePad : UserControl
     }
 
     public bool HasProvider => _provider is not null;
+    public string? ProviderError => _provider?.OutlineContent.GetType().GetProperty("LastError")
+        ?.GetValue(_provider.OutlineContent) as string;
 
     void OnActiveViewChanged(object? sender, EventArgs args)
     {

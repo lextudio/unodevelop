@@ -15,6 +15,7 @@ public sealed class XamlOutlineContentHost : UserControl, IOutlineContentHost
     readonly IViewContent _primary;
     readonly TreeView _tree = new();
     IReadOnlyList<OutlineEntry> _entries = Array.Empty<OutlineEntry>();
+    public string? LastError { get; private set; }
 
     public XamlOutlineContentHost(IViewContent primary)
     {
@@ -35,26 +36,27 @@ public sealed class XamlOutlineContentHost : UserControl, IOutlineContentHost
 
     void Refresh()
     {
-        _tree.RootNodes.Clear();
+        LastError = null;
         try
         {
             var text = (_primary.GetService(typeof(ITextEditor)) as ITextEditor)?.Document.Text;
             if (string.IsNullOrWhiteSpace(text))
             {
-                _entries = Array.Empty<OutlineEntry>();
                 return;
             }
 
             var document = XDocument.Parse(text, LoadOptions.SetLineInfo);
-            _entries = document.Root is null
+            var entries = document.Root is null
                 ? Array.Empty<OutlineEntry>()
                 : new[] { CreateEntry(document.Root) };
-            foreach (var entry in _entries)
+            _tree.RootNodes.Clear();
+            foreach (var entry in entries)
                 _tree.RootNodes.Add(CreateTreeNode(entry));
+            _entries = entries;
         }
-        catch
+        catch (Exception ex)
         {
-            _entries = Array.Empty<OutlineEntry>();
+            LastError = ex.ToString();
         }
     }
 

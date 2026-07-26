@@ -1290,6 +1290,7 @@ public static class UnoDevelopDevFlowActions
                 outlineFound = outline is not null,
                 outlineHasProvider = control?.GetType().GetProperty("HasProvider")
                     ?.GetValue(control) as bool? ?? false,
+                providerError = control?.GetType().GetProperty("ProviderError")?.GetValue(control),
                 items = items?.Cast<object>().ToArray() ?? Array.Empty<object>()
             });
         });
