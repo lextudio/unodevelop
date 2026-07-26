@@ -153,6 +153,10 @@
         <ToolbarItem id="StepOut" tooltip="Step Out (Shift+F11)" icon="StepOut_16x" class="UnoDevelop.Commands.StepOutDebugShellCommand" />
       </Condition>
     </Condition>
+    <!-- Layout -->
+    <ToolbarItem id="ChooseConfigurationSeparator" type="Separator" />
+    <ToolbarItem id="ChooseLayout" type="Custom" class="UnoDevelop.Workbench.ChooseLayoutComboBox" />
+
     <!-- Navigation -->
     <ToolbarItem id="NavigationSeparator" type="Separator" />
     <Condition name="CanNavigateBack" action="Disable">
