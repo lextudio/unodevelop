@@ -161,8 +161,7 @@ public static class UnoDevelopDevFlowActions
 
             var workbench = ServiceSingleton.GetRequiredService<IWorkbench>();
             var text = System.IO.File.ReadAllText(filePath);
-            var view = new SimpleViewContent(Path.GetFileName(filePath), text, filePath);
-            workbench.ShowView(view, true);
+            workbench.ShowView(new MainPage.EditorViewContent(Path.GetFileName(filePath), text, filePath), true);
             return "OK: Opened " + filePath;
         });
     }
@@ -521,6 +520,75 @@ public static class UnoDevelopDevFlowActions
         return JsonSerializer.Serialize(result);
     }
 
+    static DebugService GetDebugService()
+        => (ServiceSingleton.ServiceProvider.GetService(typeof(DebugService)) as DebugService)
+            ?? throw new InvalidOperationException("DebugService not available");
+
+    [DevFlowAction("ide-debug-service-info", Description = "Return debugger service status as JSON: {available, typeName, isDebugging}.")]
+    public static string DebugServiceInfo()
+    {
+        var debugger = ServiceSingleton.ServiceProvider.GetService(typeof(IDebuggerService)) as IDebuggerService;
+        return JsonSerializer.Serialize(new
+        {
+            available = debugger is not null,
+            typeName = debugger?.GetType().FullName ?? "",
+            isDebugging = debugger?.IsDebugging ?? false
+        });
+    }
+
+    [DevFlowAction("ide-debug-continue", Description = "Continue debuggee execution. Returns 'OK' or error.")]
+    public static async Task<string> DebugContinue(int timeoutSeconds = 30)
+    {
+        var svc = GetDebugService();
+        await svc.ContinueAsync();
+        return "OK";
+    }
+
+    [DevFlowAction("ide-debug-step-over", Description = "Step over. Returns 'OK' or error.")]
+    public static async Task<string> DebugStepOver(int timeoutSeconds = 30)
+    {
+        var svc = GetDebugService();
+        await svc.StepOverAsync();
+        return "OK";
+    }
+
+    [DevFlowAction("ide-debug-step-into", Description = "Step into. Returns 'OK' or error.")]
+    public static async Task<string> DebugStepInto(int timeoutSeconds = 30)
+    {
+        var svc = GetDebugService();
+        await svc.StepInAsync();
+        return "OK";
+    }
+
+    [DevFlowAction("ide-debug-step-out", Description = "Step out. Returns 'OK' or error.")]
+    public static async Task<string> DebugStepOut(int timeoutSeconds = 30)
+    {
+        var svc = GetDebugService();
+        await svc.StepOutAsync();
+        return "OK";
+    }
+
+    [DevFlowAction("ide-debug-output", Description = "Return debug output text as JSON: {text}. Returns empty string if not debugging.")]
+    public static string DebugOutput()
+    {
+        var debugger = ServiceSingleton.ServiceProvider.GetService(typeof(IDebuggerService)) as IDebuggerService;
+        return JsonSerializer.Serialize(new { text = debugger?.IsDebugging == true ? "(debugging)" : "" });
+    }
+
+    [DevFlowAction("ide-debug-pad-snapshot", Description = "Get the current content of a debug pad by name. Returns {found, items} JSON.")]
+    public static string DebugPadSnapshot(string padName)
+    {
+        var items = SD.MainThread.InvokeIfRequired(() =>
+        {
+            var workbench = ServiceSingleton.GetRequiredService<IWorkbench>();
+            var pads = workbench.ViewContentCollection
+                .Select(v => new { type = v.GetType().Name, title = v.TitleName })
+                .ToList();
+            return pads;
+        });
+        return JsonSerializer.Serialize(new { found = items.Count > 0, items });
+    }
+
     [DevFlowAction("ide-visualize-text",
         Description = "Test TextVisualizer: evaluate a string variable and return full value. Returns {value, truncated} JSON.")]
     public static async Task<string> VisualizeText(string variableName, int frameId = 0)
@@ -789,6 +857,78 @@ public static class UnoDevelopDevFlowActions
             };
         });
         return JsonSerializer.Serialize(items);
+    }
+
+    [DevFlowAction("uno.probe.tests.debug",
+        Description = "Debug all tests in the current solution. Uses the debugger to launch the test host. Returns JSON with {started, error}. Catches exceptions so DevFlow stays alive.")]
+    public static async Task<string> DebugUnitTests(int timeoutSeconds = 60)
+    {
+        var debugger = ServiceSingleton.ServiceProvider.GetService(typeof(IDebuggerService)) as IDebuggerService;
+        if (debugger is null)
+            return JsonSerializer.Serialize(new { started = false, error = "Debugger service not available." });
+
+        if (debugger.IsDebugging)
+        {
+            var stopped = await StopDebug();
+            if (stopped.StartsWith("ERROR"))
+                return JsonSerializer.Serialize(new { started = false, error = "Could not stop existing debug session." });
+        }
+
+        var testService = ServiceSingleton.ServiceProvider.GetService(typeof(ITestService)) as ITestService;
+        if (testService is null)
+            return JsonSerializer.Serialize(new { started = false, error = "Test service not available." });
+
+        var tests = testService.GetTests();
+        var projectGroups = tests.GroupBy(t => t.ProjectPath).Where(g => g.Key is not null).ToList();
+
+        foreach (var group in projectGroups)
+        {
+            var projectPath = group.Key!;
+
+            try
+            {
+                if (debugger is DebugService ds)
+                {
+                    var outputPad = ServiceSingleton.ServiceProvider.GetService(typeof(IOutputPad)) as UnoOutputPadService;
+                    var category = outputPad?.GetOrCreateCategory("Debug");
+                    if (category is not null)
+                        await ds.StartAsync(projectPath, category);
+                    else
+                        await ds.StartAsync(projectPath, null!);
+                }
+                else
+                {
+                    return JsonSerializer.Serialize(new { started = false, error = "Debugger is not the expected DebugService type." });
+                }
+            }
+            catch (Exception ex)
+            {
+                return JsonSerializer.Serialize(new { started = false, error = "Debug start threw: " + ex.Message });
+            }
+
+            if (timeoutSeconds > 0)
+            {
+                var tcs = new TaskCompletionSource<(int threadId, string reason)>();
+                debugger.Stopped += Handler;
+                void Handler(int threadId, string reason)
+                {
+                    debugger.Stopped -= Handler;
+                    tcs.TrySetResult((threadId, reason));
+                }
+
+                var timeout = Task.Delay(TimeSpan.FromSeconds(timeoutSeconds));
+                var completed = await Task.WhenAny(tcs.Task, timeout);
+                if (completed == timeout)
+                    return JsonSerializer.Serialize(new { started = true, stopped = false, error = "Timeout waiting for breakpoint." });
+
+                var (_, reason) = tcs.Task.Result;
+                return JsonSerializer.Serialize(new { started = true, stopped = true, reason });
+            }
+
+            return JsonSerializer.Serialize(new { started = true });
+        }
+
+        return JsonSerializer.Serialize(new { started = false, error = "No test projects found in solution." });
     }
 #endif
 

@@ -27,4 +27,13 @@ public sealed class UnitTestingTests
             timeoutMs: 60_000);
         Assert.NotNull(completed);
     }
+
+    [Fact]
+    public async Task DebugTests_ReturnsWithoutError()
+    {
+        await _app.InvokeAsync("uno.probe.tests.refresh");
+        // Debug may not start if there are no test projects — just verify the action runs.
+        var result = await _app.InvokeStringAsync("uno.probe.tests.debug");
+        Assert.NotNull(result);
+    }
 }

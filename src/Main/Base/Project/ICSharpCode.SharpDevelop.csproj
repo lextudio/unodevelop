@@ -11,6 +11,7 @@
 
   <ItemGroup>
     <Compile Include="..\Src\GlobalUsings.uno.cs" />
+    <Compile Include="..\Src\SD.uno.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -55,6 +56,8 @@
     <Compile Include="..\Src\LanguageServices\Roslyn\CSharpVBLanguageService.CodeActions.cs" />
     <Compile Include="..\Src\LanguageServices\Lsp\LspServerRegistry.cs" />
     <Compile Include="..\Src\LanguageServices\Lsp\LspLanguageService.cs" />
+    <Compile Include="..\Src\LanguageServices\Lsp\LspServiceManager.cs" />
+    <Compile Include="..\Src\LanguageServices\Lsp\LspCodeCompletionBinding.cs" />
     <Compile Include="..\Src\NuGet\UnoNuGetProject.cs" />
     <Compile Include="..\Src\NuGet\NuGetPackageSourceCatalog.cs" />
     <Compile Include="..\Src\NuGet\NuGetSearchResult.cs" />
@@ -73,6 +76,8 @@
              Link="Upstream\Project\BeforeBuildCustomToolProjectItems.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Project\BeforeBuildCustomToolFileNameFilter.cs"
              Link="Upstream\Project\BeforeBuildCustomToolFileNameFilter.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Project\MSBuildFileProject.cs"
+             Link="Upstream\Project\MSBuildFileProject.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Project\ProjectCustomToolOptions.cs"
              Link="Upstream\Project\ProjectCustomToolOptions.cs" />
     <Compile Include="..\Src\Gui\PadDescriptor.uno.cs" />
@@ -191,8 +196,33 @@
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Workbench\File\FileHelpers.cs"
              Link="Upstream\Workbench\File\FileHelpers.cs" />
     <Compile Include="..\Src\Project\ProjectBindingDescriptor.uno.cs" />
-    <Compile Include="..\Src\Project\TargetFramework.uno.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Project\ProjectBindingDoozer.cs"
+             Link="Upstream\Project\ProjectBindingDoozer.cs" />
     <Compile Include="..\Src\Project\ProjectLoadException.uno.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Project\ErrorProject.cs"
+             Link="Upstream\Project\ErrorProject.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Project\Build\MultipleProjectBuildable.cs"
+             Link="Upstream\Project\Build\MultipleProjectBuildable.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Project\Build\IMSBuildEngine.cs"
+             Link="Upstream\Project\Build\IMSBuildEngine.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Project\Project_TypeGuids.cs"
+             Link="Upstream\Project\Project_TypeGuids.cs" />
+
+
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Project\MSBuildItemDefinitionGroup.cs"
+             Link="Upstream\Project\MSBuildItemDefinitionGroup.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Project\MissingProject.cs"
+             Link="Upstream\Project\MissingProject.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Project\ContextSpecificProperties.cs"
+             Link="Upstream\Project\ContextSpecificProperties.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Parser\DomAssemblyName.cs"
+             Link="Upstream\Parser\DomAssemblyName.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Project\Items\ReferenceProjectItem.cs"
+             Link="Upstream\Project\Items\ReferenceProjectItem.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Project\ProjectUpgradeException.cs"
+             Link="Upstream\Project\ProjectUpgradeException.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Project\WebReferenceUrl.cs"
+             Link="Upstream\Project\WebReferenceUrl.cs" />
     <Compile Include="..\Src\Project\UpstreamNamespaceStubs.uno.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Gui\Components\LocalizedPropertyGrid\LocalizedPropertyAttribute.cs"
              Link="Upstream\Gui\Components\LocalizedPropertyGrid\LocalizedPropertyAttribute.cs" />
@@ -234,6 +264,14 @@
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Services\NavigationService\INavigationPoint.cs"
          Link="Upstream\Services\NavigationService\INavigationPoint.cs" />
 
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Parser\ParseInformationEventArgs.cs"
+             Link="Upstream\Parser\ParseInformationEventArgs.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Parser\ISolutionSnapshotWithProjectMapping.cs"
+             Link="Upstream\Parser\ISolutionSnapshotWithProjectMapping.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Parser\IParserService.cs"
+             Link="Upstream\Parser\IParserService.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Project\Converter\IUpgradableProject.cs"
+             Link="Upstream\Project\Converter\IUpgradableProject.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Parser\ParserBackend.cs"
              Link="Upstream\Parser\ParserBackend.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Project\Build\BuildTarget.cs"
@@ -258,6 +296,45 @@
              Link="Upstream\Project\Build\IBuildFeedbackSink.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Project\Build\IBuildService.cs"
              Link="Upstream\Project\Build\IBuildService.cs" />
+    <!-- Dom interfaces -->
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Dom\IAssemblyList.cs"
+             Link="Upstream\Dom\IAssemblyList.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Dom\IAssemblyModel.cs"
+             Link="Upstream\Dom\IAssemblyModel.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Dom\IAssemblyReferenceModel.cs"
+             Link="Upstream\Dom\IAssemblyReferenceModel.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Dom\IAssemblyReferencesModel.cs"
+             Link="Upstream\Dom\IAssemblyReferencesModel.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Dom\IEntityModel.cs"
+             Link="Upstream\Dom\IEntityModel.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Dom\IEntityModelContext.cs"
+             Link="Upstream\Dom\IEntityModelContext.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Dom\IEventModel.cs"
+             Link="Upstream\Dom\IEventModel.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Dom\IFieldModel.cs"
+             Link="Upstream\Dom\IFieldModel.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Dom\IMemberModel.cs"
+             Link="Upstream\Dom\IMemberModel.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Dom\IMethodModel.cs"
+             Link="Upstream\Dom\IMethodModel.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Dom\IModelFactory.cs"
+             Link="Upstream\Dom\IModelFactory.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Dom\INamespaceModel.cs"
+             Link="Upstream\Dom\INamespaceModel.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Dom\IPropertyModel.cs"
+             Link="Upstream\Dom\IPropertyModel.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Dom\ISolutionAssemblyList.cs"
+             Link="Upstream\Dom\ISolutionAssemblyList.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Dom\ISymbolModel.cs"
+             Link="Upstream\Dom\ISymbolModel.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Dom\ITypeDefinitionModel.cs"
+             Link="Upstream\Dom\ITypeDefinitionModel.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Dom\ITypeDefinitionModelCollection.cs"
+             Link="Upstream\Dom\ITypeDefinitionModelCollection.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Dom\KeyedModelCollection.cs"
+             Link="Upstream\Dom\KeyedModelCollection.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Dom\ModelCollectionLinq.cs"
+             Link="Upstream\Dom\ModelCollectionLinq.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Dom\IModelCollection.cs"
              Link="Upstream\Dom\IModelCollection.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Dom\ModelCollectionChangedEvent.cs"
@@ -275,9 +352,19 @@
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Project\IProjectService.cs"
          Link="Upstream\Project\IProjectService.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Services\ProjectService\ProjectEventHandler.cs"
-         Link="Upstream\Services\ProjectService\ProjectEventHandler.cs" />
+             Link="Upstream\Services\ProjectService\ProjectEventHandler.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Services\ProjectService\ProjectItemEventHandler.cs"
-         Link="Upstream\Services\ProjectService\ProjectItemEventHandler.cs" />
+             Link="Upstream\Services\ProjectService\ProjectItemEventHandler.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Services\ProjectService\ParseableFileContentFinder.cs"
+             Link="Upstream\Services\ProjectService\ParseableFileContentFinder.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Services\ProjectService\ProjectConfigurationEventHandler.cs"
+             Link="Upstream\Services\ProjectService\ProjectConfigurationEventHandler.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Services\ProjectService\SolutionConfigurationEventHandler.cs"
+             Link="Upstream\Services\ProjectService\SolutionConfigurationEventHandler.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Services\ProjectService\SolutionEventHandler.cs"
+             Link="Upstream\Services\ProjectService\SolutionEventHandler.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Services\ProjectService\SolutionFolderEventHandler.cs"
+             Link="Upstream\Services\ProjectService\SolutionFolderEventHandler.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Project\Configuration\ConfigurationAndPlatform.cs"
              Link="Upstream\Project\Configuration\ConfigurationAndPlatform.cs" />
      <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Project\Configuration\ConfigurationMapping.cs"
@@ -296,6 +383,8 @@
              Link="Upstream\Project\Items\ItemType.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Project\IProjectItemBackendStore.cs"
              Link="Upstream\Project\IProjectItemBackendStore.cs" />
+
+    <Compile Include="..\Src\Project\Behaviors\DotNetStartBehavior.uno.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Project\Behaviors\ProjectBehavior.cs"
              Link="Upstream\Project\Behaviors\ProjectBehavior.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Project\Behaviors\ProjectBehaviorService.cs"
@@ -354,5 +443,18 @@
     <Compile Include="..\Src\Services\ClassBrowserIcons\ClassBrowserIconService.uno.cs" />
     <Compile Include="..\Src\Services\ProjectService\ProjectService.uno.cs" />
     <Compile Include="..\Src\Editor\Search\SearchResultsPad.uno.cs" />
+    <Compile Include="..\Src\Util\DotnetDetection.uno.cs" />
+    <!-- TargetFramework infrastructure -->
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Util\Versions.cs"
+             Link="Upstream\Util\Versions.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Project\TargetFrameworks\RedistLists.cs"
+             Link="Upstream\Project\TargetFrameworks\RedistLists.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Project\TargetFrameworks\TargetFramework.cs"
+             Link="Upstream\Project\TargetFrameworks\TargetFramework.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Project\TargetFrameworks\DotNet2x.cs"
+             Link="Upstream\Project\TargetFrameworks\DotNet2x.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Project\TargetFrameworks\DotNet4x.cs"
+             Link="Upstream\Project\TargetFrameworks\DotNet4x.cs" />
+    <Compile Include="..\Src\Project\CompilableProject.uno.cs" />
   </ItemGroup>
 </Project>

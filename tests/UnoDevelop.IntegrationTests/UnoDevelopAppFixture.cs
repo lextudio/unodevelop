@@ -18,6 +18,7 @@ public sealed class UnoDevelopAppFixture : IAsyncLifetime
 
     public string UnoDevelopProjectPath { get; } = LocateUnoDevelopProject();
     public string FixtureSolutionPath { get; } = LocateFixture("SampleTestProject", "SampleTestProject.csproj");
+    public string VBFixtureSolutionPath { get; } = LocateFixture("VBFixture", "VBFixture.sln");
     public string DebugTestProjectPath { get; } = LocateFixture("DebugTestApp", "DebugTestApp.csproj");
 
     public async Task InitializeAsync()
