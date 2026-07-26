@@ -60,7 +60,23 @@ namespace ICSharpCode.XamlDesigner
             _status = new TextBlock
             {
                 Margin = new Thickness(8, 4, 8, 4),
-                Text = "Design"
+                Text = "Design",
+                // WinUI's TextBlock defaults to no wrapping and no text selection - a long
+                // exception message (the common case here, e.g. a XAML parse error naming an
+                // unresolvable type) would otherwise overflow off-screen with no way to read or
+                // copy it out.
+                TextWrapping = TextWrapping.Wrap,
+                IsTextSelectionEnabled = true
+            };
+            // Scrollable rather than a hard clip: a wrapped multi-line error can still exceed a
+            // reasonable status-bar height, and clipping would just trade "unreadable off to the
+            // side" for "unreadable off the bottom".
+            var statusScroller = new ScrollViewer
+            {
+                Content = _status,
+                MaxHeight = 160,
+                VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+                HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled
             };
 
             _root = new Grid();
@@ -68,10 +84,10 @@ namespace ICSharpCode.XamlDesigner
             _root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
             Grid.SetRow(_previewHost, 0);
             Grid.SetRow(_adornerLayer, 0);
-            Grid.SetRow(_status, 1);
+            Grid.SetRow(statusScroller, 1);
             _root.Children.Add(_previewHost);
             _root.Children.Add(_adornerLayer);
-            _root.Children.Add(_status);
+            _root.Children.Add(statusScroller);
             Control = _root;
 
             RefreshPreview();
