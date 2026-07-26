@@ -182,5 +182,13 @@ public sealed class ImmediatePad : UserControl
         });
     }
 
+    public Task<IReadOnlyList<object>> GetSnapshotAsync()
+    {
+        IReadOnlyList<object> snapshot = _history
+            .Select(command => (object)new { Command = command })
+            .ToArray();
+        return Task.FromResult(snapshot);
+    }
+
     public new void Dispose() { }
 }

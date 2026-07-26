@@ -4,6 +4,7 @@ using System.ComponentModel.Design;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text.Json;
 using System.Threading.Tasks;
 using ICSharpCode.Core;
@@ -170,7 +171,7 @@ public static class UnoDevelopDevFlowActions
         });
     }
 
-    [DevFlowAction("ide-set-breakpoint", Description = "Set (or toggle) a breakpoint at a file:line. Returns current breakpoint lines for that file as JSON array.")]
+    [DevFlowAction("ide-set-breakpoint", Description = "Set a breakpoint at a file:line. Returns {success,file,lines}.")]
     public static string SetBreakpoint(string filePath, int line)
     {
         return SD.MainThread.InvokeIfRequired(() =>
@@ -191,7 +192,18 @@ public static class UnoDevelopDevFlowActions
                 .Select(b => b.LineNumber)
                 .OrderBy(x => x)
                 .ToList();
-            return JsonSerializer.Serialize(lines);
+            return JsonSerializer.Serialize(new { success = lines.Contains(line), file = fn.ToString(), lines });
+        });
+    }
+
+    [DevFlowAction("ide-clear-breakpoints", Description = "Clear all breakpoints/bookmarks. Returns {success}.")]
+    public static string ClearBreakpoints()
+    {
+        return SD.MainThread.InvokeIfRequired(() =>
+        {
+            foreach (var bookmark in SD.BookmarkManager.Bookmarks.ToArray())
+                SD.BookmarkManager.RemoveMark(bookmark);
+            return """{"success":true}""";
         });
     }
 
@@ -215,16 +227,29 @@ public static class UnoDevelopDevFlowActions
         });
     }
 
-    [DevFlowAction("ide-list-all-breakpoints", Description = "List ALL bookmarks across all files as JSON array of {file, line} objects.")]
+    [DevFlowAction("ide-list-all-breakpoints", Description = "List ALL bookmarks across all files as JSON array of {File, Line} objects.")]
     public static string ListAllBreakpoints()
     {
         return SD.MainThread.InvokeIfRequired(() =>
         {
             var all = SD.BookmarkManager.Bookmarks
                 .Where(b => b.IsSaved && b.FileName != null)
-                .Select(b => new { file = b.FileName.ToString(), line = b.LineNumber })
+                .Select(b => new { File = b.FileName.ToString(), Line = b.LineNumber })
                 .ToList();
             return JsonSerializer.Serialize(all);
+        });
+    }
+
+    [DevFlowAction("ide-pads", Description = "List registered workbench pads as JSON array.")]
+    public static string Pads()
+    {
+        return SD.MainThread.InvokeIfRequired(() =>
+        {
+            var workbench = ServiceSingleton.GetRequiredService<IWorkbench>();
+            var pads = workbench.PadContentCollection
+                .Select(p => new { title = p.Title, className = p.ClassName })
+                .ToArray();
+            return JsonSerializer.Serialize(pads);
         });
     }
 
@@ -263,20 +288,11 @@ public static class UnoDevelopDevFlowActions
         var debugger = SD.MainThread.InvokeIfRequired(() =>
             ServiceSingleton.ServiceProvider.GetService(typeof(UnoDevelop.Debugger.IDebuggerService)) as UnoDevelop.Debugger.IDebuggerService);
         if (debugger is null)
-            return "ERROR: Debugger service not available";
+            return JsonSerializer.Serialize(new { started = false, error = "Debugger service not available." });
         if (debugger.IsDebugging)
-            return "ERROR: Already debugging";
+            return JsonSerializer.Serialize(new { started = false, error = "Already debugging." });
 
-        var tcs = new TaskCompletionSource<(int threadId, string reason)>();
-        if (waitForBreakpoint)
-        {
-            debugger.Stopped += Handler;
-            void Handler(int threadId, string reason)
-            {
-                debugger.Stopped -= Handler;
-                tcs.TrySetResult((threadId, reason));
-            }
-        }
+        var stopSequence = debugger.CurrentStopSequence;
 
         // Start debugging on UI thread
         await SD.MainThread.InvokeAsync(async () =>
@@ -286,7 +302,6 @@ public static class UnoDevelopDevFlowActions
             var category = outputPad?.GetOrCreateCategory("Debug") ?? outputPad?.BuildMessageViewCategory;
             if (category is null)
             {
-                tcs.TrySetResult((0, "ERROR: No output pad"));
                 return;
             }
 
@@ -296,41 +311,26 @@ public static class UnoDevelopDevFlowActions
             }
             else
             {
-                tcs.TrySetResult((0, "ERROR: Debugger is not DebugService"));
+                throw new InvalidOperationException("Debugger is not DebugService");
             }
         });
 
         if (!waitForBreakpoint)
-            return "OK: Debug started";
+            return JsonSerializer.Serialize(new { started = true, stopped = false, isDebugging = debugger.IsDebugging, isProcessRunning = debugger.IsProcessRunning });
 
-        // Wait for breakpoint or timeout
-        var timeoutTask = Task.Delay(timeoutSeconds * 1000);
-        var completed = await Task.WhenAny(tcs.Task, timeoutTask);
-        if (completed == timeoutTask)
-            return "ERROR: Timeout waiting for breakpoint hit";
-
-        var (threadId, reason) = await tcs.Task;
-        if (threadId == 0)
-            return reason; // error message
-
-        // Wait briefly for PrefetchAndCacheAsync to populate the cache
-        await Task.Delay(1000);
-
-        // Collect debug data inline (before SharpDbg may exit)
-        var callStack = await GetCallStackJson(debugger);
-        var locals = await GetLocalsJson(debugger);
-        var threads = await GetThreadsJson(debugger);
-        var modules = await GetModulesJson(debugger);
+        if (!await WaitForStopAsync(debugger, stopSequence, timeoutSeconds))
+            return JsonSerializer.Serialize(new { started = debugger.IsDebugging, stopped = false, error = "Timeout waiting for breakpoint hit.", isDebugging = debugger.IsDebugging, isProcessRunning = debugger.IsProcessRunning });
 
         var result = new
         {
-            status = "Stopped at breakpoint",
-            threadId,
-            reason,
-            callStack,
-            locals,
-            threads,
-            modules
+            started = true,
+            stopped = true,
+            isDebugging = debugger.IsDebugging,
+            isProcessRunning = debugger.IsProcessRunning,
+            threadId = debugger.CurrentThreadId,
+            currentFile = debugger.CurrentFile,
+            currentLine = debugger.CurrentLine,
+            stopSequence = debugger.CurrentStopSequence
         };
         return JsonSerializer.Serialize(result);
     }
@@ -342,7 +342,7 @@ public static class UnoDevelopDevFlowActions
         if (threadId == 0) threadId = 1;
         var frames = await debugger.GetStackFramesAsync(threadId);
         if (frames.Count == 0) return "[]";
-        var result = frames.Select(f => new { id = f.Id, name = f.Name, file = f.FilePath, line = f.Line }).ToList();
+        var result = frames.Select(f => new { Id = f.Id, Name = f.Name, File = f.FilePath, Line = f.Line }).ToList();
         return JsonSerializer.Serialize(result);
     }
 
@@ -355,27 +355,27 @@ public static class UnoDevelopDevFlowActions
         if (frames.Count == 0) return "[]";
         var vars = await debugger.GetLocalsAsync(frames[0].Id);
         if (vars.Count == 0) return "[]";
-        var result = vars.Select(v => new { name = v.Name, value = v.Value, type = v.Type }).ToList();
+        var result = vars.Select(v => new { Name = v.Name, Value = v.Value, Type = v.Type }).ToList();
         return JsonSerializer.Serialize(result);
     }
 
     private static async Task<string> GetThreadsJson(IDebuggerService? debugger)
     {
         if (debugger is null) return "[]";
-        if (!debugger.IsDebugging && debugger.HasCache)
+        if (!debugger.IsProcessRunning)
             return "[]";
         var threads = await debugger.GetThreadsAsync();
-        var result = threads.Select(t => new { id = t.Id, name = t.Name }).ToList();
+        var result = threads.Select(t => new { Id = t.Id, Name = t.Name }).ToList();
         return JsonSerializer.Serialize(result);
     }
 
     private static async Task<string> GetModulesJson(IDebuggerService? debugger)
     {
         if (debugger is null) return "[]";
-        if (!debugger.IsDebugging && debugger.HasCache)
+        if (!debugger.IsProcessRunning)
             return "[]";
         var modules = await debugger.GetModulesAsync();
-        var result = modules.Select(m => new { name = m.Name, path = m.Path, optimized = m.IsOptimized }).ToList();
+        var result = modules.Select(m => new { Name = m.Name, Path = m.Path, Optimized = m.IsOptimized }).ToList();
         return JsonSerializer.Serialize(result);
     }
 
@@ -385,9 +385,9 @@ public static class UnoDevelopDevFlowActions
         var debugger = SD.MainThread.InvokeIfRequired(() =>
             ServiceSingleton.ServiceProvider.GetService(typeof(UnoDevelop.Debugger.IDebuggerService)) as UnoDevelop.Debugger.IDebuggerService);
         if (debugger is null)
-            return "ERROR: Debugger service not available";
+            return JsonSerializer.Serialize(new { success = false, error = "Debugger service not available", isDebugging = false, isProcessRunning = false });
         if (!debugger.IsDebugging && !debugger.HasCache)
-            return "OK: Not debugging";
+            return JsonSerializer.Serialize(new { success = true, isDebugging = false, isProcessRunning = false });
 
         // DebugService.Dispose() terminates the adapter and clears any stale caches.
         if (debugger is IDisposable d)
@@ -395,7 +395,12 @@ public static class UnoDevelopDevFlowActions
             await Task.Run(() => d.Dispose());
         }
 
-        return "OK: Debug stopped";
+        return JsonSerializer.Serialize(new
+        {
+            success = true,
+            isDebugging = debugger.IsDebugging,
+            isProcessRunning = debugger.IsProcessRunning
+        });
     }
 
     [DevFlowAction("ide-get-call-stack", Description = "Return the current call stack as JSON array of {id, name, file, line}. Returns empty array if not debugging.")]
@@ -403,7 +408,7 @@ public static class UnoDevelopDevFlowActions
     {
         var debugger = SD.MainThread.InvokeIfRequired(() =>
             ServiceSingleton.ServiceProvider.GetService(typeof(UnoDevelop.Debugger.IDebuggerService)) as UnoDevelop.Debugger.IDebuggerService);
-        if (debugger is null || (!debugger.IsDebugging && !debugger.HasCache))
+        if (debugger is null || !debugger.IsProcessRunning)
             return "[]";
 
         var threadId = debugger.CurrentThreadId;
@@ -414,10 +419,10 @@ public static class UnoDevelopDevFlowActions
 
         var result = frames.Select(f => new
         {
-            id = f.Id,
-            name = f.Name,
-            file = f.FilePath,
-            line = f.Line
+            Id = f.Id,
+            Name = f.Name,
+            File = f.FilePath,
+            Line = f.Line
         }).ToList();
 
         return JsonSerializer.Serialize(result);
@@ -428,7 +433,7 @@ public static class UnoDevelopDevFlowActions
     {
         var debugger = SD.MainThread.InvokeIfRequired(() =>
             ServiceSingleton.ServiceProvider.GetService(typeof(UnoDevelop.Debugger.IDebuggerService)) as UnoDevelop.Debugger.IDebuggerService);
-        if (debugger is null || (!debugger.IsDebugging && !debugger.HasCache))
+        if (debugger is null || !debugger.IsProcessRunning)
             return "[]";
 
         var threadId = debugger.CurrentThreadId;
@@ -443,9 +448,9 @@ public static class UnoDevelopDevFlowActions
 
         var result = vars.Select(v => new
         {
-            name = v.Name,
-            value = v.Value,
-            type = v.Type
+            Name = v.Name,
+            Value = v.Value,
+            Type = v.Type
         }).ToList();
 
         return JsonSerializer.Serialize(result);
@@ -456,8 +461,14 @@ public static class UnoDevelopDevFlowActions
     {
         var debugger = SD.MainThread.InvokeIfRequired(() =>
             ServiceSingleton.ServiceProvider.GetService(typeof(IDebuggerService)) as IDebuggerService);
-        if (debugger is null || (!debugger.IsDebugging && !debugger.HasCache))
+        if (debugger is null || !debugger.IsProcessRunning)
             return "ERROR: Not debugging";
+
+        if (frameId == 0 && debugger.CurrentThreadId != 0)
+        {
+            var frames = await debugger.GetStackFramesAsync(debugger.CurrentThreadId);
+            frameId = frames.Count > 0 ? frames[0].Id : 0;
+        }
 
         var result = await debugger.EvaluateAsync(expression, frameId);
         if (result is null)
@@ -465,10 +476,11 @@ public static class UnoDevelopDevFlowActions
 
         return JsonSerializer.Serialize(new
         {
-            value = result.Value,
-            type = result.Type,
-            variablesReference = result.VariablesReference,
-            evaluateName = result.EvaluateName
+            Name = result.Name,
+            Value = result.Value,
+            Type = result.Type,
+            VariablesReference = result.VariablesReference,
+            EvaluateName = result.EvaluateName
         });
     }
 
@@ -477,11 +489,11 @@ public static class UnoDevelopDevFlowActions
     {
         var debugger = SD.MainThread.InvokeIfRequired(() =>
             ServiceSingleton.ServiceProvider.GetService(typeof(IDebuggerService)) as IDebuggerService);
-        if (debugger is null || (!debugger.IsDebugging && !debugger.HasCache))
+        if (debugger is null || !debugger.IsProcessRunning)
             return "[]";
 
         var threads = await debugger.GetThreadsAsync();
-        var result = threads.Select(t => new { id = t.Id, name = t.Name }).ToList();
+        var result = threads.Select(t => new { Id = t.Id, Name = t.Name }).ToList();
         return JsonSerializer.Serialize(result);
     }
 
@@ -490,17 +502,17 @@ public static class UnoDevelopDevFlowActions
     {
         var debugger = SD.MainThread.InvokeIfRequired(() =>
             ServiceSingleton.ServiceProvider.GetService(typeof(IDebuggerService)) as IDebuggerService);
-        if (debugger is null || (!debugger.IsDebugging && !debugger.HasCache) || variablesReference <= 0)
+        if (debugger is null || !debugger.IsProcessRunning || variablesReference <= 0)
             return "[]";
 
         var children = await debugger.GetChildrenAsync(variablesReference);
         var result = children.Select(c => new
         {
-            name = c.Name,
-            value = c.Value,
-            type = c.Type,
-            variablesReference = c.VariablesReference,
-            evaluateName = c.EvaluateName
+            Name = c.Name,
+            Value = c.Value,
+            Type = c.Type,
+            VariablesReference = c.VariablesReference,
+            EvaluateName = c.EvaluateName
         }).ToList();
         return JsonSerializer.Serialize(result);
     }
@@ -510,25 +522,25 @@ public static class UnoDevelopDevFlowActions
     {
         var debugger = SD.MainThread.InvokeIfRequired(() =>
             ServiceSingleton.ServiceProvider.GetService(typeof(IDebuggerService)) as IDebuggerService);
-        if (debugger is null || (!debugger.IsDebugging && !debugger.HasCache))
+        if (debugger is null || !debugger.IsProcessRunning)
             return "[]";
 
         var modules = await debugger.GetModulesAsync();
         var result = modules.Select(m => new
         {
-            id = m.Id,
-            name = m.Name,
-            path = m.Path,
-            isOptimized = m.IsOptimized
+            Id = m.Id,
+            Name = m.Name,
+            Path = m.Path,
+            IsOptimized = m.IsOptimized
         }).ToList();
         return JsonSerializer.Serialize(result);
     }
 
     static DebugService GetDebugService()
-        => (ServiceSingleton.ServiceProvider.GetService(typeof(DebugService)) as DebugService)
+        => (ServiceSingleton.ServiceProvider.GetService(typeof(IDebuggerService)) as DebugService)
             ?? throw new InvalidOperationException("DebugService not available");
 
-    [DevFlowAction("ide-debug-service-info", Description = "Return debugger service status as JSON: {available, typeName, isDebugging}.")]
+    [DevFlowAction("ide-debug-service-info", Description = "Return debugger service status as JSON.")]
     public static string DebugServiceInfo()
     {
         var debugger = ServiceSingleton.ServiceProvider.GetService(typeof(IDebuggerService)) as IDebuggerService;
@@ -536,7 +548,13 @@ public static class UnoDevelopDevFlowActions
         {
             available = debugger is not null,
             typeName = debugger?.GetType().FullName ?? "",
-            isDebugging = debugger?.IsDebugging ?? false
+            isDebugging = debugger?.IsDebugging ?? false,
+            isProcessRunning = debugger?.IsProcessRunning ?? false,
+            hasCache = debugger?.HasCache ?? false,
+            currentThreadId = debugger?.CurrentThreadId ?? 0,
+            currentStopSequence = debugger?.CurrentStopSequence ?? 0,
+            currentFile = debugger?.CurrentFile,
+            currentLine = debugger?.CurrentLine ?? 0
         });
     }
 
@@ -544,53 +562,118 @@ public static class UnoDevelopDevFlowActions
     public static async Task<string> DebugContinue(int timeoutSeconds = 30)
     {
         var svc = GetDebugService();
+        var stopSequence = svc.CurrentStopSequence;
         await svc.ContinueAsync();
-        return "OK";
+        var stopped = await WaitForStopAsync(svc, stopSequence, timeoutSeconds);
+        return JsonSerializer.Serialize(DebugLocation(svc, stopped));
     }
 
     [DevFlowAction("ide-debug-step-over", Description = "Step over. Returns 'OK' or error.")]
     public static async Task<string> DebugStepOver(int timeoutSeconds = 30)
     {
         var svc = GetDebugService();
+        var stopSequence = svc.CurrentStopSequence;
         await svc.StepOverAsync();
-        return "OK";
+        var stopped = await WaitForStopAsync(svc, stopSequence, timeoutSeconds);
+        return JsonSerializer.Serialize(DebugLocation(svc, stopped));
     }
 
     [DevFlowAction("ide-debug-step-into", Description = "Step into. Returns 'OK' or error.")]
     public static async Task<string> DebugStepInto(int timeoutSeconds = 30)
     {
         var svc = GetDebugService();
+        var stopSequence = svc.CurrentStopSequence;
         await svc.StepInAsync();
-        return "OK";
+        var stopped = await WaitForStopAsync(svc, stopSequence, timeoutSeconds);
+        return JsonSerializer.Serialize(DebugLocation(svc, stopped));
     }
 
     [DevFlowAction("ide-debug-step-out", Description = "Step out. Returns 'OK' or error.")]
     public static async Task<string> DebugStepOut(int timeoutSeconds = 30)
     {
         var svc = GetDebugService();
+        var stopSequence = svc.CurrentStopSequence;
         await svc.StepOutAsync();
-        return "OK";
+        var stopped = await WaitForStopAsync(svc, stopSequence, timeoutSeconds);
+        return JsonSerializer.Serialize(DebugLocation(svc, stopped));
     }
 
     [DevFlowAction("ide-debug-output", Description = "Return debug output text as JSON: {text}. Returns empty string if not debugging.")]
     public static string DebugOutput()
     {
-        var debugger = ServiceSingleton.ServiceProvider.GetService(typeof(IDebuggerService)) as IDebuggerService;
-        return JsonSerializer.Serialize(new { text = debugger?.IsDebugging == true ? "(debugging)" : "" });
+        var outputPad = ServiceSingleton.ServiceProvider.GetService(typeof(IOutputPad)) as UnoOutputPadService;
+        var text = outputPad?.Categories.FirstOrDefault(c => c.DisplayCategory == "Debug")?.Text ?? string.Empty;
+        return JsonSerializer.Serialize(new { text });
     }
 
     [DevFlowAction("ide-debug-pad-snapshot", Description = "Get the current content of a debug pad by name. Returns {found, items} JSON.")]
-    public static string DebugPadSnapshot(string padName)
+    public static async Task<string> DebugPadSnapshot(string padName)
     {
-        var items = SD.MainThread.InvokeIfRequired(() =>
+        var snapshotTask = await SD.MainThread.InvokeAsync(async () =>
         {
             var workbench = ServiceSingleton.GetRequiredService<IWorkbench>();
-            var pads = workbench.ViewContentCollection
-                .Select(v => new { type = v.GetType().Name, title = v.TitleName })
-                .ToList();
-            return pads;
+            var pad = workbench.PadContentCollection.FirstOrDefault(p =>
+                string.Equals(p.ClassName, padName, StringComparison.OrdinalIgnoreCase)
+                || p.ClassName.EndsWith("." + padName, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(p.Title, padName, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(p.Title.Replace(" ", string.Empty), padName, StringComparison.OrdinalIgnoreCase));
+            if (pad is null)
+                return JsonSerializer.Serialize(new { found = false, padName, items = Array.Empty<object>() });
+
+            pad.CreatePad();
+            var content = pad.PadContent;
+            var method = content?.GetType().GetMethod("GetSnapshotAsync", BindingFlags.Instance | BindingFlags.Public);
+            var items = method is null ? Array.Empty<object>() : await InvokeSnapshotAsync(content!, method);
+            return JsonSerializer.Serialize(new
+            {
+                found = true,
+                title = pad.Title,
+                category = pad.Category,
+                className = pad.ClassName,
+                items
+            });
         });
-        return JsonSerializer.Serialize(new { found = items.Count > 0, items });
+        return await snapshotTask;
+    }
+
+    private static async Task<bool> WaitForStopAsync(IDebuggerService debugger, int stopSequence, int timeoutSeconds)
+    {
+        var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(timeoutSeconds);
+        while (DateTime.UtcNow < deadline)
+        {
+            if (debugger.IsDebugging
+                && debugger.CurrentStopSequence > stopSequence
+                && debugger.CurrentLine > 0)
+                return true;
+            await Task.Delay(200);
+        }
+        return false;
+    }
+
+    private static object DebugLocation(IDebuggerService debugger, bool stopped)
+        => new
+        {
+            stopped,
+            isDebugging = debugger.IsDebugging,
+            isProcessRunning = debugger.IsProcessRunning,
+            threadId = debugger.CurrentThreadId,
+            currentFile = debugger.CurrentFile,
+            currentLine = debugger.CurrentLine,
+            stopSequence = debugger.CurrentStopSequence
+        };
+
+    private static async Task<object[]> InvokeSnapshotAsync(object content, MethodInfo method)
+    {
+        var result = method.Invoke(content, Array.Empty<object>());
+        if (result is Task<IReadOnlyList<object>> typedTask)
+            return (await typedTask).ToArray();
+        if (result is Task task)
+        {
+            await task;
+            var resultProperty = task.GetType().GetProperty("Result", BindingFlags.Instance | BindingFlags.Public);
+            return (resultProperty?.GetValue(task) as IEnumerable<object>)?.ToArray() ?? Array.Empty<object>();
+        }
+        return (result as IEnumerable<object>)?.ToArray() ?? Array.Empty<object>();
     }
 
     [DevFlowAction("ide-visualize-text",
@@ -648,11 +731,11 @@ public static class UnoDevelopDevFlowActions
         var children = await debugger.GetChildrenAsync(varRef);
         var items = children.Select((c, i) => new
         {
-            index = i,
-            name = c.Name,
-            value = c.Value,
-            type = c.Type,
-            hasChildren = c.VariablesReference > 0
+            Index = i,
+            Name = c.Name,
+            Value = c.Value,
+            Type = c.Type,
+            HasChildren = c.VariablesReference > 0
         }).ToList();
 
         return JsonSerializer.Serialize(items);

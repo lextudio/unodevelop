@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
@@ -89,6 +91,14 @@ public sealed class ThreadsPad : UserControl
             foreach (var t in threads)
                 _threads.Add(new ThreadItem(t));
         });
+    }
+
+    public Task<IReadOnlyList<object>> GetSnapshotAsync()
+    {
+        IReadOnlyList<object> snapshot = _threads
+            .Select(t => (object)new { Id = t.Id, Name = t.DisplayName })
+            .ToArray();
+        return Task.FromResult(snapshot);
     }
 
     public new void Dispose()

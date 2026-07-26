@@ -3,27 +3,32 @@
   <!-- End-to-end integration tests that launch UnoDevelop and drive it over the DevFlow REST API
        (port 9227 by default, overridable via DEVFLOW_AGENT_PORT). They depend on the #if DEBUG
        "uno.probe.tests.*" DevFlow actions in UnoDevelopDevFlowActions.cs.
-
-       UnoDevelop must be built in Debug before running:
-         dotnet build UnoDevelop/src/Main/SharpDevelop/SharpDevelop.csproj -c Debug
-
-       Then run the suite explicitly (slow — boots the full app):
-         dotnet test UnoDevelop/tests/UnoDevelop.IntegrationTests -->
+       Full usage (prerequisites, running, filtering, coverage) is documented in
+       docs/integration-testing.md rather than here, since the exact commands involve a
+       double-hyphen flag syntax that MSBuild's XML comment grammar rejects. -->
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Exe</OutputType>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <IsPackable>false</IsPackable>
+    <TestingPlatformDotnetTestSupport>true</TestingPlatformDotnetTestSupport>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <!-- xunit.v3.mtp-v2 alone (Microsoft.Testing.Platform-native). Deliberately NOT referencing
+         Microsoft.NET.Test.Sdk / xunit.runner.visualstudio here (unlike UnoDevelop.Core.Tests) -
+         those pull in the VSTest bridge, which .NET 10's Microsoft.Testing.Platform refuses to
+         run alongside ("Testing with VSTest target is no longer supported"). OpenDevelop's
+         equivalent project (tests/OpenDevelop.IntegrationTests) uses this same MTP-only shape,
+         plus a repo-wide global.json "test.runner": "Microsoft.Testing.Platform" opt-in that
+         makes plain "dotnet test" work. UnoDevelop can't add that same global.json opt-in yet:
+         it's repo-wide and UnoDevelop.Core.Tests is still VSTest/NUnit-based, so it would break
+         that project's own "dotnet test". Until Core.Tests migrates to MTP too (or this project's
+         suite moves elsewhere), use "dotnet run" or invoke the built exe directly - see
+         docs/integration-testing.md for exact commands. -->
     <PackageReference Include="xunit.v3.mtp-v2" />
-    <PackageReference Include="xunit.runner.visualstudio">
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
   </ItemGroup>
 
 </Project>

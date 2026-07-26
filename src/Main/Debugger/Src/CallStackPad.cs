@@ -112,6 +112,20 @@ public sealed class CallStackPad : UserControl
         });
     }
 
+    public Task<IReadOnlyList<object>> GetSnapshotAsync()
+    {
+        IReadOnlyList<object> snapshot = _frames
+            .Select(f => (object)new
+            {
+                Name = f.Name,
+                File = f.FilePath,
+                Line = f.Line,
+                Location = f.Location
+            })
+            .ToArray();
+        return Task.FromResult(snapshot);
+    }
+
     public new void Dispose()
     {
         if (_debugger is not null)

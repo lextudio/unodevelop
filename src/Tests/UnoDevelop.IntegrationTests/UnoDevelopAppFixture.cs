@@ -154,7 +154,7 @@ public sealed class UnoDevelopAppFixture : IAsyncLifetime
         return raw ?? "";
     }
 
-    async Task<JsonElement> InvokeRawAsync(string action, params object[] args)
+    public async Task<JsonElement> InvokeRawAsync(string action, params object[] args)
     {
         var body = JsonSerializer.Serialize(new { args });
         using var content = new StringContent(body, System.Text.Encoding.UTF8, "application/json");

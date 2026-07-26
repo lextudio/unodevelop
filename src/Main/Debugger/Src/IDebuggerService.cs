@@ -10,10 +10,18 @@ public interface IDebuggerService
 {
     bool IsDebugging { get; }
 
+    bool IsProcessRunning { get; }
+
     bool HasCache { get; }
 
     /// The thread ID from the most recent Stopped event.
     int CurrentThreadId { get; }
+
+    int CurrentStopSequence { get; }
+
+    string? CurrentFile { get; }
+
+    int CurrentLine { get; }
 
     /// Fired (threadId, reason) when the debuggee stops.
     event Action<int, string>? Stopped;

@@ -14,6 +14,7 @@
     <PackageVersion Include="LeXtudio.UnoDock.Themes.VS2013" Version="0.1.12" />
     <PackageVersion Include="LeXtudio.UnoEdit" Version="0.7.9" />
     <PackageVersion Include="LeXtudio.UnoPropertyGrid" Version="0.4.2" />
+    <PackageVersion Include="Microsoft.Diagnostics.NETCore.Client" Version="0.2.661903" />
     <PackageVersion Include="Microsoft.Build" Version="18.7.1" />
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp.Features" Version="5.3.0" />
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="5.3.0" />
@@ -21,17 +22,17 @@
     <PackageVersion Include="Microsoft.VisualStudio.Validation" Version="17.8.8" />
     <PackageVersion Include="System.CodeDom" Version="10.0.9" />
     <!-- Real MIT VS MEF: engine (Microsoft.VisualStudio.Composition) + standard MEF2 attributes
-         (System.Composition.AttributedModel). See docs/project-system.md (Slice 44). -->
+         (System.Composition.AttributedModel). See docs/project-system.md (Slice 44).
+         All four System.Composition.* siblings pinned to 9.0.0 (not the original 8.0.0 for
+         AttributedModel/Runtime) so CentralPackageTransitivePinningEnabled can stay on: Hosting
+         9.0.0 requires Runtime >= 9.0.0 and TypedParts 9.0.0 requires AttributedModel >= 9.0.0,
+         so 8.0.0 pins caused an NU1109 downgrade error once transitive pinning enforced them. -->
     <PackageVersion Include="Microsoft.VisualStudio.Composition" Version="17.13.41" />
-    <PackageVersion Include="System.Composition.AttributedModel" Version="8.0.0" />
-    <PackageVersion Include="System.Composition.Runtime" Version="8.0.0" />
+    <PackageVersion Include="System.Composition.AttributedModel" Version="9.0.0" />
+    <PackageVersion Include="System.Composition.Runtime" Version="9.0.0" />
     <!-- MEF2 hosting/typed-part discovery for docs/language-services.md §8.3
          (CSharpVBLanguageService.CodeActions.cs) - composes CodeFixProvider exports from the
-         same assembly set Roslyn's own Workspace uses (MefHostServices.DefaultAssemblies).
-         Pinned to 9.0.0, not 8.0.0 like the sibling System.Composition.AttributedModel/Runtime
-         above, to match what Microsoft.CodeAnalysis.CSharp.Features 5.3.0 and
-         Microsoft.VisualStudio.Composition 17.13.41 already pull in transitively (NU1605
-         package-downgrade error otherwise). -->
+         same assembly set Roslyn's own Workspace uses (MefHostServices.DefaultAssemblies). -->
     <PackageVersion Include="System.Composition.Hosting" Version="9.0.0" />
     <PackageVersion Include="System.Composition.TypedParts" Version="9.0.0" />
     <!-- Pin patched MessagePack (transitive via Microsoft.VisualStudio.Composition 17.13.41 ->

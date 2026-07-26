@@ -1,35 +1,23 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
 
-namespace DebugTestApp;
-
-class Program
+namespace DebugTestApp
 {
-    static void Main(string[] args)
+    internal static class Program
     {
-        var greeting = "Hello, Debugger!";
-        var answer = 42;
-        var pi = 3.14159;
-        var fruits = new List<string> { "apple", "banana", "cherry", "date" };
-        var scores = new Dictionary<string, int>
+        static void Main()
         {
-            ["Alice"] = 95,
-            ["Bob"] = 87,
-            ["Charlie"] = 92
-        };
-        var buffer = new byte[] { 0x48, 0x65, 0x6C, 0x6C, 0x6F };
-        int? maybeValue = 10;
-        var message = ComputeGreeting("World");
+            var greeting = "Hello, Debugger!";
+            var answer = 42;
+            var message = ComputeGreeting("World");
+            Console.WriteLine(message);
+            Console.WriteLine(greeting);
+            Console.WriteLine(answer);
+        }
 
-        Console.WriteLine(greeting);
-        Console.ReadLine();
-    }
-
-    static string ComputeGreeting(string name)
-    {
-        var prefix = "Hello";
-        var result = $"{prefix}, {name}!";
-        return result;
+        static string ComputeGreeting(string name)
+        {
+            var result = $"Hello, {name}!";
+            return result;
+        }
     }
 }

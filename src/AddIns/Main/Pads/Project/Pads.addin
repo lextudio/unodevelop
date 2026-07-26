@@ -22,6 +22,11 @@
          title="Properties"
          category="Main"
          defaultPosition="Right" />
+    <Pad id="Breakpoints"
+         class="UnoDevelop.Debugger.BreakpointsPad"
+         title="Breakpoints"
+         category="Debugger"
+         defaultPosition="Bottom" />
     <Pad id="Locals"
          class="UnoDevelop.Debugger.LocalsPad"
          title="Locals"

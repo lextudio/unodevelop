@@ -149,6 +149,19 @@ public sealed class WatchPad : UserControl
         }
     }
 
+    public Task<IReadOnlyList<object>> GetSnapshotAsync()
+    {
+        IReadOnlyList<object> snapshot = _watches
+            .Select(w => (object)new
+            {
+                Expression = w.Expression,
+                Value = w.DisplayValue,
+                Type = w.Type
+            })
+            .ToArray();
+        return Task.FromResult(snapshot);
+    }
+
     public new void Dispose()
     {
         if (_debugger is not null)

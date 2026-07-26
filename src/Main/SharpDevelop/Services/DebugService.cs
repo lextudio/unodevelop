@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using ICSharpCode.SharpDevelop;
 using ICSharpCode.SharpDevelop.Workbench;
+using Microsoft.Diagnostics.NETCore.Client;
 using UnoDevelop.Debugger;
 
 namespace UnoDevelop.Services;
@@ -16,18 +17,32 @@ namespace UnoDevelop.Services;
 internal sealed class DebugService : IDisposable, IDebuggerService
 {
     private Process? _adapterProcess;
+    private Process? _debuggeeProcess;
     private DapClient? _dap;
     private CancellationTokenSource? _cts;
     private int _activeThreadId;
+    private int _currentStopSequence;
+    private string? _currentFile;
+    private int _currentLine;
     private int _session; // incremented each StartAsync, lets Exited handler ignore stale sessions
     private readonly ConcurrentDictionary<int, IReadOnlyList<StackFrameInfo>> _cachedStackFrames = new();
     private readonly ConcurrentDictionary<int, IReadOnlyList<VariableInfo>> _cachedLocals = new();
+    private readonly ConcurrentDictionary<int, ThreadInfo> _cachedThreads = new();
+    private readonly ConcurrentDictionary<string, ModuleInfo> _cachedModules = new();
 
-    public bool IsDebugging => _adapterProcess is { HasExited: false };
+    public bool IsDebugging => _debuggeeProcess is { HasExited: false };
+
+    public bool IsProcessRunning => IsDebugging;
 
     public bool HasCache => _cachedStackFrames.Count > 0;
 
     public int CurrentThreadId => _activeThreadId;
+
+    public int CurrentStopSequence => _currentStopSequence;
+
+    public string? CurrentFile => _currentFile;
+
+    public int CurrentLine => _currentLine;
 
     public event EventHandler? DebugStarted;
     public event EventHandler? DebugStopped;
@@ -46,6 +61,11 @@ internal sealed class DebugService : IDisposable, IDebuggerService
         _session++;
         _cachedStackFrames.Clear();
         _cachedLocals.Clear();
+        _cachedThreads.Clear();
+        _cachedModules.Clear();
+        _activeThreadId = 0;
+        _currentFile = null;
+        _currentLine = 0;
 
         output.AppendLine("> Building for debug...");
         var targetDll = await ResolveBuildOutputAsync(projectPath, output);
@@ -78,10 +98,8 @@ internal sealed class DebugService : IDisposable, IDebuggerService
         var capturedSession = _session;
         _adapterProcess.Exited += (_, _) =>
         {
-            if (_session != capturedSession) return; // stale — a newer session already started
+            if (_session != capturedSession) return;
             Dbg($"Adapter exited. ExitCode={_adapterProcess?.ExitCode}");
-            output.AppendLine("\n> Debug adapter exited.");
-            DebugStopped?.Invoke(this, EventArgs.Empty);
         };
 
         try
@@ -101,9 +119,13 @@ internal sealed class DebugService : IDisposable, IDebuggerService
         _cts?.Cancel();
         var dap = _dap;
         var adapterProcess = _adapterProcess;
+        var debuggeeProcess = _debuggeeProcess;
         _dap = null;
         _adapterProcess = null;
+        _debuggeeProcess = null;
         _activeThreadId = 0;
+        _currentFile = null;
+        _currentLine = 0;
         _cachedStackFrames.Clear();
         _cachedLocals.Clear();
         try
@@ -118,10 +140,13 @@ internal sealed class DebugService : IDisposable, IDebuggerService
         }
         catch { }
         try { adapterProcess?.Kill(entireProcessTree: true); } catch { }
+        try { debuggeeProcess?.Kill(entireProcessTree: true); } catch { }
         dap?.Dispose();
         _dap = null;
         _adapterProcess = null;
         _activeThreadId = 0;
+        _currentFile = null;
+        _currentLine = 0;
         _cachedStackFrames.Clear();
         _cachedLocals.Clear();
     }
@@ -202,16 +227,16 @@ internal sealed class DebugService : IDisposable, IDebuggerService
         var psi = new ProcessStartInfo
         {
             FileName = "dotnet",
-            Arguments = $"\"{adapterDll}\" --interpreter=vscode",
+            Arguments = $"\"{adapterDll}\" --interpreter=vscode --engineLogging=\"{Path.Combine(Path.GetTempPath(), "unodevelop-sharpdbg-adapter.log")}\"",
             RedirectStandardInput = true,
             RedirectStandardOutput = true,
             RedirectStandardError = false,
             UseShellExecute = false,
             CreateNoWindow = true,
         };
-        var p = new Process { StartInfo = psi, EnableRaisingEvents = true };
-        p.Start();
-        return p;
+        var process = new Process { StartInfo = psi, EnableRaisingEvents = true };
+        process.Start();
+        return process;
     }
 
     private async Task HandshakeAsync(string targetDll, string projectPath, IOutputCategory output, CancellationToken ct)
@@ -225,12 +250,28 @@ internal sealed class DebugService : IDisposable, IDebuggerService
             ["linesStartAt1"] = true,
             ["columnsStartAt1"] = true,
             ["supportsRunInTerminalRequest"] = false,
+            ["supportsHandshakeRequest"] = true,
+            ["supportsVariableType"] = true,
+            ["supportsVariablePaging"] = true,
         };
         var initResponse = await _dap!.SendRequestAsync("initialize", initArgs, ct);
         Dbg($"Initialize response: {initResponse?.ToJsonString() ?? "null"}");
 
-        // 2. send existing bookmarks as breakpoints BEFORE launch
-        //    so the adapter processes them before the debuggee starts
+        // 2. Launch the target suspended and attach, matching SharpDbg's own
+        // out-of-process test practice more closely than the launch request.
+        _debuggeeProcess = LaunchDebuggee(targetDll, Path.GetDirectoryName(projectPath));
+        Dbg($"Attach: pid={_debuggeeProcess.Id}");
+        var attachArgs = new JsonObject
+        {
+            ["processId"] = _debuggeeProcess.Id,
+            ["console"] = "internalConsole",
+            ["justMyCode"] = true,
+        };
+        await _dap.SendRequestAsync("attach", attachArgs, ct);
+        Dbg("Attach response received");
+
+        // 3. Send existing bookmarks as breakpoints before configurationDone,
+        //    matching the standard DAP configuration window.
         try
         {
             var allBookmarks = SD.BookmarkManager.Bookmarks.Where(b => b.FileName != null).ToList();
@@ -251,39 +292,86 @@ internal sealed class DebugService : IDisposable, IDebuggerService
             Dbg($"Sync bookmarks error: {ex.Message}");
         }
 
-        // 3. launch (debuggee starts, breakpoints already set)
-        var launchArgs = new JsonObject
-        {
-            ["program"] = targetDll,
-            ["cwd"] = Path.GetDirectoryName(projectPath),
-            ["stopAtEntry"] = false,
-            ["console"] = "internalConsole",
-        };
-        await _dap.SendRequestAsync("launch", launchArgs, ct);
-
         // 4. configurationDone
+        Dbg("Sending configurationDone");
         await _dap.SendRequestAsync("configurationDone", null, ct);
+        Dbg("configurationDone response received; resuming runtime");
+        new DiagnosticsClient(_debuggeeProcess.Id).ResumeRuntime();
+        Dbg("runtime resumed");
 
         output.AppendLine($"> Debugging: {Path.GetFileName(targetDll)}");
+    }
+
+    private static Process LaunchDebuggee(string targetDll, string? workingDirectory)
+    {
+        var psi = new ProcessStartInfo
+        {
+            FileName = "dotnet",
+            RedirectStandardInput = false,
+            RedirectStandardOutput = false,
+            UseShellExecute = false,
+            CreateNoWindow = true,
+            WorkingDirectory = workingDirectory ?? Path.GetDirectoryName(targetDll) ?? Environment.CurrentDirectory,
+        };
+        psi.ArgumentList.Add(targetDll);
+        psi.Environment["DOTNET_DefaultDiagnosticPortSuspend"] = "1";
+        foreach (var envVar in new[]
+        {
+            "COMPLUS_FORCEENC", "COMPLUS_ReadyToRun", "COMPLUS_ZapDisable",
+            "DOTNET_GCConserveMemory", "DOTNET_GCHeapCount", "DOTNET_GCNoAffinitize",
+            "DOTNET_MODIFIABLE_ASSEMBLIES", "DOTNET_MULTILEVEL_LOOKUP", "DOTNET_TieredPGO",
+            "DOTNET_gcServer", "_NO_DEBUG_HEAP"
+        })
+        {
+            psi.Environment.Remove(envVar);
+        }
+
+        var process = new Process { StartInfo = psi, EnableRaisingEvents = true };
+        process.Start();
+        return process;
     }
 
     private void OnDapEvent(string evt, JsonObject? body, IOutputCategory output)
     {
         Dbg($"DAP event: {evt} body={body?.ToJsonString() ?? "null"}");
-    switch (evt)
+        switch (evt)
         {
             case "output":
                 var text = body?["output"]?.GetValue<string>() ?? string.Empty;
                 output.AppendLine(text.TrimEnd('\n', '\r'));
                 break;
+            case "thread":
+                var threadId = body?["threadId"]?.GetValue<int>() ?? 0;
+                if (threadId > 0)
+                    _cachedThreads[threadId] = new ThreadInfo(threadId, $"Thread {threadId}");
+                ThreadsChanged?.Invoke();
+                break;
+            case "module":
+                if (body?["module"] is JsonObject module)
+                {
+                    var modulePath = module["path"]?.GetValue<string>();
+                    var moduleName = module["name"]?.GetValue<string>() ?? Path.GetFileName(modulePath) ?? string.Empty;
+                    var moduleKey = module["id"]?.ToString() ?? modulePath ?? moduleName;
+                    _cachedModules[moduleKey] = new ModuleInfo(
+                        _cachedModules.Count + 1,
+                        moduleName,
+                        modulePath,
+                        module["isOptimized"]?.GetValue<bool>() ?? false);
+                }
+                break;
             case "stopped":
                 _activeThreadId = body?["threadId"]?.GetValue<int>() ?? 0;
+                if (_activeThreadId > 0)
+                    _cachedThreads[_activeThreadId] = new ThreadInfo(_activeThreadId, $"Thread {_activeThreadId}");
                 var reason = body?["reason"]?.GetValue<string>() ?? "stopped";
+                _currentStopSequence++;
                 _ = HandleStoppedAsync(_activeThreadId, reason);
                 break;
             case "continued":
                 _cachedStackFrames.Clear();
                 _cachedLocals.Clear();
+                _currentFile = null;
+                _currentLine = 0;
                 ExecutionPositionChanged?.Invoke(string.Empty, 0);
                 Continued?.Invoke();
                 break;
@@ -291,6 +379,9 @@ internal sealed class DebugService : IDisposable, IDebuggerService
             case "exited":
                 _cachedStackFrames.Clear();
                 _cachedLocals.Clear();
+                _activeThreadId = 0;
+                _currentFile = null;
+                _currentLine = 0;
                 ExecutionPositionChanged?.Invoke(string.Empty, 0);
                 DebugStopped?.Invoke(this, EventArgs.Empty);
                 // Clear session state so IsDebugging returns false.
@@ -320,7 +411,11 @@ internal sealed class DebugService : IDisposable, IDebuggerService
         {
             var f = cached[0];
             if (!string.IsNullOrEmpty(f.FilePath) && f.Line > 0)
+            {
+                _currentFile = f.FilePath;
+                _currentLine = f.Line;
                 ExecutionPositionChanged?.Invoke(f.FilePath!, f.Line);
+            }
             return;
         }
         if (!IsDebugging) return;
@@ -337,7 +432,11 @@ internal sealed class DebugService : IDisposable, IDebuggerService
             var line = frame["line"]?.GetValue<int>() ?? 0;
             Dbg($"ExecutionPosition: {filePath}:{line}");
             if (!string.IsNullOrEmpty(filePath) && line > 0)
+            {
+                _currentFile = filePath;
+                _currentLine = line;
                 ExecutionPositionChanged?.Invoke(filePath, line);
+            }
         }
         catch (Exception ex)
         {
@@ -351,7 +450,7 @@ internal sealed class DebugService : IDisposable, IDebuggerService
         if (!IsDebugging) return;
         try
         {
-            Dbg($"PrefetchAndCacheAsync: thread={threadId}");
+            Dbg($"PrefetchAndCacheAsync: stack only, thread={threadId}");
             var stArgs = new JsonObject { ["threadId"] = threadId, ["levels"] = 10 };
             var stResp = await _dap.SendRequestAsync("stackTrace", stArgs);
             var frames = stResp?["body"]?["stackFrames"] as JsonArray;
@@ -368,36 +467,6 @@ internal sealed class DebugService : IDisposable, IDebuggerService
                     f["line"]?.GetValue<int>() ?? 0));
             }
             _cachedStackFrames[threadId] = frameList;
-
-            var firstFrameId = frameList[0].Id;
-            Dbg($"PrefetchAndCacheAsync: fetching scopes for frame={firstFrameId}");
-            var scopesResp = await _dap.SendRequestAsync("scopes",
-                new JsonObject { ["frameId"] = firstFrameId });
-            var scopes = scopesResp?["body"]?["scopes"] as JsonArray;
-            if (scopes is null || scopes.Count == 0) return;
-
-            var scopeRef = (scopes[0] as JsonObject)?["variablesReference"]?.GetValue<int>() ?? 0;
-            if (scopeRef == 0) return;
-
-            Dbg($"PrefetchAndCacheAsync: fetching variables for scopeRef={scopeRef}");
-            var varsResp = await _dap.SendRequestAsync("variables",
-                new JsonObject { ["variablesReference"] = scopeRef });
-            var vars = varsResp?["body"]?["variables"] as JsonArray;
-            if (vars is null) return;
-
-            var varList = new List<VariableInfo>(vars.Count);
-            foreach (var vn in vars)
-            {
-                if (vn is not JsonObject v) continue;
-                varList.Add(new VariableInfo(
-                    v["name"]?.GetValue<string>() ?? "",
-                    v["value"]?.GetValue<string>() ?? "",
-                    v["type"]?.GetValue<string>() ?? "",
-                    v["variablesReference"]?.GetValue<int>() ?? 0,
-                    v["evaluateName"]?.GetValue<string>()));
-            }
-            _cachedLocals[firstFrameId] = varList;
-            Dbg($"PrefetchAndCacheAsync: cached {varList.Count} locals for frame {firstFrameId}");
         }
         catch (Exception ex)
         {
@@ -512,57 +581,41 @@ internal sealed class DebugService : IDisposable, IDebuggerService
         catch { return Array.Empty<VariableInfo>(); }
     }
 
-    public async Task<IReadOnlyList<ThreadInfo>> GetThreadsAsync()
+    public Task<IReadOnlyList<ThreadInfo>> GetThreadsAsync()
     {
-        if (_dap is null) return Array.Empty<ThreadInfo>();
-        if (!IsDebugging) return Array.Empty<ThreadInfo>();
-        try
-        {
-            var response = await _dap.SendRequestAsync("threads");
-            var threads = response?["body"]?["threads"] as JsonArray;
-            if (threads is null) return Array.Empty<ThreadInfo>();
-
-            var result = new List<ThreadInfo>(threads.Count);
-            foreach (var t in threads)
-            {
-                if (t is not JsonObject jt) continue;
-                result.Add(new ThreadInfo(
-                    jt["id"]?.GetValue<int>() ?? 0,
-                    jt["name"]?.GetValue<string>() ?? string.Empty));
-            }
-            return result;
-        }
-        catch { return Array.Empty<ThreadInfo>(); }
+        IReadOnlyList<ThreadInfo> threads = _cachedThreads.Values.OrderBy(t => t.Id).ToArray();
+        return Task.FromResult(threads);
     }
 
-    public async Task<IReadOnlyList<ModuleInfo>> GetModulesAsync()
+    public Task<IReadOnlyList<ModuleInfo>> GetModulesAsync()
     {
-        if (_dap is null) return Array.Empty<ModuleInfo>();
-        if (!IsDebugging) return Array.Empty<ModuleInfo>();
-        try
-        {
-            var response = await _dap.SendRequestAsync("modules");
-            var modules = response?["body"]?["modules"] as JsonArray;
-            if (modules is null) return Array.Empty<ModuleInfo>();
-
-            var result = new List<ModuleInfo>(modules.Count);
-            foreach (var m in modules)
-            {
-                if (m is not JsonObject jm) continue;
-                result.Add(new ModuleInfo(
-                    jm["id"]?.GetValue<int>() ?? 0,
-                    jm["name"]?.GetValue<string>() ?? string.Empty,
-                    jm["path"]?.GetValue<string>(),
-                    jm["isOptimized"]?.GetValue<bool>() ?? false));
-            }
-            return result;
-        }
-        catch { return Array.Empty<ModuleInfo>(); }
+        IReadOnlyList<ModuleInfo> modules = _cachedModules.Values.OrderBy(m => m.Name).ToArray();
+        return Task.FromResult(modules);
     }
 
     /// Run `dotnet build` and extract the output DLL via MSBuild property.
     private static async Task<string?> ResolveBuildOutputAsync(string projectPath, IOutputCategory output)
     {
+        output.AppendLine("> Building debug target...");
+        var initialBuildPsi = new ProcessStartInfo
+        {
+            FileName = "dotnet",
+            Arguments = $"build \"{projectPath}\" -c Debug --nologo",
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true,
+        };
+        using (var build = Process.Start(initialBuildPsi)!)
+        {
+            var buildStdout = await build.StandardOutput.ReadToEndAsync();
+            var buildStderr = await build.StandardError.ReadToEndAsync();
+            await build.WaitForExitAsync();
+            if (!string.IsNullOrWhiteSpace(buildStdout)) output.AppendLine(buildStdout.TrimEnd());
+            if (!string.IsNullOrWhiteSpace(buildStderr)) output.AppendLine(buildStderr.TrimEnd());
+            if (build.ExitCode != 0) return null;
+        }
+
         // Ask MSBuild for TargetPath directly — fast, no need to parse build log
         var psi = new ProcessStartInfo
         {

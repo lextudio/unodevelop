@@ -171,6 +171,22 @@ public sealed class LocalsPad : UserControl
         return node;
     }
 
+    public Task<IReadOnlyList<object>> GetSnapshotAsync()
+    {
+        var snapshot = _treeView.RootNodes
+            .Select(node => node.Content)
+            .OfType<LocalItem>()
+            .Select(item => (object)new
+            {
+                Name = item.Name,
+                Value = item.Value,
+                Type = item.Type,
+                VariablesReference = item.Info.VariablesReference
+            })
+            .ToArray();
+        return Task.FromResult<IReadOnlyList<object>>(snapshot);
+    }
+
     private async void OnNodeExpanding(TreeView sender, TreeViewExpandingEventArgs args)
     {
         if (args.Node is not TreeViewNode node) return;

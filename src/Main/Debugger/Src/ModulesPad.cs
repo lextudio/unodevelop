@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
@@ -98,6 +100,19 @@ public sealed class ModulesPad : UserControl
             foreach (var m in modules)
                 _modules.Add(new ModuleItem(m));
         });
+    }
+
+    public Task<IReadOnlyList<object>> GetSnapshotAsync()
+    {
+        IReadOnlyList<object> snapshot = _modules
+            .Select(m => (object)new
+            {
+                Name = m.DisplayName,
+                Path = m.ModulePath,
+                Optimized = m.Optimized
+            })
+            .ToArray();
+        return Task.FromResult(snapshot);
     }
 
     public new void Dispose()

@@ -18,6 +18,8 @@ internal sealed class DapClient : IDisposable
     private readonly StreamReader _reader;
     private readonly ConcurrentDictionary<int, TaskCompletionSource<JsonObject>> _pending = new();
     private readonly CancellationTokenSource _cts = new();
+    private readonly SemaphoreSlim _writeLock = new(1, 1);
+    private readonly SemaphoreSlim _requestLock = new(1, 1);
     private int _seq;
 
     public event Action<string, JsonObject?>? EventReceived;
@@ -33,6 +35,19 @@ internal sealed class DapClient : IDisposable
 
     public async Task<JsonObject?> SendRequestAsync(string command, JsonObject? args = null, CancellationToken ct = default)
     {
+        await _requestLock.WaitAsync(ct);
+        try
+        {
+            return await SendRequestCoreAsync(command, args, ct);
+        }
+        finally
+        {
+            _requestLock.Release();
+        }
+    }
+
+    private async Task<JsonObject?> SendRequestCoreAsync(string command, JsonObject? args = null, CancellationToken ct = default)
+    {
         var seq = Interlocked.Increment(ref _seq);
         var tcs = new TaskCompletionSource<JsonObject>(TaskCreationOptions.RunContinuationsAsynchronously);
         _pending[seq] = tcs;
@@ -45,9 +60,12 @@ internal sealed class DapClient : IDisposable
         };
         if (args is not null) msg["arguments"] = args;
 
-        await WriteMessageAsync(msg);
+        using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        timeoutCts.CancelAfter(TimeSpan.FromSeconds(15));
 
-        using var reg = ct.Register(() =>
+        await WriteMessageAsync(msg, timeoutCts.Token);
+
+        using var reg = timeoutCts.Token.Register(() =>
         {
             _pending.TryRemove(seq, out _);
             tcs.TrySetCanceled();
@@ -56,14 +74,23 @@ internal sealed class DapClient : IDisposable
         return await tcs.Task;
     }
 
-    private async Task WriteMessageAsync(JsonObject msg)
+    private async Task WriteMessageAsync(JsonObject msg, CancellationToken ct = default)
     {
         var json = msg.ToJsonString();
+        Dbg("SEND " + json);
         var body = Encoding.UTF8.GetBytes(json);
         var header = $"Content-Length: {body.Length}\r\n\r\n";
-        await _writer.WriteAsync(header);
-        await _writer.BaseStream.WriteAsync(body);
-        await _writer.BaseStream.FlushAsync();
+        await _writeLock.WaitAsync(ct);
+        try
+        {
+            await _writer.WriteAsync(header.AsMemory(), ct);
+            await _writer.BaseStream.WriteAsync(body, ct);
+            await _writer.BaseStream.FlushAsync(ct);
+        }
+        finally
+        {
+            _writeLock.Release();
+        }
     }
 
     private async Task ReadLoop()
@@ -91,11 +118,12 @@ internal sealed class DapClient : IDisposable
                     read += await _reader.ReadAsync(buf, read, contentLength - read);
 
                 var json = new string(buf);
+                Dbg("RECV " + json);
                 Dispatch(json);
             }
         }
         catch (OperationCanceledException) { }
-        catch { }
+        catch (Exception ex) { Dbg("READ LOOP ERROR " + ex); }
     }
 
     private void Dispatch(string json)
@@ -118,12 +146,40 @@ internal sealed class DapClient : IDisposable
             var body = obj["body"] as JsonObject;
             EventReceived?.Invoke(evt, body);
         }
+        else if (type == "request")
+        {
+            _ = RespondToReverseRequestAsync(obj);
+        }
+    }
+
+    private async Task RespondToReverseRequestAsync(JsonObject request)
+    {
+        var seq = request["seq"]?.GetValue<int>() ?? 0;
+        var command = request["command"]?.GetValue<string>() ?? string.Empty;
+        var response = new JsonObject
+        {
+            ["seq"] = Interlocked.Increment(ref _seq),
+            ["type"] = "response",
+            ["request_seq"] = seq,
+            ["success"] = true,
+            ["command"] = command,
+            ["body"] = new JsonObject()
+        };
+
+        await WriteMessageAsync(response);
+    }
+
+    private static void Dbg(string message)
+    {
+        try { File.AppendAllText("/tmp/unodevelop-dap.log", $"[{DateTime.Now:HH:mm:ss.fff}] {message}\n"); } catch { }
     }
 
     public void Dispose()
     {
         _cts.Cancel();
-        _writer.Dispose();
-        _reader.Dispose();
+        _requestLock.Dispose();
+        _writeLock.Dispose();
+        try { _writer.Dispose(); } catch { }
+        try { _reader.Dispose(); } catch { }
     }
 }
