@@ -15,6 +15,7 @@ using ICSharpCode.SharpDevelop.Editor;
 using ICSharpCode.SharpDevelop.Editor.Bookmarks;
 using ICSharpCode.SharpDevelop.LanguageServices;
 using ICSharpCode.SharpDevelop.LanguageServices.Lsp;
+using ICSharpCode.SharpDevelop.LanguageServices.Roslyn;
 using ICSharpCode.SharpDevelop.Project;
 using ICSharpCode.SharpDevelop.Workbench;
 using LeXtudio.DevFlow.Agent.Core;
@@ -1384,6 +1385,229 @@ public static class UnoDevelopDevFlowActions
         return """{"found":false}""";
     }
 
+    [DevFlowAction("ide-resolve-resource-at-cursor",
+        Description = "Resolve the resource-key string literal at a caret position in a C# or VB file (full editor-caret AST resolution, adapted from OpenDevelop's Hornung.ResourceToolkit Bcl/ICSharpCodeCore Roslyn resolvers). Args: [filePath, offset]. Returns {found, key, kind, value, comment?, resxFile?} JSON.")]
+    public static string ResolveResourceAtCursor(string filePath, int offset)
+    {
+        if (!System.IO.File.Exists(filePath))
+            return """{"found":false,"error":"File not found"}""";
+
+        var language = ICSharpCode.SharpDevelop.LanguageServices.Roslyn.ResourceReferenceResolver.LanguageFromFileName(filePath);
+        if (language is null)
+            return """{"found":false,"error":"Unsupported file type (expected .cs or .vb)"}""";
+
+        var fileContent = System.IO.File.ReadAllText(filePath);
+        var reference = ICSharpCode.SharpDevelop.LanguageServices.Roslyn.ResourceReferenceResolver.FindResourceKeyAtCursor(language, fileContent, offset);
+        if (reference is null)
+            return """{"found":false}""";
+
+        if (reference.Kind == ICSharpCode.SharpDevelop.LanguageServices.Roslyn.ResourceReferenceResolver.ResourceReferenceKind.CoreResourceService)
+        {
+            try
+            {
+                var value = SD.ResourceService.GetString(reference.Key);
+                return JsonSerializer.Serialize(new
+                {
+                    found = true,
+                    key = reference.Key,
+                    kind = "CoreResourceService",
+                    resolved = true,
+                    value
+                });
+            }
+            catch (Exception ex)
+            {
+                return JsonSerializer.Serialize(new
+                {
+                    found = true,
+                    key = reference.Key,
+                    kind = "CoreResourceService",
+                    resolved = false,
+                    resolveError = ex.Message
+                });
+            }
+        }
+
+        // BclResourceManager: resolve via .resx lookup under the containing project (falls back
+        // to the file's own directory if it isn't part of an open project), reusing the same
+        // directory-scoped lookup as ide-resolve-resource-key.
+        var projectService = ServiceSingleton.GetRequiredService<IProjectService>();
+        var project = projectService.CurrentSolution?.Projects?
+            .FirstOrDefault(p => p.FileName is not null
+                && filePath.StartsWith(System.IO.Path.GetDirectoryName(p.FileName.ToString()) ?? "@@none@@", StringComparison.OrdinalIgnoreCase));
+        var searchDirectory = project?.FileName is not null
+            ? System.IO.Path.GetDirectoryName(project.FileName.ToString())
+            : System.IO.Path.GetDirectoryName(filePath);
+
+        if (string.IsNullOrEmpty(searchDirectory) || !System.IO.Directory.Exists(searchDirectory))
+        {
+            return JsonSerializer.Serialize(new { found = true, key = reference.Key, kind = "BclResourceManager", resolved = false });
+        }
+
+        foreach (var resxFile in System.IO.Directory.EnumerateFiles(searchDirectory, "*.resx", System.IO.SearchOption.AllDirectories))
+        {
+            LeXtudio.OpenDevelop.ResourceFiles.ResourceEntry? match;
+            try
+            {
+                match = LeXtudio.OpenDevelop.ResourceFiles.ResourceFileReader.Read(resxFile)
+                    .FirstOrDefault(entry => string.Equals(entry.Name, reference.Key, StringComparison.OrdinalIgnoreCase));
+            }
+            catch
+            {
+                continue;
+            }
+
+            if (match is not null)
+            {
+                return JsonSerializer.Serialize(new
+                {
+                    found = true,
+                    key = reference.Key,
+                    kind = "BclResourceManager",
+                    resolved = true,
+                    value = match.Value,
+                    comment = match.Comment,
+                    resxFile
+                });
+            }
+        }
+
+        return JsonSerializer.Serialize(new { found = true, key = reference.Key, kind = "BclResourceManager", resolved = false });
+    }
+
+    [DevFlowAction("ide-find-unused-resource-keys",
+        Description = "Find .resx keys under a directory that have no BclResourceManager-pattern reference in any .cs/.vb file under the same directory (adapted from OpenDevelop's ResourceRefactoringService.FindUnusedKeys / UnusedResourceKeysViewContent - directory-scoped, not full-solution scope tracking). Args: [directory]. Returns {found, unused:[{resxFile,key}]} JSON.")]
+    public static string FindUnusedResourceKeys(string directory)
+    {
+        if (string.IsNullOrEmpty(directory) || !System.IO.Directory.Exists(directory))
+            return """{"found":false,"error":"Directory not found"}""";
+
+        var referencedKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var sourceFile in System.IO.Directory.EnumerateFiles(directory, "*.*", System.IO.SearchOption.AllDirectories)
+            .Where(f => ICSharpCode.SharpDevelop.LanguageServices.Roslyn.ResourceReferenceResolver.LanguageFromFileName(f) is not null))
+        {
+            var language = ICSharpCode.SharpDevelop.LanguageServices.Roslyn.ResourceReferenceResolver.LanguageFromFileName(sourceFile)!;
+            string content;
+            try
+            {
+                content = System.IO.File.ReadAllText(sourceFile);
+            }
+            catch
+            {
+                continue;
+            }
+
+            foreach (var occurrence in ICSharpCode.SharpDevelop.LanguageServices.Roslyn.ResourceReferenceResolver.FindAllResourceReferences(language, content))
+            {
+                if (occurrence.Kind == ICSharpCode.SharpDevelop.LanguageServices.Roslyn.ResourceReferenceResolver.ResourceReferenceKind.BclResourceManager)
+                    referencedKeys.Add(occurrence.Key);
+            }
+        }
+
+        var unused = new List<object>();
+        foreach (var resxFile in System.IO.Directory.EnumerateFiles(directory, "*.resx", System.IO.SearchOption.AllDirectories))
+        {
+            IReadOnlyList<LeXtudio.OpenDevelop.ResourceFiles.ResourceEntry> entries;
+            try
+            {
+                entries = LeXtudio.OpenDevelop.ResourceFiles.ResourceFileReader.Read(resxFile);
+            }
+            catch
+            {
+                continue;
+            }
+
+            foreach (var entry in entries)
+            {
+                if (entry.IsEditable && entry.Type.Equals("string", StringComparison.OrdinalIgnoreCase)
+                    && !referencedKeys.Contains(entry.Name))
+                {
+                    unused.Add(new { resxFile, key = entry.Name });
+                }
+            }
+        }
+
+        return JsonSerializer.Serialize(new { found = true, unused });
+    }
+
+    [DevFlowAction("ide-rename-resource-key",
+        Description = "Rename a .resx key and rewrite all BclResourceManager-pattern string-literal references to it in .cs files under a directory (adapted from OpenDevelop's ResourceRefactoringService.Rename). Args: [directory, oldKey, newKey]. Returns {success, resxFile?, updatedFiles:[...], error?} JSON.")]
+    public static string RenameResourceKey(string directory, string oldKey, string newKey)
+    {
+        if (string.IsNullOrEmpty(directory) || !System.IO.Directory.Exists(directory))
+            return """{"success":false,"error":"Directory not found"}""";
+        if (string.IsNullOrWhiteSpace(newKey))
+            return """{"success":false,"error":"New key must not be empty"}""";
+
+        string? resxFile = null;
+        foreach (var candidate in System.IO.Directory.EnumerateFiles(directory, "*.resx", System.IO.SearchOption.AllDirectories))
+        {
+            IReadOnlyList<LeXtudio.OpenDevelop.ResourceFiles.ResourceEntry> entries;
+            try
+            {
+                entries = LeXtudio.OpenDevelop.ResourceFiles.ResourceFileReader.Read(candidate);
+            }
+            catch
+            {
+                continue;
+            }
+
+            if (entries.Any(e => string.Equals(e.Name, newKey, StringComparison.OrdinalIgnoreCase)))
+                return JsonSerializer.Serialize(new { success = false, error = $"Key '{newKey}' already exists in {candidate}" });
+
+            var match = entries.FirstOrDefault(e => string.Equals(e.Name, oldKey, StringComparison.OrdinalIgnoreCase));
+            if (match is not null)
+            {
+                match.Name = newKey;
+                LeXtudio.OpenDevelop.ResourceFiles.ResourceFileReader.SaveResX(candidate, entries);
+                resxFile = candidate;
+                break;
+            }
+        }
+
+        if (resxFile is null)
+            return JsonSerializer.Serialize(new { success = false, error = $"Key '{oldKey}' not found in any .resx under {directory}" });
+
+        var updatedFiles = new List<string>();
+        foreach (var sourceFile in System.IO.Directory.EnumerateFiles(directory, "*.*", System.IO.SearchOption.AllDirectories)
+            .Where(f => ICSharpCode.SharpDevelop.LanguageServices.Roslyn.ResourceReferenceResolver.LanguageFromFileName(f) is not null))
+        {
+            var language = ICSharpCode.SharpDevelop.LanguageServices.Roslyn.ResourceReferenceResolver.LanguageFromFileName(sourceFile)!;
+            string content;
+            try
+            {
+                content = System.IO.File.ReadAllText(sourceFile);
+            }
+            catch
+            {
+                continue;
+            }
+
+            var occurrences = ICSharpCode.SharpDevelop.LanguageServices.Roslyn.ResourceReferenceResolver.FindAllResourceReferences(language, content)
+                .Where(o => o.Kind == ICSharpCode.SharpDevelop.LanguageServices.Roslyn.ResourceReferenceResolver.ResourceReferenceKind.BclResourceManager
+                    && string.Equals(o.Key, oldKey, StringComparison.OrdinalIgnoreCase))
+                .OrderByDescending(o => o.Offset)
+                .ToList();
+            if (occurrences.Count == 0)
+                continue;
+
+            var updated = content;
+            foreach (var occurrence in occurrences)
+            {
+                // occurrence.Offset/Length span the whole string-literal token including quotes;
+                // replace only the inner text so escaping/quote style is preserved.
+                var literalText = updated.Substring(occurrence.Offset, occurrence.Length);
+                var replaced = literalText.Replace(oldKey, newKey, StringComparison.OrdinalIgnoreCase);
+                updated = updated[..occurrence.Offset] + replaced + updated[(occurrence.Offset + occurrence.Length)..];
+            }
+
+            System.IO.File.WriteAllText(sourceFile, updated);
+            updatedFiles.Add(sourceFile);
+        }
+
+        return JsonSerializer.Serialize(new { success = true, resxFile, updatedFiles });
+    }
+
     [DevFlowAction("ide-open-android-sdk-manager",
         Description = "Open the Android SDK Manager tool view. Optional args: [sdkRoot]. Returns {opened} JSON.")]
     public static string OpenAndroidSdkManager(string? sdkRoot = null)
@@ -1678,13 +1902,31 @@ public static class UnoDevelopDevFlowActions
                 AutoRegisterXamlLsp();
 
             var service = LspServiceManager.GetService(filePath);
-            if (service == null)
-                return """{"triggered":false,"reason":"No LSP service"}""";
-
             var documentId = new DocumentId(ICSharpCode.Core.FileName.Create(filePath));
             var text = System.IO.File.ReadAllText(filePath);
-            await service.UpsertDocumentAsync(documentId, text, CancellationToken.None);
-            var result = await service.GetCompletionsAsync(documentId, offset, CancellationToken.None);
+            CompletionResult result;
+
+            if (service is not null)
+            {
+                await service.UpsertDocumentAsync(documentId, text, CancellationToken.None);
+                result = await service.GetCompletionsAsync(documentId, offset, CancellationToken.None);
+            }
+            else
+            {
+                // .cs/.vb don't go through LspServiceManager (that's for external-LSP languages
+                // like TypeScript/XAML) - they're served directly by CSharpVBLanguageService via
+                // LanguageServiceRegistry. UpsertDocumentAsync bootstraps an ad-hoc single-file
+                // project automatically if this file was never opened/tracked before.
+                var registry = ServiceSingleton.ServiceProvider.GetService(typeof(LanguageServiceRegistry)) as LanguageServiceRegistry;
+                if (registry is null || !registry.TryGetService(filePath, out var languageService)
+                    || languageService is not CSharpVBLanguageService roslynService)
+                {
+                    return """{"triggered":false,"reason":"No language service"}""";
+                }
+
+                await roslynService.UpsertDocumentAsync(documentId, text, CancellationToken.None);
+                result = await roslynService.GetCompletionsAsync(documentId, offset, CancellationToken.None);
+            }
 
             return JsonSerializer.Serialize(new
             {

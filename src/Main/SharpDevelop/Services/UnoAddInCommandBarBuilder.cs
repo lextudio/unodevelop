@@ -198,6 +198,27 @@ internal sealed class UnoAddInToolbarBuilder : IUnoAddInToolbarBuilder
         if (failedAction == ConditionFailedAction.Exclude)
             return null;
 
+        if (type == "Custom")
+        {
+            var className = codon.Properties["class"];
+            if (!string.IsNullOrEmpty(className))
+            {
+                var instance = codon.AddIn.CreateObject(className);
+                if (instance is Control control)
+                {
+                    // For combos etc. that manage their own layout switching,
+                    // IsEnabled is always true (conditions only control display).
+                    control.IsEnabled = failedAction != ConditionFailedAction.Disable;
+                    return control;
+                }
+                if (instance is UIElement element)
+                {
+                    return element;
+                }
+            }
+            return null;
+        }
+
         return type switch
         {
             "Separator" => new WpfSeparator(),

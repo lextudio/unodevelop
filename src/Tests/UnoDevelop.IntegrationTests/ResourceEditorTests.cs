@@ -32,7 +32,7 @@ public sealed class ResourceEditorTests
         Assert.True(result.GetProperty("canEdit").GetBoolean());
 
         var entries = result.GetProperty("entries").EnumerateArray().ToList();
-        Assert.Equal(3, entries.Count);
+        Assert.Equal(4, entries.Count);
 
         var greeting = entries.Single(e => e.GetProperty("name").GetString() == "Greeting");
         Assert.True(greeting.GetProperty("isEditable").GetBoolean());

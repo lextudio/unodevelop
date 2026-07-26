@@ -17,6 +17,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\Core\Project\ICSharpCode.Core.csproj" />
     <ProjectReference Include="..\..\..\Libraries\ICSharpCode.TypeSystem.Abstractions\ICSharpCode.TypeSystem.Abstractions.csproj" />
+    <ProjectReference Include="..\..\..\Libraries\ResourceFiles\LeXtudio.OpenDevelop.ResourceFiles.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -54,6 +55,9 @@
     <Compile Include="..\Src\LanguageServices\NoOpLanguageService.cs" />
     <Compile Include="..\Src\LanguageServices\Roslyn\CSharpVBLanguageService.cs" />
     <Compile Include="..\Src\LanguageServices\Roslyn\CSharpVBLanguageService.CodeActions.cs" />
+    <Compile Include="..\Src\LanguageServices\Roslyn\ResourceReferenceResolver.cs" />
+    <Compile Include="..\Src\LanguageServices\Roslyn\CSharpResourceReferenceResolver.cs" />
+    <Compile Include="..\Src\LanguageServices\Roslyn\VBResourceReferenceResolver.cs" />
     <Compile Include="..\Src\LanguageServices\Lsp\LspServerRegistry.cs" />
     <Compile Include="..\Src\LanguageServices\Lsp\LspLanguageService.cs" />
     <Compile Include="..\Src\LanguageServices\Lsp\LspServiceManager.cs" />

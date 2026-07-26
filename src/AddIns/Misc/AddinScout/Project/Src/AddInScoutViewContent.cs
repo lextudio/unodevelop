@@ -182,11 +182,13 @@ public sealed class AddInScoutViewContent : IViewContent
         if (addIn is null)
             return null;
 
-        var addIns = new List<AddIn> { addIn };
-        if (addIn.Enabled)
-            AddInManager.Disable(addIns);
-        else
-            AddInManager.Enable(addIns);
+        // AddInManager.Enable/Disable deliberately only set addIn.Action and persist to the
+        // config file for the NEXT restart (see their XML doc comments) - they never flip the
+        // live addIn.Enabled bool, since real addin loading only happens at startup. Flip it
+        // directly here too so the toggle is visible immediately in this running session (the
+        // AddIn.Enabled setter already keeps Action in sync), then persist via the same
+        // AddInManager.SaveAddInConfiguration used by Enable/Disable internally.
+        addIn.Enabled = !addIn.Enabled;
 
         var disabled = addInTree.AddIns.Where(candidate => !candidate.Enabled)
             .Select(candidate => candidate.Manifest?.PrimaryIdentity)

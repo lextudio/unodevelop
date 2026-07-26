@@ -259,7 +259,58 @@ namespace ICSharpCode.SharpDevelop.LanguageServices.Roslyn
                 items.Add(await ConvertCompletionItemAsync(completionService, document, item, cancellationToken));
             }
 
+            await AddResourceKeyCompletionsAsync(document, offset, items, cancellationToken);
+
             return new CompletionResult(items, await ConvertSpanAsync(document, completions.Span, cancellationToken));
+        }
+
+        /// <summary>
+        /// Appends .resx-key completion items when the cursor is inside the key-string-literal
+        /// argument of a BCL-style resource-access call (X.GetString/GetObject/GetStream("|"),
+        /// X.ApplyResources(_, "|"), X("|")/X["|"]) - the code-completion piece of OpenDevelop's
+        /// Hornung.ResourceToolkit. Shared by both C# and VB documents via
+        /// ResourceReferenceResolver's language dispatch (document.Project.Language already
+        /// distinguishes them for everything else in this class).
+        /// ICSharpCode.Core.ResourceService.GetString("|") is intentionally not offered here -
+        /// IResourceService has no "list all registered keys" API to complete against.
+        /// </summary>
+        static async Task AddResourceKeyCompletionsAsync(Document document, int offset, List<CompletionItem> items, CancellationToken cancellationToken)
+        {
+            var text = await document.GetTextAsync(cancellationToken);
+            var reference = ResourceReferenceResolver.FindResourceKeyAtCursor(document.Project.Language, text.ToString(), offset);
+            if (reference?.Kind != ResourceReferenceResolver.ResourceReferenceKind.BclResourceManager)
+                return;
+
+            // Prefer the real project's directory; fall back to the document's own directory for
+            // loose/ad-hoc single-file "projects" (UpsertDocumentAsync's EnsureProject bootstrap
+            // path for a file never added via AddCompileDocumentAsync has no FilePath at all).
+            var projectFilePath = document.Project.FilePath;
+            var projectDirectory = string.IsNullOrEmpty(projectFilePath) ? null : Path.GetDirectoryName(projectFilePath);
+            if (string.IsNullOrEmpty(projectDirectory))
+                projectDirectory = Path.GetDirectoryName(document.FilePath);
+            if (string.IsNullOrEmpty(projectDirectory) || !Directory.Exists(projectDirectory))
+                return;
+
+            foreach (var resxFile in Directory.EnumerateFiles(projectDirectory, "*.resx", SearchOption.AllDirectories))
+            {
+                IReadOnlyList<LeXtudio.OpenDevelop.ResourceFiles.ResourceEntry> entries;
+                try
+                {
+                    entries = LeXtudio.OpenDevelop.ResourceFiles.ResourceFileReader.Read(resxFile);
+                }
+                catch
+                {
+                    continue;
+                }
+
+                foreach (var entry in entries)
+                {
+                    if (entry.IsEditable && entry.Type.Equals("string", StringComparison.OrdinalIgnoreCase))
+                    {
+                        items.Add(new CompletionItem(entry.Name, entry.Name, entry.Value, glyph: "Resource"));
+                    }
+                }
+            }
         }
 
         public async Task<QuickInfo?> GetQuickInfoAsync(DocumentId documentId, int offset, CancellationToken cancellationToken)

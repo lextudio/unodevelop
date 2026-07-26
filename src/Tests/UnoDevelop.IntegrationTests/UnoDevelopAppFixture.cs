@@ -24,6 +24,9 @@ public sealed class UnoDevelopAppFixture : IAsyncLifetime
     public string InvalidXamlFixtureFilePath { get; } = LocateFixture("XamlFixture", "Invalid.xaml");
     public string XmlFixtureFilePath { get; } = LocateFixture("XamlFixture", "Sample.xml");
     public string ResourceFixtureFilePath { get; } = LocateFixture("ResourceFixture", "Sample.resx");
+    public string ResourceUsageFixtureFilePath { get; } = LocateFixture("ResourceFixture", "ResourceUsage.cs");
+    public string ResourceUsageVBFixtureFilePath { get; } = LocateFixture("ResourceFixture", "ResourceUsage.vb");
+    public string RenameResourceFixtureFilePath { get; } = LocateFixture("ResourceFixture", System.IO.Path.Combine("Rename", "RenameSample.resx"));
     public string DebugTestProjectPath { get; } = LocateFixture("DebugTestApp", "DebugTestApp.csproj");
     public string DebugTestProgramPath { get; } = LocateFixture("DebugTestApp", "Program.cs");
 

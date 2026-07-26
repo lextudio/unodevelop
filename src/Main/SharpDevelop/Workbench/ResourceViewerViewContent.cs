@@ -155,7 +155,13 @@ internal sealed class ResourceViewerViewContent : IViewContent
             return;
         }
 
-        ResourceFileReader.SaveResX(FilePath, _entries, stream);
+        // Deliberately ignore the passed-in stream and save in-place via FilePath directly:
+        // ResourceFileReader.SaveResX(fileName, entries, stream) re-reads fileName from disk to
+        // preserve existing .resx headers/whitespace, so if the caller's stream already truncated
+        // that same file (e.g. File.Create(FilePath) before calling this), the reload sees an
+        // empty file and the save corrupts it to zero bytes. The fileName-only overload owns its
+        // own read-then-write ordering and is safe for this in-place case.
+        ResourceFileReader.SaveResX(FilePath, _entries);
         MarkClean();
     }
 
@@ -299,8 +305,9 @@ internal sealed class ResourceViewerViewContent : IViewContent
     {
         try
         {
-            using var stream = File.Create(FilePath);
-            Save(PrimaryFile!, stream);
+            // Save(OpenedFile, Stream) ignores its stream parameter and saves via FilePath
+            // directly (see its own comment) - no stream to open/pass here.
+            Save(PrimaryFile!, Stream.Null);
             if (notifyOnSuccess)
             {
                 ServiceSingleton.GetRequiredService<IMessageService>().ShowMessage($"Saved: {FilePath}", "UnoDevelop");

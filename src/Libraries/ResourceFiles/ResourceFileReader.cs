@@ -166,7 +166,37 @@ public static class ResourceFileReader
             ?? Array.Empty<ResourceEntry>();
     }
 
+    /// <summary>
+    /// Saves <paramref name="entries"/> to <paramref name="fileName"/>, reading and writing the
+    /// same path safely (unlike the <see cref="Stream"/> overload below, which corrupts the file
+    /// to zero bytes if the caller opens its write stream via e.g. <c>File.Create(fileName)</c>
+    /// *before* calling this - that truncates fileName before this method's own
+    /// "read existing headers" step ever runs, since XDocument.Load re-reads from disk rather
+    /// than from the caller's stream). Prefer this overload whenever fileName and the save
+    /// destination are the same path - which is the common case (in-place save, rename).
+    /// </summary>
+    public static void SaveResX(string fileName, IEnumerable<ResourceEntry> entries)
+    {
+        var document = BuildResXDocument(fileName, entries);
+        using var stream = File.Create(fileName);
+        document.Save(stream);
+    }
+
+    /// <summary>
+    /// Saves <paramref name="entries"/> to <paramref name="stream"/>, using <paramref name="fileName"/>
+    /// only to load the existing document's headers/whitespace if it's a different, still-intact
+    /// file (e.g. "Save As" to a new path, or a stream that hasn't truncated fileName). Do NOT
+    /// pass a stream that has already truncated fileName itself - use the fileName-only overload
+    /// above for in-place saves instead.
+    /// </summary>
     public static void SaveResX(string fileName, IEnumerable<ResourceEntry> entries, Stream stream)
+    {
+        var document = BuildResXDocument(fileName, entries);
+        stream.SetLength(0);
+        document.Save(stream);
+    }
+
+    static XDocument BuildResXDocument(string fileName, IEnumerable<ResourceEntry> entries)
     {
         var document = File.Exists(fileName)
             ? XDocument.Load(fileName, LoadOptions.PreserveWhitespace)
@@ -197,8 +227,7 @@ public static class ResourceFileReader
             root.Add(element);
         }
 
-        stream.SetLength(0);
-        document.Save(stream);
+        return document;
     }
 
     public static bool IsBooleanType(string type)
