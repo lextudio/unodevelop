@@ -9,6 +9,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using ICSharpCode.Core;
 using ICSharpCode.SharpDevelop;
+using ICSharpCode.AvalonEdit;
 using ICSharpCode.AvalonEdit.Highlighting;
 using ICSharpCode.SharpDevelop.Editor;
 using ICSharpCode.SharpDevelop.Editor.Bookmarks;
@@ -1028,6 +1029,7 @@ public static class UnoDevelopDevFlowActions
 
             var typeName = viewContent.GetType().FullName;
             var editor = viewContent.GetService<ITextEditor>();
+            var textEditor = viewContent.GetService(typeof(TextEditor)) as TextEditor;
             string? text = null;
             try { text = editor?.Document.Text; } catch { }
             var fileName = viewContent.PrimaryFileName?.ToString();
@@ -1053,7 +1055,27 @@ public static class UnoDevelopDevFlowActions
                 isAvalonEdit = typeName != null && typeName.Contains("AvalonEdit"),
                 fileName,
                 syntaxHighlighting,
+                editorSyntaxHighlighting = textEditor?.SyntaxHighlighting?.Name,
+                highlightedLineSource = textEditor?.HighlightedLineSource?.GetType().Name,
                 textLength = text?.Length
+            });
+        });
+    }
+
+    [DevFlowAction("ide-editor-foldings", Description = "Return the active editor folding strategy and sections.")]
+    public static string GetEditorFoldings()
+    {
+        return SD.MainThread.InvokeIfRequired(() =>
+        {
+            var editor = SD.Workbench.ActiveViewContent?.GetService(typeof(TextEditor)) as TextEditor;
+            if (editor is null)
+                return """{"found":false,"strategy":"None","count":0}""";
+            var snapshot = MainPage.GetFoldingSnapshot(editor);
+            return JsonSerializer.Serialize(new
+            {
+                found = true,
+                strategy = snapshot.Strategy,
+                count = snapshot.Count
             });
         });
     }

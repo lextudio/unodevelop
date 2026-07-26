@@ -47,5 +47,12 @@ public sealed class VBBindingTests
         var view = await _app.InvokeAsync("ide-active-view");
         Assert.True(view.GetProperty("active").GetBoolean());
         Assert.Equal("VB", view.GetProperty("syntaxHighlighting").GetString());
+        Assert.Equal("VB", view.GetProperty("editorSyntaxHighlighting").GetString());
+        Assert.Equal("XshdHighlightedLineSource", view.GetProperty("highlightedLineSource").GetString());
+
+        var foldings = await _app.InvokeAsync("ide-editor-foldings");
+        Assert.True(foldings.GetProperty("found").GetBoolean(), foldings.ToString());
+        Assert.Equal("VisualBasicFoldingStrategy", foldings.GetProperty("strategy").GetString());
+        Assert.True(foldings.GetProperty("count").GetInt32() >= 2, foldings.ToString());
     }
 }

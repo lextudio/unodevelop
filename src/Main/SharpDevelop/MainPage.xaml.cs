@@ -1570,8 +1570,7 @@ public partial class MainPage : Page, IUnoSolutionExplorerHost
         }
 
         var foldingManager = FoldingManager.Install(editor.TextArea);
-        var foldingStrategy = new BraceFoldingStrategy();
-        var foldingState = new FoldingState(editor, foldingManager, foldingStrategy);
+        var foldingState = new FoldingState(editor, foldingManager);
         _foldingStates.Add(editor, foldingState);
         editor.TextChanged += foldingState.OnTextChanged;
         foldingState.Refresh();
@@ -2857,9 +2856,9 @@ public partial class MainPage : Page, IUnoSolutionExplorerHost
             {
                 Theme = TextEditorTheme.Light,
                 Text = text,
-                Tag = filePath,
-                SyntaxHighlighting = ResolveSyntaxHighlighting(filePath ?? title)
+                Tag = filePath
             };
+            ApplySyntaxHighlighting(filePath ?? title);
             _textEditorAdapter = new AvalonEditTextEditorAdapter(Editor);
             ConfigureCodeEditor(Editor);
 
@@ -2992,7 +2991,8 @@ public partial class MainPage : Page, IUnoSolutionExplorerHost
             FilePath = newPath;
             TabPageText = Path.GetFileName(newPath);
             TitleName = TabPageText;
-            Editor.SyntaxHighlighting = ResolveSyntaxHighlighting(newPath);
+            Editor.Tag = newPath;
+            ApplySyntaxHighlighting(newPath);
             TabPageTextChanged?.Invoke(this, EventArgs.Empty);
             TitleNameChanged?.Invoke(this, EventArgs.Empty);
 
@@ -3003,6 +3003,16 @@ public partial class MainPage : Page, IUnoSolutionExplorerHost
         }
 
         public TextEditor Editor { get; }
+
+        void ApplySyntaxHighlighting(string? fileName)
+        {
+            var definition = ResolveSyntaxHighlighting(fileName);
+            Editor.SyntaxHighlighting = definition;
+            Editor.HighlightedLineSource?.Dispose();
+            Editor.HighlightedLineSource = definition is null
+                ? null
+                : new XshdHighlightedLineSource(definition);
+        }
 
         private static IHighlightingDefinition? ResolveSyntaxHighlighting(string? fileName)
         {
@@ -3127,6 +3137,10 @@ public partial class MainPage : Page, IUnoSolutionExplorerHost
             {
                 return _textEditorAdapter;
             }
+            if (serviceType == typeof(TextEditor))
+            {
+                return Editor;
+            }
 
             return null;
         }
@@ -3150,28 +3164,58 @@ public partial class MainPage : Page, IUnoSolutionExplorerHost
 
     private static readonly ConditionalWeakTable<TextEditor, FoldingState> _foldingStates = new();
 
+    internal static (string Strategy, int Count) GetFoldingSnapshot(TextEditor editor)
+    {
+        if (!_foldingStates.TryGetValue(editor, out var state))
+            return ("None", 0);
+        state.Refresh();
+        return (state.StrategyName, state.Count);
+    }
+
     private sealed class FoldingState
     {
         private readonly TextEditor _editor;
         private readonly FoldingManager _foldingManager;
-        private readonly BraceFoldingStrategy _foldingStrategy;
+        private readonly BraceFoldingStrategy _braceStrategy = new();
+        private readonly XmlFoldingStrategy _xmlStrategy = new();
+        private readonly VisualBasicFoldingStrategy _visualBasicStrategy = new();
 
-        public FoldingState(TextEditor editor, FoldingManager foldingManager, BraceFoldingStrategy foldingStrategy)
+        public FoldingState(TextEditor editor, FoldingManager foldingManager)
         {
             _editor = editor;
             _foldingManager = foldingManager;
-            _foldingStrategy = foldingStrategy;
         }
 
         public void OnTextChanged(object? sender, EventArgs e)
             => Refresh();
+
+        public string StrategyName => Path.GetExtension(_editor.Tag as string).ToLowerInvariant() switch
+        {
+            ".xml" or ".xaml" => nameof(XmlFoldingStrategy),
+            ".vb" => nameof(VisualBasicFoldingStrategy),
+            _ => nameof(BraceFoldingStrategy)
+        };
+
+        public int Count => _foldingManager.AllFoldings.Count();
 
         public void Refresh()
         {
             if (_editor.Document is null)
                 return;
 
-            _foldingStrategy.UpdateFoldings(_foldingManager, _editor.Document);
+            switch (Path.GetExtension(_editor.Tag as string).ToLowerInvariant())
+            {
+                case ".xml":
+                case ".xaml":
+                    _xmlStrategy.UpdateFoldings(_foldingManager, _editor.Document);
+                    break;
+                case ".vb":
+                    _visualBasicStrategy.UpdateFoldings(_foldingManager, _editor.Document);
+                    break;
+                default:
+                    _braceStrategy.UpdateFoldings(_foldingManager, _editor.Document);
+                    break;
+            }
         }
     }
 
