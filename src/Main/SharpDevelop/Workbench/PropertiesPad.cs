@@ -8,6 +8,7 @@ namespace UnoDevelop.Workbench;
 public sealed class PropertiesPad : UserControl
 {
     private readonly PropertyGridControl _grid;
+    private object? _selectedObject;
 
     public PropertiesPad()
     {
@@ -19,5 +20,26 @@ public sealed class PropertiesPad : UserControl
         Content = _grid;
     }
 
-    public void SetSelectedObject(object? value) => _grid.SelectedObject = value;
+    public object? SelectedObject => _selectedObject;
+
+    public void SetSelectedObject(object? value)
+    {
+        _selectedObject = value;
+        _grid.SelectedObject = value;
+    }
+
+    public object GetSnapshot()
+    {
+        var element = _selectedObject as Microsoft.UI.Xaml.FrameworkElement;
+        return new
+        {
+            SelectedType = _selectedObject?.GetType().Name,
+            Name = element?.Name,
+            Width = FiniteOrNull(element?.Width),
+            Height = FiniteOrNull(element?.Height)
+        };
+    }
+
+    private static double? FiniteOrNull(double? value)
+        => value is { } number && double.IsFinite(number) ? number : null;
 }

@@ -41,6 +41,9 @@
 		<ProjectReference Include="..\..\AddIns\DisplayBindings\HexEditor\Project\HexEditor.csproj"
 		                  ReferenceOutputAssembly="false"
 		                  PrivateAssets="all" />
+		<ProjectReference Include="..\..\AddIns\DisplayBindings\XamlDesigner\Project\ICSharpCode.XamlDesigner.csproj"
+		                  ReferenceOutputAssembly="false"
+		                  PrivateAssets="all" />
 		<ProjectReference Include="..\..\AddIns\Analysis\CodeCoverage\Project\CodeCoverage.csproj"
 		                  ReferenceOutputAssembly="false"
 		                  PrivateAssets="all" />
@@ -143,6 +146,7 @@
 			<XmlEditorOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\DisplayBindings\XmlEditor\Project\bin\$(Configuration)\net10.0-desktop\UnoDevelop.XmlEditor.*" Exclude="**\*.addin" />
 			<IconEditorOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\DisplayBindings\IconEditor\Project\bin\$(Configuration)\net10.0-desktop\UnoDevelop.IconEditor.*" Exclude="**\*.addin" />
 			<GitAddInOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\VersionControl\GitAddIn\Project\bin\$(Configuration)\net10.0-desktop\UnoDevelop.GitAddIn.*" Exclude="**\*.addin" />
+			<XamlDesignerOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\DisplayBindings\XamlDesigner\Project\bin\$(Configuration)\net10.0-desktop\ICSharpCode.XamlDesigner.*" Exclude="**\*.addin" />
 		</ItemGroup>
 		<MakeDir Directories="$(OutputPath)AddIns\Misc\AddinScout\Project\" />
 		<MakeDir Directories="$(OutputPath)AddIns\Misc\RegExpTk\Project\" />
@@ -157,6 +161,7 @@
 		<MakeDir Directories="$(OutputPath)AddIns\DisplayBindings\XmlEditor\Project\" />
 		<MakeDir Directories="$(OutputPath)AddIns\DisplayBindings\IconEditor\Project\" />
 		<MakeDir Directories="$(OutputPath)AddIns\VersionControl\GitAddIn\Project\" />
+		<MakeDir Directories="$(OutputPath)AddIns\DisplayBindings\XamlDesigner\Project\" />
 		<Copy SourceFiles="@(AddInScoutOutput)"
 		      DestinationFolder="$(OutputPath)AddIns\Misc\AddinScout\Project\"
 		      SkipUnchangedFiles="true" />
@@ -195,6 +200,9 @@
 		      SkipUnchangedFiles="true" />
 		<Copy SourceFiles="@(GitAddInOutput)"
 		      DestinationFolder="$(OutputPath)AddIns\VersionControl\GitAddIn\Project\"
+		      SkipUnchangedFiles="true" />
+		<Copy SourceFiles="@(XamlDesignerOutput)"
+		      DestinationFolder="$(OutputPath)AddIns\DisplayBindings\XamlDesigner\Project\"
 		      SkipUnchangedFiles="true" />
 	</Target>
 	

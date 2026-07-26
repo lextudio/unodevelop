@@ -1343,6 +1343,7 @@ public partial class MainPage : Page, IUnoSolutionExplorerHost
                 var openedFile = _fileService.GetOrCreateOpenedFile(displayBindingFileName);
                 var displayBindingView = displayBinding.CreateContentForFile(openedFile);
                 _openFileViews[filePath] = displayBindingView;
+                AttachSecondaryDisplayBindings(displayBindingView);
                 _workbench.ShowView(displayBindingView, switchToOpenedView);
                 _fileService?.NotifyFileOpened(filePath);
                 return displayBindingView;
@@ -1367,10 +1368,29 @@ public partial class MainPage : Page, IUnoSolutionExplorerHost
         }
 
         _openFileViews[filePath] = view;
+        AttachSecondaryDisplayBindings(view);
         _workbench.ShowView(view, switchToOpenedView);
         _fileService?.NotifyFileOpened(filePath);
         ScheduleDiagnosticsRefresh(view);
         return view;
+    }
+
+    /// <summary>
+    /// Attaches AddIn-registered secondary display bindings (e.g. XamlDesigner's design-surface
+    /// preview) to a freshly opened primary view content, mirroring upstream SharpDevelop's
+    /// DisplayBindingService.AttachSubWindows call site. Errors are swallowed (logged) so a
+    /// misbehaving secondary binding never blocks opening the primary file.
+    /// </summary>
+    private static void AttachSecondaryDisplayBindings(IViewContent viewContent)
+    {
+        try
+        {
+            ServiceSingleton.GetRequiredService<IDisplayBindingService>().AttachSubWindows(viewContent, false);
+        }
+        catch (Exception ex)
+        {
+            LoggingService.Warn("Failed to attach secondary display bindings: " + ex.Message);
+        }
     }
 
     private IViewContent? JumpToFilePositionInWorkbench(string filePath, int line, int column)
@@ -1394,6 +1414,9 @@ public partial class MainPage : Page, IUnoSolutionExplorerHost
                 var editor = editorContent.Control as TextEditor ?? new TextEditor();
                 editor.Theme = TextEditorTheme.Light;
                 ConfigureCodeEditor(editor);
+                editor.AllowDrop = true;
+                editor.DragOver += OnXamlEditorDragOver;
+                editor.Drop += (_, args) => OnXamlEditorDrop(editorContent, args);
                 editor.TextChanged += (_, _) => OnEditorTextChanged(editorContent);
                 editor.KeyDown += (_, eventArgs) => OnEditorKeyDown(editorContent, eventArgs);
                 if (editor.TextArea is not null)
@@ -1425,6 +1448,53 @@ public partial class MainPage : Page, IUnoSolutionExplorerHost
             else
             {
                 docControl = viewContent.Control as UIElement;
+            }
+
+            var viewContents = new List<IViewContent> { viewContent };
+            viewContents.AddRange(viewContent.SecondaryViewContents);
+
+            ContentControl? viewHost = null;
+            List<ToggleButton>? viewButtons = null;
+            List<UIElement?>? viewControls = null;
+            if (viewContents.Count > 1)
+            {
+                viewControls = new List<UIElement?> { docControl };
+                viewControls.AddRange(viewContent.SecondaryViewContents.Select(secondary => secondary.Control as UIElement));
+                viewHost = new ContentControl { Content = viewControls[0] };
+                viewButtons = new List<ToggleButton>();
+                var switcher = new StackPanel
+                {
+                    Orientation = Orientation.Horizontal,
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    Spacing = 2,
+                    Padding = new Thickness(8, 4, 8, 4)
+                };
+                for (var index = 0; index < viewContents.Count; index++)
+                {
+                    var button = new ToggleButton
+                    {
+                        Content = index == 0 ? "Code" : viewContents[index].TabPageText,
+                        MinWidth = 84,
+                        IsChecked = index == 0,
+                        Tag = index
+                    };
+                    viewButtons.Add(button);
+                    switcher.Children.Add(button);
+                }
+                var viewGrid = new Grid();
+                viewGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+                viewGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+                var switcherBorder = new Border
+                {
+                    BorderThickness = new Thickness(0, 1, 0, 0),
+                    BorderBrush = new SolidColorBrush(Microsoft.UI.Colors.LightGray),
+                    Child = switcher
+                };
+                Grid.SetRow(viewHost, 0);
+                Grid.SetRow(switcherBorder, 1);
+                viewGrid.Children.Add(viewHost);
+                viewGrid.Children.Add(switcherBorder);
+                docControl = viewGrid;
             }
 
             document = new LayoutDocument
@@ -1472,8 +1542,9 @@ public partial class MainPage : Page, IUnoSolutionExplorerHost
             DocumentPane.Children.Add(document);
             _documents[viewContent] = document;
 
-            var workbenchWindow = new UnoWorkbenchWindow(document, viewContent);
-            viewContent.WorkbenchWindow = workbenchWindow;
+            var workbenchWindow = new UnoWorkbenchWindow(document, viewContents, viewHost, viewButtons, viewControls);
+            foreach (var content in viewContents)
+                content.WorkbenchWindow = workbenchWindow;
         }
 
         if (activate)
@@ -1504,6 +1575,41 @@ public partial class MainPage : Page, IUnoSolutionExplorerHost
         _foldingStates.Add(editor, foldingState);
         editor.TextChanged += foldingState.OnTextChanged;
         foldingState.Refresh();
+    }
+
+    private static void OnXamlEditorDragOver(object sender, DragEventArgs args)
+    {
+        if (sender is TextEditor editor
+            && string.Equals(Path.GetExtension(editor.Tag as string), ".xaml", StringComparison.OrdinalIgnoreCase)
+            && args.DataView.Contains(StandardDataFormats.Text))
+        {
+            args.AcceptedOperation = DataPackageOperation.Copy;
+        }
+    }
+
+    private static async void OnXamlEditorDrop(EditorViewContent editorContent, DragEventArgs args)
+    {
+        if (!string.Equals(Path.GetExtension(editorContent.FilePath), ".xaml", StringComparison.OrdinalIgnoreCase)
+            || !args.DataView.Contains(StandardDataFormats.Text))
+            return;
+
+        var payload = await args.DataView.GetTextAsync();
+        const string prefix = "UnoDevelop.XamlToolbox:";
+        if (!payload.StartsWith(prefix, StringComparison.Ordinal))
+            return;
+
+        InsertXamlToolboxSnippet(editorContent, payload.Substring(prefix.Length));
+    }
+
+    internal static bool InsertXamlToolboxSnippet(IViewContent viewContent, string snippet)
+    {
+        if (!string.Equals(Path.GetExtension(viewContent.PrimaryFileName?.ToString()), ".xaml", StringComparison.OrdinalIgnoreCase)
+            || viewContent.GetService(typeof(ITextEditor)) is not ITextEditor editor)
+            return false;
+        editor.Document.Insert(editor.Caret.Offset, snippet);
+        if (viewContent is EditorViewContent editorContent)
+            editorContent.MarkDirty();
+        return true;
     }
 
     private void CloseAllWorkbenchViews()
@@ -2975,7 +3081,7 @@ public partial class MainPage : Page, IUnoSolutionExplorerHost
 
         public bool CloseWithSolution => true;
 
-        public ICollection<IViewContent> SecondaryViewContents => Array.Empty<IViewContent>();
+        public ICollection<IViewContent> SecondaryViewContents { get; } = new List<IViewContent>();
 
         public bool IsDirty => _isDirty;
 
@@ -3087,13 +3193,32 @@ public partial class MainPage : Page, IUnoSolutionExplorerHost
     private sealed class UnoWorkbenchWindow : IWorkbenchWindow
     {
         private readonly LayoutDocument _document;
+        private readonly ContentControl? _viewHost;
+        private readonly IList<ToggleButton> _viewButtons;
+        private readonly IList<UIElement?> _viewControls;
 
-        public UnoWorkbenchWindow(LayoutDocument document, IViewContent initialContent)
+        public UnoWorkbenchWindow(
+            LayoutDocument document,
+            IList<IViewContent> viewContents,
+            ContentControl? viewHost,
+            IList<ToggleButton>? viewButtons,
+            IList<UIElement?>? viewControls)
         {
             _document = document;
-            ActiveViewContent = initialContent;
-            ViewContents = new List<IViewContent> { initialContent };
-            _document.Title = initialContent.TabPageText;
+            _viewHost = viewHost;
+            _viewButtons = viewButtons ?? Array.Empty<ToggleButton>();
+            _viewControls = viewControls ?? Array.Empty<UIElement?>();
+            ViewContents = viewContents;
+            ActiveViewContent = viewContents[0];
+            _document.Title = ActiveViewContent.TabPageText;
+            foreach (var button in _viewButtons)
+            {
+                button.Click += (_, _) =>
+                {
+                    if (button.Tag is int selectedIndex)
+                        SwitchView(selectedIndex);
+                };
+            }
         }
 
         public string Title => _document.Title;
@@ -3115,6 +3240,17 @@ public partial class MainPage : Page, IUnoSolutionExplorerHost
                 return;
             }
 
+            if (_viewHost is not null && viewNumber < _viewControls.Count)
+                _viewHost.Content = _viewControls[viewNumber];
+            for (var index = 0; index < _viewButtons.Count; index++)
+                _viewButtons[index].IsChecked = index == viewNumber;
+            SetActiveView(viewNumber);
+        }
+
+        private void SetActiveView(int viewNumber)
+        {
+            if (ReferenceEquals(ActiveViewContent, ViewContents[viewNumber]))
+                return;
             ActiveViewContent = ViewContents[viewNumber];
             ActiveViewContentChanged?.Invoke(this, EventArgs.Empty);
         }

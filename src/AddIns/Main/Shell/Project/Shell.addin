@@ -11,8 +11,22 @@
       <ConditionEvaluator name="Debugging" class="UnoDevelop.Services.DebuggingConditionEvaluator" />
       <ConditionEvaluator name="Paused" class="UnoDevelop.Services.PausedConditionEvaluator" />
       <ConditionEvaluator name="TestsRunning" class="UnoDevelop.Services.TestsRunningConditionEvaluator" />
+      <ConditionEvaluator name="ProjectActive" class="UnoDevelop.Conditions.ProjectActiveConditionEvaluator" />
+      <ConditionEvaluator name="WindowActive" class="UnoDevelop.Conditions.WindowActiveConditionEvaluator" />
+      <ConditionEvaluator name="ActiveWindowState" class="UnoDevelop.Conditions.ActiveWindowStateConditionEvaluator" />
+      <ConditionEvaluator name="OpenWindowState" class="UnoDevelop.Conditions.OpenWindowStateConditionEvaluator" />
+      <ConditionEvaluator name="CanNavigateBack" class="UnoDevelop.Conditions.CanNavigateBackConditionEvaluator" />
+      <ConditionEvaluator name="CanNavigateForward" class="UnoDevelop.Conditions.CanNavigateForwardConditionEvaluator" />
     </Import>
   </Runtime>
+
+  <Path name="/SharpDevelop/Workbench/Pads">
+    <Pad id="Toolbox"
+         class="UnoDevelop.Workbench.ToolboxPad"
+         title="Toolbox"
+         category="Main"
+         defaultPosition="Left" />
+  </Path>
 
   <Path name="/UnoDevelop/MainMenu/File">
     <MenuItem id="OpenSolutionOrProject" label="Open Solution or Project..." class="UnoDevelop.Commands.OpenSolutionOrProjectShellCommand" />
@@ -86,20 +100,46 @@
   </Path>
 
   <Path name="/UnoDevelop/Workbench/ToolBar/Standard">
-    <!-- Run / Debug: require a loaded project and no active session (mirrors SharpDevelop's
-         <Condition name="SolutionOpen"> + <Condition name="IsProcessRunning" isdebugging="False">). -->
+    <!-- File operations -->
+    <ToolbarItem id="New" tooltip="New File" icon="NewFile_16x" class="UnoDevelop.Commands.NewFileShellCommand" />
+    <ToolbarItem id="Open" tooltip="Open File" icon="OpenFile_16x" class="UnoDevelop.Commands.OpenFileShellCommand" />
+    <ToolbarItem id="OpenProject" tooltip="Open Solution or Project" icon="OpenfileDialog_16x" class="UnoDevelop.Commands.OpenSolutionOrProjectShellCommand" />
+    <Condition name="ActiveWindowState" windowstate="Dirty,Untitled" nowindowstate="ViewOnly" action="Disable">
+      <ToolbarItem id="Save" tooltip="Save" icon="Save_16x" class="UnoDevelop.Commands.SaveFileShellCommand" />
+    </Condition>
+    <Condition name="OpenWindowState" openwindowstate="Dirty" action="Disable">
+      <ToolbarItem id="SaveAll" tooltip="Save All" icon="SaveAll_16x" class="UnoDevelop.Commands.SaveAllShellCommand" />
+    </Condition>
+    <!-- Edit operations -->
+    <ToolbarItem id="EditSeparator" type="Separator" />
+    <ToolbarItem id="Cut" tooltip="Cut" icon="Cut_16x" class="UnoDevelop.Commands.CutShellCommand" />
+    <ToolbarItem id="Copy" tooltip="Copy" icon="Copy_16x" class="UnoDevelop.Commands.CopyShellCommand" />
+    <ToolbarItem id="Paste" tooltip="Paste" icon="Paste_16x" class="UnoDevelop.Commands.PasteShellCommand" />
+    <ToolbarItem id="Delete" tooltip="Delete" icon="Cancel_16x" class="UnoDevelop.Commands.DeleteShellCommand" />
+    <ToolbarItem id="UndoRedoSeparator" type="Separator" />
+    <ToolbarItem id="Undo" tooltip="Undo" icon="Undo_16x" class="UnoDevelop.Commands.UndoShellCommand" />
+    <ToolbarItem id="Redo" tooltip="Redo" icon="Redo_16x" class="UnoDevelop.Commands.RedoShellCommand" />
+    <!-- Build operations -->
+    <ToolbarItem id="BuildSeparator" type="Separator" />
+    <Condition name="SolutionOpen" action="Disable">
+      <ToolbarItem id="BuildSolution" tooltip="Build Solution" icon="BuildSolution_16x" class="UnoDevelop.Commands.BuildSolutionShellCommand" />
+    </Condition>
+    <Condition name="SolutionOpen" action="Disable">
+      <Condition name="ProjectActive" action="Disable">
+        <ToolbarItem id="BuildProject" tooltip="Build Project" icon="BuildSelection_16x" class="UnoDevelop.Commands.BuildProjectShellCommand" />
+      </Condition>
+    </Condition>
+    <!-- Run / Debug -->
+    <ToolbarItem id="DebugSeparator" type="Separator" />
     <Condition name="SolutionOpen" action="Disable">
       <Condition name="ExecutionActive" active="False" action="Disable">
         <ToolbarItem id="RunWithoutDebugging" tooltip="Run (without debugging)" icon="StartWithoutDebug_16x" class="UnoDevelop.Commands.RunWithoutDebuggingShellCommand" />
         <ToolbarItem id="Debug" tooltip="Debug" icon="Run_16x" class="UnoDevelop.Commands.DebugShellCommand" />
       </Condition>
     </Condition>
-    <!-- Stop: only while something is executing. -->
     <Condition name="ExecutionActive" active="True" action="Disable">
       <ToolbarItem id="Stop" tooltip="Stop" icon="Cancel_16x" class="UnoDevelop.Commands.StopRunShellCommand" />
     </Condition>
-    <ToolbarItem id="Separator0" type="Separator" />
-    <!-- Debug stepping: only while a debug session is attached AND paused (break mode). -->
     <Condition name="Debugging" debugging="True" action="Disable">
       <Condition name="Paused" paused="True" action="Disable">
         <ToolbarItem id="Continue" tooltip="Continue (F5)" icon="StepForward_16x" class="UnoDevelop.Commands.ContinueDebugShellCommand" />
@@ -107,6 +147,24 @@
         <ToolbarItem id="StepInto" tooltip="Step Into (F11)" icon="StepIn_16x" class="UnoDevelop.Commands.StepIntoDebugShellCommand" />
         <ToolbarItem id="StepOut" tooltip="Step Out (Shift+F11)" icon="StepOut_16x" class="UnoDevelop.Commands.StepOutDebugShellCommand" />
       </Condition>
+    </Condition>
+    <!-- Navigation -->
+    <ToolbarItem id="NavigationSeparator" type="Separator" />
+    <Condition name="CanNavigateBack" action="Disable">
+      <ToolbarItem id="NavigateBack" tooltip="Navigate Back" icon="Backward_16x" class="UnoDevelop.Commands.NavigateBackShellCommand" />
+    </Condition>
+    <Condition name="CanNavigateForward" action="Disable">
+      <ToolbarItem id="NavigateForward" tooltip="Navigate Forward" icon="Forward_16x" class="UnoDevelop.Commands.NavigateForwardShellCommand" />
+    </Condition>
+    <!-- Editor tools -->
+    <ToolbarItem id="SearchSeparator" type="Separator" />
+    <Condition name="WindowActive" activewindow="ICSharpCode.SharpDevelop.Editor.ITextEditor" action="Disable">
+      <ToolbarItem id="Comment" tooltip="Comment/Uncomment Selection" icon="CommentCode_16x" class="UnoDevelop.Commands.CommentRegionShellCommand" />
+      <ToolbarItem id="SearchSeparator2" type="Separator" />
+      <ToolbarItem id="ToggleBookmark" tooltip="Toggle Bookmark" icon="Bookmark_16x" class="UnoDevelop.Commands.ToggleBookmarkShellCommand" />
+      <ToolbarItem id="PrevBookmark" tooltip="Previous Bookmark" icon="PreviousBookmark_16x" class="UnoDevelop.Commands.PrevBookmarkShellCommand" />
+      <ToolbarItem id="NextBookmark" tooltip="Next Bookmark" icon="NextBookmark_16x" class="UnoDevelop.Commands.NextBookmarkShellCommand" />
+      <ToolbarItem id="ClearBookmarks" tooltip="Clear Bookmarks" icon="ClearBookmark_16x" class="UnoDevelop.Commands.ClearBookmarksShellCommand" />
     </Condition>
   </Path>
 </AddIn>

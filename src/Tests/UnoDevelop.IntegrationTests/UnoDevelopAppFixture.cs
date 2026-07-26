@@ -20,7 +20,9 @@ public sealed class UnoDevelopAppFixture : IAsyncLifetime
     public string FixtureSolutionPath { get; } = LocateFixture("SampleTestProject", "SampleTestProject.csproj");
     public string VBFixtureSolutionPath { get; } = LocateFixture("VBFixture", "VBFixture.sln");
     public string XamlFixtureFilePath { get; } = LocateFixture("XamlFixture", "MainPage.xaml");
+    public string InvalidXamlFixtureFilePath { get; } = LocateFixture("XamlFixture", "Invalid.xaml");
     public string DebugTestProjectPath { get; } = LocateFixture("DebugTestApp", "DebugTestApp.csproj");
+    public string DebugTestProgramPath { get; } = LocateFixture("DebugTestApp", "Program.cs");
 
     public async ValueTask InitializeAsync()
     {

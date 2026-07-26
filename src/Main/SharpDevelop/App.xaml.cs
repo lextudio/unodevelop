@@ -37,7 +37,7 @@ public partial class App : Application
     protected override void OnLaunched(LaunchActivatedEventArgs args)
     {
         MainWindow ??= new Window();
-        MainWindow.Title = "UnoDevelop, SharpDevelop on Uno Platform";
+        MainWindow.Title = "UnoDevelop";
         Microsoft.Win32.FileDialogHost.ActiveWindow = MainWindow;
         MainWindow.Content = new MainPage();
         MainWindow.Closed += (_, _) => ICSharpCode.Core.PropertyService.Save();

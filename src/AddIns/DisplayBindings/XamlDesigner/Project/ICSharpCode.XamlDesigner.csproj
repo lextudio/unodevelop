@@ -24,5 +24,6 @@
     <Compile Include="Configuration\AssemblyInfo.cs" />
     <Compile Include="Src\XamlDesignerDisplayBinding.cs" />
     <Compile Include="Src\XamlDesignerViewContent.cs" />
+    <Compile Include="Src\XamlToolboxProvider.cs" />
   </ItemGroup>
 </Project>

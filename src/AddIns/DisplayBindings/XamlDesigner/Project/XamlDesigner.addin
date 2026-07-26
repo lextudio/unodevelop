@@ -17,4 +17,5 @@
                     class="ICSharpCode.XamlDesigner.XamlDesignerDisplayBinding"
                     fileNamePattern="\.xaml$" />
   </Path>
+
 </AddIn>

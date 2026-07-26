@@ -164,9 +164,7 @@ public static class UnoDevelopDevFlowActions
             if (!System.IO.File.Exists(filePath))
                 return "ERROR: File not found: " + filePath;
 
-            var workbench = ServiceSingleton.GetRequiredService<IWorkbench>();
-            var text = System.IO.File.ReadAllText(filePath);
-            workbench.ShowView(new MainPage.EditorViewContent(Path.GetFileName(filePath), text, filePath), true);
+            ServiceSingleton.GetRequiredService<IFileService>().OpenFile(FileName.Create(filePath), true);
             return """{"opened":true}""";
         });
     }
@@ -1059,6 +1057,204 @@ public static class UnoDevelopDevFlowActions
             });
         });
     }
+
+    [DevFlowAction("ide-xaml-preview-status",
+        Description = "Check the XAML Designer secondary view's preview status for the active workbench window. Returns {found, statusText, hasRenderedPreview} JSON.")]
+    public static string GetXamlPreviewStatus()
+    {
+        return SD.MainThread.InvokeIfRequired(() =>
+        {
+            var window = SD.Workbench.ActiveWorkbenchWindow;
+            var designerView = window?.ViewContents
+                .FirstOrDefault(vc => vc.GetType().FullName == "ICSharpCode.XamlDesigner.XamlDesignerViewContent");
+
+            if (designerView is null)
+            {
+                var bindings = AddInTree.BuildItems<DisplayBindingDescriptor>(
+                    "/SharpDevelop/Workbench/DisplayBindings", null, false);
+                return JsonSerializer.Serialize(new
+                {
+                    found = false,
+                    activeFile = window?.ActiveViewContent?.PrimaryFileName?.ToString(),
+                    views = window?.ViewContents.Select(vc => vc.GetType().FullName).ToArray() ?? Array.Empty<string>(),
+                    displayBindings = bindings.Select(binding => new
+                    {
+                        binding.Id,
+                        binding.IsSecondary,
+                        LoadedType = binding.IsSecondary
+                            ? binding.SecondaryBinding?.GetType().AssemblyQualifiedName
+                            : binding.Binding?.GetType().AssemblyQualifiedName
+                    }).ToArray(),
+                    addIns = ServiceSingleton.GetRequiredService<IAddInTree>().AddIns
+                        .SelectMany(addIn => addIn.Manifest.Identities.Keys)
+                        .ToArray()
+                });
+            }
+
+            var type = designerView.GetType();
+            var statusText = type.GetProperty("StatusText")?.GetValue(designerView) as string;
+            var hasRenderedPreview = type.GetProperty("HasRenderedPreview")?.GetValue(designerView) as bool?;
+            var snapshot = type.GetMethod("GetSnapshot")?.Invoke(designerView, null) as System.Collections.IEnumerable;
+            var selectedElementType = type.GetProperty("SelectedElementType")?.GetValue(designerView) as string;
+            var hasSelectionAdorner = type.GetProperty("HasSelectionAdorner")?.GetValue(designerView) as bool?;
+
+            return JsonSerializer.Serialize(new
+            {
+                found = true,
+                statusText,
+                hasRenderedPreview = hasRenderedPreview ?? false,
+                activeView = window is null ? null : GetDocumentViewLabel(window, window.ActiveViewContent),
+                views = window?.ViewContents.Select(view => GetDocumentViewLabel(window, view)).ToArray() ?? Array.Empty<string>(),
+                items = snapshot?.Cast<object>().ToArray() ?? Array.Empty<object>(),
+                selectedElementType,
+                hasSelectionAdorner = hasSelectionAdorner ?? false
+            });
+        });
+    }
+
+    [DevFlowAction("ide-xaml-switch-view",
+        Description = "Switch the active XAML document between its Source and Design views.")]
+    public static string SwitchXamlView(string viewName)
+    {
+        return SD.MainThread.InvokeIfRequired(() =>
+        {
+            var window = SD.Workbench.ActiveWorkbenchWindow;
+            if (window is null)
+                return """{"success":false,"error":"No active workbench window."}""";
+
+            var index = window.ViewContents
+                .Select((view, index) => new { view, index })
+                .FirstOrDefault(item =>
+                    string.Equals(GetDocumentViewLabel(window, item.view), viewName, StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(item.view.TabPageText, viewName, StringComparison.OrdinalIgnoreCase))
+                ?.index ?? -1;
+            if (index < 0)
+                return JsonSerializer.Serialize(new { success = false, error = "View not found: " + viewName });
+
+            window.SwitchView(index);
+            return JsonSerializer.Serialize(new
+            {
+                success = true,
+                activeView = GetDocumentViewLabel(window, window.ActiveViewContent)
+            });
+        });
+    }
+
+    private static string GetDocumentViewLabel(IWorkbenchWindow window, IViewContent view)
+        => window.ViewContents.IndexOf(view) == 0 && window.ViewContents.Count > 1
+            ? "Code"
+            : view.TabPageText;
+
+    [DevFlowAction("ide-xaml-designer-select",
+        Description = "Select a rendered XAML element by runtime type name.")]
+    public static string SelectXamlDesignerElement(string typeName, int index = 0)
+    {
+        return SD.MainThread.InvokeIfRequired(() =>
+        {
+            var designer = FindActiveXamlDesigner();
+            var selected = designer?.GetType().GetMethod("SelectElementByType")
+                ?.Invoke(designer, new object[] { typeName, index }) as bool? ?? false;
+            return JsonSerializer.Serialize(new { success = selected, typeName, index });
+        });
+    }
+
+    [DevFlowAction("ide-xaml-designer-add",
+        Description = "Add a XAML toolbox snippet to the selected design container.")]
+    public static string AddXamlDesignerElement(string xaml)
+    {
+        return SD.MainThread.InvokeIfRequired(() =>
+        {
+            var designer = FindActiveXamlDesigner();
+            var added = designer?.GetType().GetMethod("AddToolboxItem")
+                ?.Invoke(designer, new object[] { xaml }) as bool? ?? false;
+            return JsonSerializer.Serialize(new { success = added, xaml });
+        });
+    }
+
+    [DevFlowAction("ide-xaml-source-insert",
+        Description = "Insert a XAML toolbox snippet at the active source editor caret.")]
+    public static string InsertXamlSourceElement(string xaml)
+    {
+        return SD.MainThread.InvokeIfRequired(() =>
+        {
+            var active = SD.Workbench.ActiveWorkbenchWindow?.ActiveViewContent;
+            var inserted = active is not null && MainPage.InsertXamlToolboxSnippet(active, xaml);
+            var editor = active?.GetService(typeof(ITextEditor)) as ITextEditor;
+            return JsonSerializer.Serialize(new
+            {
+                success = inserted,
+                xaml,
+                containsSnippet = editor?.Document.Text.Contains(xaml, StringComparison.Ordinal) == true
+            });
+        });
+    }
+
+    [DevFlowAction("ide-xaml-designer-resize",
+        Description = "Resize the selected design element by width/height deltas.")]
+    public static string ResizeXamlDesignerElement(double widthDelta, double heightDelta)
+    {
+        return SD.MainThread.InvokeIfRequired(() =>
+        {
+            var designer = FindActiveXamlDesigner();
+            var resized = designer?.GetType().GetMethod("ResizeSelection")
+                ?.Invoke(designer, new object[] { widthDelta, heightDelta }) as bool? ?? false;
+            return JsonSerializer.Serialize(new { success = resized, widthDelta, heightDelta });
+        });
+    }
+
+    [DevFlowAction("ide-xaml-designer-pads",
+        Description = "Return XAML Toolbox and Properties pad state.")]
+    public static string GetXamlDesignerPads()
+    {
+        return SD.MainThread.InvokeIfRequired(() =>
+        {
+            var pads = SD.Workbench.PadContentCollection;
+            var toolbox = pads.FirstOrDefault(pad =>
+                pad.ClassName.EndsWith(".ToolboxPad", StringComparison.Ordinal));
+            var properties = pads.FirstOrDefault(pad =>
+                pad.ClassName.EndsWith(".PropertiesPad", StringComparison.Ordinal));
+            toolbox?.CreatePad();
+            properties?.CreatePad();
+            var toolboxControl = toolbox?.PadContent?.Control;
+            var propertiesControl = properties?.PadContent?.Control;
+            var toolboxItems = toolboxControl?.GetType().GetMethod("GetSnapshot")
+                ?.Invoke(toolboxControl, null) as System.Collections.IEnumerable;
+            var toolboxGroups = toolboxControl?.GetType().GetMethod("GetGroupSnapshot")
+                ?.Invoke(toolboxControl, null) as System.Collections.IEnumerable;
+            var propertySnapshot = propertiesControl?.GetType().GetMethod("GetSnapshot")
+                ?.Invoke(propertiesControl, null);
+            return JsonSerializer.Serialize(new
+            {
+                toolboxFound = toolbox is not null,
+                toolboxHasProvider = toolboxControl?.GetType().GetProperty("HasProvider")
+                    ?.GetValue(toolboxControl) as bool? ?? false,
+                toolboxItems = toolboxItems?.Cast<object>().ToArray() ?? Array.Empty<object>(),
+                toolboxGroups = toolboxGroups?.Cast<object>().ToArray() ?? Array.Empty<object>(),
+                propertiesFound = properties is not null,
+                propertySnapshot
+            });
+        });
+    }
+
+    [DevFlowAction("ide-xaml-toolbox-group",
+        Description = "Expand or collapse a named XAML Toolbox group.")]
+    public static string SetXamlToolboxGroup(string groupName, bool expanded)
+    {
+        return SD.MainThread.InvokeIfRequired(() =>
+        {
+            var toolbox = SD.Workbench.PadContentCollection.FirstOrDefault(pad =>
+                pad.ClassName.EndsWith(".ToolboxPad", StringComparison.Ordinal));
+            toolbox?.CreatePad();
+            var control = toolbox?.PadContent?.Control;
+            var success = control?.GetType().GetMethod("SetGroupExpanded")
+                ?.Invoke(control, new object[] { groupName, expanded }) as bool? ?? false;
+            return JsonSerializer.Serialize(new { success, groupName, expanded });
+        });
+    }
+
+    private static IViewContent? FindActiveXamlDesigner()
+        => SD.Workbench.ActiveWorkbenchWindow?.ViewContents.FirstOrDefault(view =>
+            view.GetType().FullName == "ICSharpCode.XamlDesigner.XamlDesignerViewContent");
 
     [DevFlowAction("ide-parser-status", Description = "Check whether a file has a registered LSP service.")]
     public static string GetParserStatus(string fileName)
