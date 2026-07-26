@@ -8,7 +8,7 @@
 	</Manifest>
 	
 	<Runtime>
-		<Import assembly = "GitAddIn.dll">
+		<Import assembly = "UnoDevelop.GitAddIn.dll">
 			<ConditionEvaluator name="IsUnderGitControl" class="ICSharpCode.GitAddIn.IsUnderGitControlCondition"/>
 		</Import>
 	</Runtime>
