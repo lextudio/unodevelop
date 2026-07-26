@@ -21,6 +21,7 @@ using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.IO;
+using System.Threading.Tasks;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using WinUIVisibility = Microsoft.UI.Xaml.Visibility;
@@ -95,9 +96,9 @@ namespace ICSharpCode.XmlEditor
 			editor.SchemaListSelectionChanged();
 		}
 		
-		void AddSchemaButtonClick(object sender, RoutedEventArgs e)
+		async void AddSchemaButtonClick(object sender, RoutedEventArgs e)
 		{
-			editor.AddSchemaFromFileSystem();
+			await editor.AddSchemaFromFileSystemAsync();
 		}
 		
 		void RemoveSchemaButtonClick(object sender, RoutedEventArgs e)
@@ -212,9 +213,11 @@ namespace ICSharpCode.XmlEditor
 			return null;
 		}
 
-		public Nullable<bool> ShowDialog(OpenFileDialog dialog)
+		public Task<bool?> ShowFileDialogAsync(OpenFileDialog dialog)
 		{
-			return dialog.ShowDialog();
+			// Must use the async picker here: this runs on the UI thread, and ShowDialog()
+			// would deadlock waiting for a native picker that itself needs the UI thread to pump.
+			return dialog.ShowDialogAsync();
 		}
 		
 		public void ShowErrorFormatted(string format, string parameter)

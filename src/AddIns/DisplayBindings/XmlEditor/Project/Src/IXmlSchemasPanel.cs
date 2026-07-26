@@ -18,6 +18,7 @@
 
 using System;
 using System.ComponentModel;
+using System.Threading.Tasks;
 using Microsoft.Win32;
 
 namespace ICSharpCode.XmlEditor
@@ -61,7 +62,7 @@ namespace ICSharpCode.XmlEditor
 		
 		bool RemoveSchemaButtonEnabled { get; set; }
 		
-		bool? ShowDialog(OpenFileDialog openFileDialog);
+		Task<bool?> ShowFileDialogAsync(OpenFileDialog openFileDialog);
 		bool? ShowDialog(object dialog);
 		
 		void ShowErrorFormatted(string format, string parameter);

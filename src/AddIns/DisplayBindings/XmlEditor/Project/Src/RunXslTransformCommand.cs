@@ -37,24 +37,24 @@ namespace ICSharpCode.XmlEditor
 		/// If the view represents a stylesheet that is currently assigned to an
 		/// opened document then run the transform on that document.
 		/// </summary>
-		public override void Run()
+		public override async void Run()
 		{
 			XmlView xmlView = XmlView.ActiveXmlView;
-			
+
 			if (xmlView != null) {
 				// Check to see if this view is actually a referenced stylesheet.
 				if (!string.IsNullOrEmpty(xmlView.File.FileName)) {
-					
+
 					XmlView assocFile = GetAssociatedXmlView(xmlView.File.FileName);
 					if (assocFile != null) {
 						LoggingService.Debug("Using associated xml file.");
 						xmlView = assocFile;
 					}
 				}
-				
+
 				// Assign a stylesheet.
 				if (xmlView.StylesheetFileName == null) {
-					xmlView.StylesheetFileName = AssignStylesheetCommand.BrowseForStylesheetFile();
+					xmlView.StylesheetFileName = await AssignStylesheetCommand.BrowseForStylesheetFileAsync();
 				}
 				
 				if (xmlView.StylesheetFileName != null) {

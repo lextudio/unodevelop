@@ -53,14 +53,16 @@ namespace ICSharpCode.GitAddIn
 			status.Text = path;
 		}
 
-		void FindGitPath_Click(object sender, RoutedEventArgs a)
+		async void FindGitPath_Click(object sender, RoutedEventArgs a)
 		{
 			OpenFileDialog dlg = new OpenFileDialog();
 			dlg.DefaultExt = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "exe" : string.Empty;
 			dlg.Filter = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
 				? StringParser.Parse("Git|git.exe;git.cmd;git.bat|${res:SharpDevelop.FileFilter.AllFiles}|*.*")
 				: StringParser.Parse("Git|git|${res:SharpDevelop.FileFilter.AllFiles}|*.*");
-			if (dlg.ShowDialog() == true) {
+			// Must use the async picker here: this runs on the UI thread, and ShowDialog()
+			// would deadlock waiting for a native picker that itself needs the UI thread to pump.
+			if (await dlg.ShowDialogAsync() == true) {
 				if (Git.IsGitExecutable(dlg.FileName)) {
 					AddInOptions.PathToGit = dlg.FileName;
 				} else {

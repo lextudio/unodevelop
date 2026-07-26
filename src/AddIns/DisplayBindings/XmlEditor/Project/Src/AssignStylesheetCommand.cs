@@ -17,6 +17,7 @@
 // DEALINGS IN THE SOFTWARE.
 
 using System;
+using System.Threading.Tasks;
 using Microsoft.Win32;
 using ICSharpCode.Core;
 using ICSharpCode.SharpDevelop;
@@ -30,14 +31,14 @@ namespace ICSharpCode.XmlEditor
 	/// </summary>
 	public class AssignStylesheetCommand : AbstractMenuCommand
 	{
-		public override void Run()
+		public override async void Run()
 		{
 			// Get active xml document.
 			XmlView xmlView = XmlView.ActiveXmlView;
 
 			if (xmlView != null) {
 				// Prompt user for filename.
-				string stylesheetFileName = BrowseForStylesheetFile();
+				string stylesheetFileName = await BrowseForStylesheetFileAsync();
 
 				// Assign stylesheet.
 				if (stylesheetFileName != null) {
@@ -46,7 +47,7 @@ namespace ICSharpCode.XmlEditor
 			}
 		}
 
-		public static string BrowseForStylesheetFile()
+		public static async Task<string> BrowseForStylesheetFileAsync()
 		{
 			var dialog = new OpenFileDialog {
 				Multiselect = false,
@@ -63,7 +64,9 @@ namespace ICSharpCode.XmlEditor
 				dialog.FilterIndex = 1;
 			}
 
-			if (dialog.ShowDialog() == true) {
+			// Must use the async picker here: this runs on the UI thread, and ShowDialog()
+			// would deadlock waiting for a native picker that itself needs the UI thread to pump.
+			if (await dialog.ShowDialogAsync() == true) {
 				return dialog.FileName;
 			}
 

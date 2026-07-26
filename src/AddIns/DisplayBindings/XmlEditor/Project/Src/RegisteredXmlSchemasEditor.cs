@@ -20,6 +20,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
+using System.Threading.Tasks;
 using Microsoft.Win32;
 using ICSharpCode.Core;
 
@@ -181,10 +182,10 @@ namespace ICSharpCode.XmlEditor
 			}
 		}
 		
-		public void AddSchemaFromFileSystem()
+		public async Task AddSchemaFromFileSystemAsync()
 		{
 			try {
-				string schemaFileName = BrowseForSchema();
+				string schemaFileName = await BrowseForSchemaAsync();
 				if (!String.IsNullOrEmpty(schemaFileName)) {
 					
 					XmlSchemaCompletion schema = LoadSchema(schemaFileName);
@@ -208,12 +209,12 @@ namespace ICSharpCode.XmlEditor
 			}
 		}
 		
-		string BrowseForSchema()
-		{			
+		async Task<string> BrowseForSchemaAsync()
+		{
 			OpenFileDialog openFileDialog  = new OpenFileDialog();
 			openFileDialog.Filter = StringParser.Parse("${res:SharpDevelop.FileFilter.XmlSchemaFiles}|*.xsd|${res:SharpDevelop.FileFilter.AllFiles}|*.*");
-			
-			if (schemasPanel.ShowDialog(openFileDialog) == true) {
+
+			if (await schemasPanel.ShowFileDialogAsync(openFileDialog) == true) {
 				return openFileDialog.FileName;
 			}
 			return null;

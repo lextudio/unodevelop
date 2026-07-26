@@ -178,7 +178,15 @@ public sealed class TestService : ITestService
         {
             try
             {
-                var tests = _runner.ListTestsAsync(projectPath, targetFramework, CancellationToken.None)
+                // A bounded timeout, not CancellationToken.None: if the launched MTP test host
+                // connects but then never responds to initialize/discoverTests (hung static
+                // ctor, deadlock in the host, ...), MtpServerProcess's RPC call has no timeout of
+                // its own and would otherwise hang this call - and by extension every caller of
+                // GetTests()/DiscoverTestsForProject - forever. The "await using" in
+                // DotNetTestRunner.ListTestsAsync still disposes (and kills) the host process once
+                // this token fires.
+                using var discoverCts = new CancellationTokenSource(TimeSpan.FromSeconds(60));
+                var tests = _runner.ListTestsAsync(projectPath, targetFramework, discoverCts.Token)
                     .GetAwaiter()
                     .GetResult();
 
@@ -196,6 +204,10 @@ public sealed class TestService : ITestService
                         test.MethodName,
                         test.ParameterCount));
                 }
+            }
+            catch (OperationCanceledException)
+            {
+                Dbg($"DiscoverTests timed out for {project.Name} ({targetFramework ?? "(default target)"}) - MTP host did not respond within 60s");
             }
             catch (Exception ex)
             {

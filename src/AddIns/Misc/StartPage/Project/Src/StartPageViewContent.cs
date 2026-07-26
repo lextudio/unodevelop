@@ -126,7 +126,7 @@ public sealed class StartPageViewContent : IViewContent
             Content = "Open Solution or Project...",
             Margin = new Thickness(0, 8, 0, 0),
         };
-        openButton.Click += (_, _) => OpenProjectDialog();
+        openButton.Click += async (_, _) => await OpenProjectDialogAsync();
 
         var sectionBody = new Border
         {
@@ -250,14 +250,16 @@ public sealed class StartPageViewContent : IViewContent
             ServiceSingleton.GetRequiredService<IMessageService>().ShowError("Failed to open: " + path);
     }
 
-    private static void OpenProjectDialog()
+    private static async Task OpenProjectDialogAsync()
     {
         var dialog = new Microsoft.Win32.OpenFileDialog
         {
             Filter = "Solution and Project Files (*.sln;*.slnx;*.csproj)|*.sln;*.slnx;*.csproj|All Files (*.*)|*.*",
             Multiselect = false,
         };
-        if (dialog.ShowDialog() == true)
+        // Must use the async picker here: this runs on the UI thread, and ShowDialog() would
+        // deadlock waiting for a native picker that itself needs the UI thread to pump.
+        if (await dialog.ShowDialogAsync() == true)
             OpenProject(dialog.FileName);
     }
 
