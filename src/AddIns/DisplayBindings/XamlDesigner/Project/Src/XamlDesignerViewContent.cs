@@ -26,11 +26,13 @@ namespace ICSharpCode.XamlDesigner
         readonly Border _selectionBorder;
         readonly TextBlock _status;
         readonly XamlToolboxProvider _toolboxProvider = new();
+        readonly XamlOutlineContentHost _outlineContentHost;
         FrameworkElement? _selectedElement;
 
         public XamlDesignerViewContent(IViewContent primary)
         {
             _primary = primary;
+            _outlineContentHost = new XamlOutlineContentHost(primary);
 
             _previewHost = new Grid
             {
@@ -377,7 +379,9 @@ namespace ICSharpCode.XamlDesigner
         public void SwitchToThisWithoutSaveLoad(OpenedFile file, IViewContent oldView) { }
 
         public object? GetService(Type serviceType)
-            => serviceType == typeof(IToolboxProvider) ? _toolboxProvider : null;
+            => serviceType == typeof(IToolboxProvider) ? _toolboxProvider
+                : serviceType == typeof(IOutlineContentHost) ? _outlineContentHost
+                : null;
 
         public void Dispose()
         {

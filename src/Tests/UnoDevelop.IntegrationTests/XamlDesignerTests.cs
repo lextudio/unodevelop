@@ -73,6 +73,45 @@ public sealed class XamlDesignerTests
         Assert.True(pads.GetProperty("toolboxFound").GetBoolean(), pads.ToString());
         Assert.False(pads.GetProperty("toolboxHasProvider").GetBoolean(), pads.ToString());
         Assert.Empty(pads.GetProperty("toolboxItems").EnumerateArray());
+
+        var outline = await _app.InvokeAsync("ide-xaml-outline");
+        Assert.True(outline.GetProperty("outlineFound").GetBoolean(), outline.ToString());
+        Assert.False(outline.GetProperty("outlineHasProvider").GetBoolean(), outline.ToString());
+        Assert.Empty(outline.GetProperty("items").EnumerateArray());
+    }
+
+    [Fact]
+    public async Task XamlOutlinePad_ShowsElementHierarchy()
+    {
+        await _app.InvokeAsync("ide-open-file", _app.XamlFixtureFilePath);
+
+        var outline = await _app.InvokeAsync("ide-xaml-outline");
+        Assert.True(outline.GetProperty("outlineFound").GetBoolean(), outline.ToString());
+        Assert.True(outline.GetProperty("outlineHasProvider").GetBoolean(), outline.ToString());
+        Assert.Contains(outline.GetProperty("items").EnumerateArray(), item =>
+            item.GetProperty("ElementName").GetString() == "Page"
+            && item.GetProperty("Depth").GetInt32() == 0);
+        Assert.Contains(outline.GetProperty("items").EnumerateArray(), item =>
+            item.GetProperty("ElementName").GetString() == "StackPanel"
+            && item.GetProperty("Depth").GetInt32() == 1);
+        Assert.Contains(outline.GetProperty("items").EnumerateArray(), item =>
+            item.GetProperty("ElementName").GetString() == "Button"
+            && item.GetProperty("Depth").GetInt32() >= 2);
+
+        var foldings = await _app.InvokeAsync("ide-editor-foldings");
+        Assert.Equal("XmlFoldingStrategy", foldings.GetProperty("strategy").GetString());
+        Assert.True(foldings.GetProperty("count").GetInt32() >= 2, foldings.ToString());
+    }
+
+    [Fact]
+    public async Task XmlFile_UsesXmlFolding()
+    {
+        await _app.InvokeAsync("ide-open-file", _app.XmlFixtureFilePath);
+
+        var foldings = await _app.InvokeAsync("ide-editor-foldings");
+        Assert.True(foldings.GetProperty("found").GetBoolean(), foldings.ToString());
+        Assert.Equal("XmlFoldingStrategy", foldings.GetProperty("strategy").GetString());
+        Assert.True(foldings.GetProperty("count").GetInt32() >= 3, foldings.ToString());
     }
 
     [Fact]

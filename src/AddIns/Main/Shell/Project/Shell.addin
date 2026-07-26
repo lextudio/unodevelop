@@ -26,6 +26,11 @@
          title="Toolbox"
          category="Main"
          defaultPosition="Left" />
+    <Pad id="Outline"
+         class="UnoDevelop.Workbench.OutlinePad"
+         title="Outline"
+         category="Main"
+         defaultPosition="Left, Hidden" />
   </Path>
 
   <Path name="/UnoDevelop/MainMenu/File">

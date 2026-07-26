@@ -84,6 +84,7 @@
     <Compile Include="..\Src\Gui\PadExtensions.uno.cs" />
     <Compile Include="..\Src\Gui\ErrorListPadStub.uno.cs" />
     <Compile Include="..\Src\Gui\IToolboxProvider.uno.cs" />
+    <Compile Include="..\Src\Gui\IOutlineContentHost.uno.cs" />
     <Compile Include="..\Src\Workbench\WorkbenchPlatformBridge.cs" />
     <Compile Include="..\Src\Workbench\WorkbenchPlatformBridge.uno.cs" />
     <Compile Include="..\Src\Workbench\AbstractPadContent.uno.cs" />

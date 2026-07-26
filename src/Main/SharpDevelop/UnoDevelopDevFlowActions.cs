@@ -1252,6 +1252,27 @@ public static class UnoDevelopDevFlowActions
         });
     }
 
+    [DevFlowAction("ide-xaml-outline", Description = "Return the shared Outline pad state.")]
+    public static string GetXamlOutline()
+    {
+        return SD.MainThread.InvokeIfRequired(() =>
+        {
+            var outline = SD.Workbench.PadContentCollection.FirstOrDefault(pad =>
+                pad.ClassName.EndsWith(".OutlinePad", StringComparison.Ordinal));
+            outline?.CreatePad();
+            var control = outline?.PadContent?.Control;
+            var items = control?.GetType().GetMethod("GetSnapshot")
+                ?.Invoke(control, null) as System.Collections.IEnumerable;
+            return JsonSerializer.Serialize(new
+            {
+                outlineFound = outline is not null,
+                outlineHasProvider = control?.GetType().GetProperty("HasProvider")
+                    ?.GetValue(control) as bool? ?? false,
+                items = items?.Cast<object>().ToArray() ?? Array.Empty<object>()
+            });
+        });
+    }
+
     private static IViewContent? FindActiveXamlDesigner()
         => SD.Workbench.ActiveWorkbenchWindow?.ViewContents.FirstOrDefault(view =>
             view.GetType().FullName == "ICSharpCode.XamlDesigner.XamlDesignerViewContent");
