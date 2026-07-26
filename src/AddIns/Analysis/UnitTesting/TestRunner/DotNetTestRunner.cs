@@ -101,6 +101,26 @@ internal sealed class DotNetTestRunner
             server.OutputLine += line => OutputLine?.Invoke(line);
             return server;
         }
+        catch (TimeoutException)
+        {
+            // MtpServerProcess.StartAsync's own 30s AcceptTcpClientAsync timeout: the launched
+            // process never connected back over the server-mode TCP port at all - the single
+            // most common cause is that this test project doesn't actually speak
+            // Microsoft.Testing.Platform's server-mode protocol (still classic VSTest:
+            // Microsoft.NET.Test.Sdk + xunit.runner.visualstudio / NUnit3TestAdapter /
+            // MSTest.TestAdapter, with no UseMicrosoftTestingPlatformRunner / EnableMSTestRunner /
+            // EnableNUnitRunner), not a slow/hung host - worth calling out explicitly rather than
+            // reporting a generic "0 tests found" with no actionable explanation.
+            OutputLine?.Invoke(
+                "> WARNING: " + Path.GetFileNameWithoutExtension(assemblyPath) + " did not connect back as an "
+                + "MTP server-mode test host within 30s. UnoDevelop's test runner only supports "
+                + "Microsoft.Testing.Platform (MTP) - if this project still uses classic VSTest "
+                + "(Microsoft.NET.Test.Sdk + xunit.runner.visualstudio / NUnit3TestAdapter / "
+                + "MSTest.TestAdapter), it will never be discovered or run. Upgrade to xunit.v3 "
+                + "(UseMicrosoftTestingPlatformRunner), MSTest (EnableMSTestRunner), or NUnit "
+                + "(EnableNUnitRunner) to enable test discovery and running.");
+            return null;
+        }
         catch (Exception ex)
         {
             OutputLine?.Invoke("> Failed to start MTP server-mode host for " + assemblyPath + ": " + ex.Message);

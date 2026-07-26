@@ -146,6 +146,18 @@ internal sealed class UnoProjectService : IProjectService, IProjectServiceRaiseE
             return false;
         }
 
+        // Close (and clear _allProjects) BEFORE building the new solution model, not after:
+        // UnoSolutionModel.FromProject/FromSln/FromSlnx are handed _allProjects directly and
+        // APPEND onto it via AddProjectPath. OpenSolution used to close the previous solution
+        // only after the new model was already built, so the still-dirty _allProjects collection
+        // (holding the previous solution's projects) got the new solution's project(s) appended
+        // on top of it - every reopen of the same or a different project/solution accumulated
+        // one more duplicate project. This was invisible before because nothing exercised
+        // GetTests() successfully enough to expose duplicate project entries (see
+        // opendevelop-sync.md's TestService hang investigation).
+        if (_currentSolution is not null)
+            CloseSolution(allowCancel: false);
+
         if (_projectBindings.Any(binding =>
                 path.EndsWith(binding.ProjectFileExtension, StringComparison.OrdinalIgnoreCase)))
         {

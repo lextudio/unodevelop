@@ -215,7 +215,22 @@ public sealed class TestService : ITestService
             }
             catch (OperationCanceledException)
             {
+                // This 60s timeout firing is a reliable signal, not just a slow project: TestService
+                // only speaks Microsoft.Testing.Platform's server-mode protocol, so a classic
+                // VSTest-based test project (Microsoft.NET.Test.Sdk + xunit.runner.visualstudio /
+                // NUnit3TestAdapter / MSTest.TestAdapter, no UseMicrosoftTestingPlatformRunner /
+                // EnableMSTestRunner / EnableNUnitRunner) will NEVER connect back and will hit this
+                // every time - silently reporting "0 tests" otherwise, with no clue why.
                 Dbg($"DiscoverTests timed out for {project.Name} ({targetFramework ?? "(default target)"}) - MTP host did not respond within 60s");
+                PrepareOutputCategory(clear: false)?.AppendLine(
+                    $"WARNING: '{project.Name}'"
+                    + (string.IsNullOrWhiteSpace(targetFramework) ? "" : $" [{targetFramework}]")
+                    + " did not respond to Microsoft.Testing.Platform (MTP) test discovery within 60s. "
+                    + "UnoDevelop's test runner only supports MTP-based test hosts - if this project still "
+                    + "uses classic VSTest (Microsoft.NET.Test.Sdk + xunit.runner.visualstudio / "
+                    + "NUnit3TestAdapter / MSTest.TestAdapter), it will never be discovered. Upgrade to "
+                    + "xunit.v3 (UseMicrosoftTestingPlatformRunner), MSTest (EnableMSTestRunner), or "
+                    + "NUnit (EnableNUnitRunner) to enable test discovery and running.");
             }
             catch (Exception ex)
             {

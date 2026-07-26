@@ -624,6 +624,14 @@ public static class UnoDevelopDevFlowActions
         return JsonSerializer.Serialize(new { text });
     }
 
+    [DevFlowAction("ide-tests-output", Description = "Return the 'Tests' output category text (build/discovery/run log, including MTP-upgrade warnings for non-MTP test projects). Returns JSON: {text}.")]
+    public static string TestsOutput()
+    {
+        var outputPad = ServiceSingleton.ServiceProvider.GetService(typeof(IOutputPad)) as UnoOutputPadService;
+        var text = outputPad?.Categories.FirstOrDefault(c => c.DisplayCategory == "Tests")?.Text ?? string.Empty;
+        return JsonSerializer.Serialize(new { text });
+    }
+
     [DevFlowAction("ide-debug-pad-snapshot", Description = "Get the current content of a debug pad by name. Returns {found, items} JSON.")]
     public static async Task<string> DebugPadSnapshot(string padName)
     {
@@ -874,13 +882,20 @@ public static class UnoDevelopDevFlowActions
     public static string TestsRefresh()
     {
         var testService = ServiceSingleton.ServiceProvider.GetService(typeof(ITestService)) as ITestService;
-        testService?.RefreshTests();
+        if (testService is null)
+            return JsonSerializer.Serialize(new { count = 0 });
 
-        var count = testService is null
-            ? 0
-            : Task.Run(() => testService.GetTests().Count).GetAwaiter().GetResult();
+        // A single discovery pass, not two: MainPage.RefreshTestsAsync() already clears
+        // TestService's cache and (re)populates it via GetTests() to feed the Test panel UI.
+        // Previously this action ALSO called RefreshTests()+GetTests() itself first, then fired
+        // MainPage's refresh - each one a full, real discovery pass (MTP host spin-up, up to the
+        // per-project 60s bound) - doubling the cost of every refresh for no benefit, since the
+        // second pass just re-discovered the same thing the first one already found.
+        Task refreshTask = Task.CompletedTask;
+        SD.MainThread.InvokeIfRequired(() => refreshTask = MainPage.Current?.RefreshTestsAsync() ?? Task.CompletedTask);
+        refreshTask.GetAwaiter().GetResult();
 
-        SD.MainThread.InvokeIfRequired(() => MainPage.Current?.RefreshTests());
+        var count = testService.GetTests().Count;
         return JsonSerializer.Serialize(new { count });
     }
 
