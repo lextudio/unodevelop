@@ -167,6 +167,11 @@ internal sealed class UnoProjectService : IProjectService, IProjectServiceRaiseE
     public bool OpenSolution(ISolution solution)
     {
         Dbg($"OpenSolution START: solution={solution.Name}, project count={solution.Projects.Count}");
+
+        // Close existing solution first (matching SharpDevelop behavior)
+        if (_currentSolution is not null)
+            CloseSolution(allowCancel: false);
+
         var projectSnapshot = solution.Projects.CreateSnapshot();
         var old = _currentSolution;
         _currentSolution = solution;

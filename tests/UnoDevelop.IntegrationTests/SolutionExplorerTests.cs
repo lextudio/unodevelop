@@ -26,8 +26,8 @@ public sealed class SolutionExplorerTests
     [Fact]
     public async Task OpenThenCloseSolution()
     {
-        var open = await _app.InvokeStringAsync("ide-open-project", _app.FixtureSolutionPath);
-        Assert.StartsWith("OK:", open);
+        var open = await _app.InvokeAsync("ide-open-project", _app.FixtureSolutionPath);
+        Assert.True(open.GetProperty("success").GetBoolean());
 
         var close = await _app.InvokeStringAsync("ide-close-solution");
         Assert.NotNull(close);

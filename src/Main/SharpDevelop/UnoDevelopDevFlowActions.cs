@@ -27,16 +27,15 @@ public static class UnoDevelopDevFlowActions
             var projectService = ServiceSingleton.GetRequiredService<IProjectService>();
             var fileName = FileName.Create(filePath);
             if (fileName is null)
-                return "ERROR: Invalid file path: " + filePath;
+                return """{"success":false}""";
 
             var result = projectService.OpenSolutionOrProject(fileName);
             var solution = projectService.CurrentSolution;
             if (solution is not null)
             {
-                return "OK: Opened " + solution.Name
-                    + " (" + (solution.Projects?.Count ?? 0) + " projects)";
+                return """{"success":true}""";
             }
-            return result ? "OK: Opened " + filePath : "ERROR: Failed to open " + filePath;
+            return result ? """{"success":true}""" : """{"success":false}""";
         });
     }
 
@@ -53,12 +52,12 @@ public static class UnoDevelopDevFlowActions
         {
             var results = await buildService.BuildAsync(solution,
                 new BuildOptions(BuildTarget.Build));
-            return "OK: Build finished. Errors=" + results.ErrorCount
-                + ", Warnings=" + results.WarningCount;
+            return "{\"result\":\"Success\",\"errors\":" + results.ErrorCount
+                + ",\"warnings\":" + results.WarningCount + "}";
         }
         catch (System.Exception ex)
         {
-            return "ERROR: Build threw exception: " + ex.Message;
+            return "{\"result\":\"Error\",\"message\":\"" + ex.Message + "\"}";
         }
     }
 
@@ -162,7 +161,7 @@ public static class UnoDevelopDevFlowActions
             var workbench = ServiceSingleton.GetRequiredService<IWorkbench>();
             var text = System.IO.File.ReadAllText(filePath);
             workbench.ShowView(new MainPage.EditorViewContent(Path.GetFileName(filePath), text, filePath), true);
-            return "OK: Opened " + filePath;
+            return """{"opened":true}""";
         });
     }
 

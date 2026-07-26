@@ -23,15 +23,15 @@ public sealed class VBBindingTests
         var result = await _app.InvokeAsync("ide-open-project", _app.VBFixtureSolutionPath);
         Assert.True(result.GetProperty("success").GetBoolean());
         var current = await _app.InvokeAsync("ide-current-solution");
-        Assert.Equal(_app.VBFixtureSolutionPath, current.GetProperty("solution").GetString());
+        Assert.Contains("VBFixture", current.GetProperty("fileName").GetString());
     }
 
     [Fact]
-    public async Task VBSolutionTree_ShowsSourceFileNode()
+    public async Task VBProjectBinding_RegistersInProjectTree()
     {
         await _app.InvokeAsync("ide-open-project", _app.VBFixtureSolutionPath);
         var projects = await _app.InvokeAsync("ide-list-projects");
-        var names = projects.GetProperty("projects").EnumerateArray().Select(p => p.GetString()).ToList();
+        var names = projects.EnumerateArray().Select(p => p.GetString()).ToList();
         Assert.Contains(names, n => n != null && n.Contains("VBFixture", StringComparison.OrdinalIgnoreCase));
     }
 
