@@ -159,6 +159,7 @@
 			<FSharpBindingOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\BackendBindings\FSharpBinding\Project\bin\$(Configuration)\net10.0-desktop\FSharpBinding.*" Exclude="**\*.addin" />
 			<AndroidDeviceManagerOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\Misc\AndroidDeviceManager\Project\bin\$(Configuration)\net10.0-desktop\UnoDevelop.AndroidDeviceManager.*" Exclude="**\*.addin" />
 			<AndroidSdkManagerOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\Misc\AndroidSdkManager\Project\bin\$(Configuration)\net10.0-desktop\UnoDevelop.AndroidSdkManager.*" Exclude="**\*.addin" />
+			<UnitTestingOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\Analysis\UnitTesting\bin\$(Configuration)\net10.0-desktop\UnoDevelop.UnitTesting.*" Exclude="**\*.addin" />
 		</ItemGroup>
 		<MakeDir Directories="$(OutputPath)AddIns\Misc\AddinScout\Project\" />
 		<MakeDir Directories="$(OutputPath)AddIns\Misc\RegExpTk\Project\" />
@@ -177,6 +178,7 @@
 		<MakeDir Directories="$(OutputPath)AddIns\BackendBindings\FSharpBinding\Project\" />
 		<MakeDir Directories="$(OutputPath)AddIns\Misc\AndroidDeviceManager\Project\" />
 		<MakeDir Directories="$(OutputPath)AddIns\Misc\AndroidSdkManager\Project\" />
+		<MakeDir Directories="$(OutputPath)AddIns\Analysis\UnitTesting\" />
 		<Copy SourceFiles="@(AddInScoutOutput)"
 		      DestinationFolder="$(OutputPath)AddIns\Misc\AddinScout\Project\"
 		      SkipUnchangedFiles="true" />
@@ -227,6 +229,9 @@
 		      SkipUnchangedFiles="true" />
 		<Copy SourceFiles="@(AndroidSdkManagerOutput)"
 		      DestinationFolder="$(OutputPath)AddIns\Misc\AndroidSdkManager\Project\"
+		      SkipUnchangedFiles="true" />
+		<Copy SourceFiles="@(UnitTestingOutput)"
+		      DestinationFolder="$(OutputPath)AddIns\Analysis\UnitTesting\"
 		      SkipUnchangedFiles="true" />
 	</Target>
 	

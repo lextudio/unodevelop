@@ -4,15 +4,10 @@
 
   <Manifest>
     <Identity name="UnoDevelop.UnitTesting"/>
-    <Dependency addin="ICSharpCode.SharpDevelop"/>
+    <Dependency addin="SharpDevelop"/>
   </Manifest>
 
   <Runtime>
     <Import assembly="UnoDevelop.UnitTesting.dll" />
   </Runtime>
-
-  <Path name="/SharpDevelop/Services">
-    <Service id="UnoDevelop.UnitTesting.ITestService"
-             class="UnoDevelop.UnitTesting.TestService"/>
-  </Path>
 </AddIn>

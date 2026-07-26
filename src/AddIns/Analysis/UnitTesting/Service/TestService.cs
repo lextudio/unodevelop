@@ -16,6 +16,12 @@ public sealed class TestService : ITestService
 {
     private readonly DotNetTestRunner _runner = new();
     private List<TestInfo> _cachedTests = new();
+    // Tracks whether a discovery pass has actually completed, separately from whether it found
+    // anything - a project with zero (real, legitimately discovered) tests must stay cached too,
+    // otherwise every GetTests() call re-runs the full (MTP-host-spinup-cost, ~30s-per-project)
+    // discovery from scratch forever. Previously guarded by `_cachedTests.Count > 0`, which never
+    // let an empty result "stick".
+    private bool _hasDiscovered;
     private Dictionary<string, TestResultInfo> _lastResults = new();
     private CancellationTokenSource? _cts;
     private readonly object _lock = new();
@@ -36,7 +42,7 @@ public sealed class TestService : ITestService
     {
         lock (_lock)
         {
-            if (_cachedTests.Count > 0)
+            if (_hasDiscovered)
                 return _cachedTests.ToList();
 
             var projectService = ServiceSingleton.ServiceProvider.GetService(typeof(IProjectService)) as IProjectService;
@@ -75,6 +81,7 @@ public sealed class TestService : ITestService
             }
 
             _cachedTests = all;
+            _hasDiscovered = true;
             if (progressMonitor is not null)
             {
                 progressMonitor.TaskName = $"Test refresh completed: {all.Count} test(s).";
@@ -98,6 +105,7 @@ public sealed class TestService : ITestService
         lock (_lock)
         {
             _cachedTests.Clear();
+            _hasDiscovered = false;
         }
     }
 
