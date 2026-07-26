@@ -58,6 +58,57 @@ public sealed class ResourceEntry : INotifyPropertyChanged
 
     public bool IsEditable { get; }
 
+    /// <summary>
+    /// Human-readable summary for non-editable binary-ish entries (Bitmap/Icon/Cursor/other
+    /// serialized types), e.g. "Icon (2,238 bytes)" instead of a raw base64 blob. Returns
+    /// <see cref="Value"/> unchanged for editable (string/boolean/metadata) entries. Does not
+    /// attempt to decode actual image pixel data - legacy .NET Framework resx Bitmap/Icon/Cursor
+    /// payloads can be BinaryFormatter-serialized, and BinaryFormatter deserialization is
+    /// deprecated/removed in modern .NET for security reasons, so a byte-count summary is the
+    /// safe, correct thing to show rather than guessing at a decode.
+    /// </summary>
+    public string DisplaySummary
+    {
+        get
+        {
+            if (IsEditable)
+            {
+                return Value;
+            }
+
+            var kind = ClassifyBinaryKind(Type);
+            try
+            {
+                var bytes = Convert.FromBase64String(Value.Trim());
+                return $"{kind} ({bytes.Length:N0} bytes)";
+            }
+            catch (FormatException)
+            {
+                return $"{kind} (unreadable)";
+            }
+        }
+    }
+
+    private static string ClassifyBinaryKind(string type)
+    {
+        if (type.Contains("System.Drawing.Bitmap", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Bitmap";
+        }
+
+        if (type.Contains("System.Drawing.Icon", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Icon";
+        }
+
+        if (type.Contains("System.Windows.Forms.Cursor", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Cursor";
+        }
+
+        return "Binary";
+    }
+
     public event PropertyChangedEventHandler? PropertyChanged;
 
     private void SetField<T>(ref T field, T newValue, [CallerMemberName] string? propertyName = null)
@@ -69,6 +120,10 @@ public sealed class ResourceEntry : INotifyPropertyChanged
 
         field = newValue;
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        if (propertyName is nameof(Value) or nameof(Type))
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(DisplaySummary)));
+        }
     }
 }
 

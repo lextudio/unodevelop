@@ -8,7 +8,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="..\Src\**\*.cs" />
+    <Compile Include="Service/*.cs" />
+    <Compile Include="Pad/*.cs" />
+    <Compile Include="TestRunner/*.cs" />
+    <Compile Include="Mtp/*.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -16,6 +19,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Base\Project\ICSharpCode.SharpDevelop.csproj" />
+    <ProjectReference Include="..\..\..\Main\Base\Project\ICSharpCode.SharpDevelop.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="UnitTesting.addin">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 </Project>

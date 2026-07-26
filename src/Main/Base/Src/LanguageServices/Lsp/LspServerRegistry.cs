@@ -56,6 +56,10 @@ namespace ICSharpCode.SharpDevelop.LanguageServices.Lsp
             registry.Register(".jsx", typeScript);
             var python = new LspServerLaunchSpec("python", "pylsp");
             registry.Register(".py", python);
+            var fsharp = new LspServerLaunchSpec(
+                "fsharp", "dotnet", "tool", "run", "fsautocomplete", "--");
+            registry.Register(".fs", fsharp);
+            registry.Register(".fsi", fsharp);
 
             return registry;
         }

@@ -1,0 +1,18 @@
+<AddIn name="UnoDevelop UnitTesting"
+       author="OpenAI"
+       description="Unit test integration for UnoDevelop">
+
+  <Manifest>
+    <Identity name="UnoDevelop.UnitTesting"/>
+    <Dependency addin="ICSharpCode.SharpDevelop"/>
+  </Manifest>
+
+  <Runtime>
+    <Import assembly="UnoDevelop.UnitTesting.dll" />
+  </Runtime>
+
+  <Path name="/SharpDevelop/Services">
+    <Service id="UnoDevelop.UnitTesting.ITestService"
+             class="UnoDevelop.UnitTesting.TestService"/>
+  </Path>
+</AddIn>

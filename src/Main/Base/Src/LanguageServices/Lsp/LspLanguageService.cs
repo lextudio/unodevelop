@@ -433,6 +433,7 @@ namespace ICSharpCode.SharpDevelop.LanguageServices.Lsp
 
                 var startInfo = new ProcessStartInfo(_spec.Command)
                 {
+                    WorkingDirectory = new Uri(_rootUri).LocalPath,
                     RedirectStandardInput = true,
                     RedirectStandardOutput = true,
                     RedirectStandardError = false,

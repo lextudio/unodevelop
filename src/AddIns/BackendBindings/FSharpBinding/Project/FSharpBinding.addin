@@ -1,0 +1,38 @@
+<AddIn name="F# Binding"
+       author="Robert Pickering"
+       copyright="prj:///doc/copyright.txt"
+       description="Backend binding for F#"
+       addInManagerHidden="preinstalled">
+  <Manifest>
+    <Identity name="ICSharpCode.FSharpBinding"/>
+  </Manifest>
+
+  <Runtime>
+    <Import assembly="FSharpBinding.dll"/>
+    <Import assembly=":ICSharpCode.SharpDevelop"/>
+  </Runtime>
+
+  <Path name="/SharpDevelop/MSBuildEngine/CompileTaskNames">
+    <String id="fsc" text="fsc"/>
+  </Path>
+
+  <Path name="/SharpDevelop/Workbench/FileFilter">
+    <FileFilter id="F#" insertbefore="AllFiles" name="F# (*.fs;*.fsi)"
+                extensions="*.fs;*.fsi" mimeType="text/plain"/>
+  </Path>
+
+  <Path name="/SharpDevelop/Workbench/Combine/FileFilter">
+    <FileFilter id="FSharpProject" insertbefore="AllFiles"
+                name="F# Project Files (*.fsproj)"
+                class="ICSharpCode.SharpDevelop.Project.LoadProject"
+                extensions="*.fsproj"/>
+  </Path>
+
+  <Path name="/SharpDevelop/Workbench/ProjectBindings">
+    <ProjectBinding id="F#"
+                    guid="{F2A71F9B-5D33-465A-A702-920D77279786}"
+                    supportedextensions=".fs;.fsi"
+                    projectfileextension=".fsproj"
+                    class="FSharpBinding.FSharpProjectBinding"/>
+  </Path>
+</AddIn>

@@ -105,6 +105,9 @@ internal sealed class ResourceViewerViewContent : IViewContent
 
     public string FilePath { get; }
 
+    /// <summary>Read-only snapshot of loaded entries - exposed for DevFlow/integration-test inspection.</summary>
+    public IReadOnlyList<ResourceEntry> Entries => _entries;
+
     public object? Control => _control;
 
     public object? InitiallyFocusedControl => _filterBox;
@@ -352,7 +355,9 @@ internal sealed class ResourceViewerViewContent : IViewContent
 
             var name = CreateCell("Name", true);
             var type = CreateCell("Type", false);
-            var value = CreateCell("Value", false);
+            // DisplaySummary shows "Bitmap (N bytes)" etc. for image/binary resx entries instead
+            // of a raw unreadable base64 blob; falls back to the plain Value for text entries.
+            var value = CreateCell("DisplaySummary", false);
 
             Grid.SetColumn(name, 0);
             Grid.SetColumn(type, 1);
@@ -376,19 +381,54 @@ internal sealed class ResourceViewerViewContent : IViewContent
 
             var name = CreateEditor("Name");
             var type = CreateEditor("Type");
-            var value = CreateEditor("Value");
+            // Per-row: string/boolean/metadata entries (IsEditable) get a live TextBox on Value;
+            // Bitmap/Icon/Cursor/Binary entries (not editable) get a read-only byte-count summary
+            // instead - a giant base64 blob in an inline TextBox is neither readable nor safely
+            // hand-editable.
+            var valueEditor = CreateEditor("Value");
+            valueEditor.SetBinding(FrameworkElement.VisibilityProperty, new Binding
+            {
+                Path = new PropertyPath("IsEditable"),
+                Converter = BoolToVisibilityConverter
+            });
+            var valueSummary = CreateCell("DisplaySummary", false);
+            valueSummary.SetBinding(FrameworkElement.VisibilityProperty, new Binding
+            {
+                Path = new PropertyPath("IsEditable"),
+                Converter = BoolToVisibilityConverter,
+                ConverterParameter = "invert"
+            });
+            var valueCell = new Grid();
+            valueCell.Children.Add(valueEditor);
+            valueCell.Children.Add(valueSummary);
             var comment = CreateEditor("Comment");
 
             Grid.SetColumn(name, 0);
             Grid.SetColumn(type, 1);
-            Grid.SetColumn(value, 2);
+            Grid.SetColumn(valueCell, 2);
             Grid.SetColumn(comment, 3);
             root.Children.Add(name);
             root.Children.Add(type);
-            root.Children.Add(value);
+            root.Children.Add(valueCell);
             root.Children.Add(comment);
             return root;
         });
+    }
+
+    private static readonly IValueConverter BoolToVisibilityConverter = new EditableToVisibilityConverter();
+
+    private sealed class EditableToVisibilityConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, string language)
+        {
+            var isEditable = value is bool b && b;
+            var invert = string.Equals(parameter as string, "invert", StringComparison.OrdinalIgnoreCase);
+            var show = invert ? !isEditable : isEditable;
+            return show ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, string language)
+            => throw new NotSupportedException();
     }
 
     private static FrameworkElement CreateEditor(string path)

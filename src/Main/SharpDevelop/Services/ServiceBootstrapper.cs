@@ -33,6 +33,11 @@ internal static class ServiceBootstrapper
         container.AddService(typeof(IMessageService), new UnoMessageService());
         var propertyService = new UnoPropertyService();
         container.AddService(typeof(IPropertyService), propertyService);
+        // Required before any AddInManager.Enable/Disable/SaveAddInConfiguration call (used by
+        // AddInScoutViewContent's enable/disable toggle) - upstream AddInManager.SaveAddInConfiguration
+        // writes directly to this path with no null-check of its own.
+        System.IO.Directory.CreateDirectory(propertyService.ConfigDirectory.ToString());
+        AddInManager.ConfigurationFileName = Path.Combine(propertyService.ConfigDirectory.ToString(), "AddIns.xml");
         container.AddService(typeof(ICSharpCode.Core.IResourceService), new ResourceServiceImpl(Path.Combine(propertyService.DataDirectory.ToString(), "resources"), propertyService));
         container.AddService(typeof(ApplicationStateInfoService), new ApplicationStateInfoService());
         container.AddService(typeof(IShutdownService), new UnoShutdownService());
@@ -69,6 +74,9 @@ internal static class ServiceBootstrapper
         CommandWrapper.UnregisterConditionRequerySuggestedHandler = _ => { };
 
         LoadBuiltInAddIns(addInTree, container);
+        (container.GetService(typeof(IProjectService)) as UnoProjectService)
+            ?.LoadAddInProjectBindings(addInTree);
+        InitializeFSharpAddIn(addInTree);
 
         // Services that require IAddInTree to be registered first
         container.AddService(typeof(IDisplayBindingService), new DisplayBindingService());
@@ -83,7 +91,7 @@ internal static class ServiceBootstrapper
         var lspServerRegistry = LspServerRegistry.CreateDefault();
         var rootUri = new System.Uri(System.IO.Path.GetFullPath(System.IO.Directory.GetCurrentDirectory())).AbsoluteUri;
         var lspServicesByLanguageId = new Dictionary<string, LspLanguageService>();
-        foreach (var extension in new[] { ".ts", ".tsx", ".js", ".jsx", ".py" })
+        foreach (var extension in new[] { ".ts", ".tsx", ".js", ".jsx", ".py", ".fs", ".fsi" })
         {
             if (!lspServerRegistry.TryGetLaunchSpec(extension, out var launchSpec))
                 continue;
@@ -132,6 +140,24 @@ internal static class ServiceBootstrapper
                 {
                     return;
                 }
+            }
+        }
+    }
+
+    private static void InitializeFSharpAddIn(IAddInTree addInTree)
+    {
+        foreach (var addIn in addInTree.AddIns)
+        {
+            if (!addIn.Enabled || !addIn.Manifest.Identities.ContainsKey("ICSharpCode.FSharpBinding"))
+                continue;
+
+            foreach (var runtime in addIn.Runtimes)
+            {
+                var startupType = runtime.LoadedAssembly?.GetType("FSharpBinding.FSharpBindingStartup");
+                startupType?.GetMethod("Initialize", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)
+                    ?.Invoke(null, null);
+                if (startupType is not null)
+                    return;
             }
         }
     }

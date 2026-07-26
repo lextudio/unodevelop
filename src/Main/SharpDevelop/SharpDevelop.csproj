@@ -27,7 +27,7 @@
 		<ProjectReference Include="..\Base\Project\ICSharpCode.SharpDevelop.csproj" />
 		<ProjectReference Include="..\Core\Project\ICSharpCode.Core.csproj" />
 		<ProjectReference Include="..\Debugger\Project\UnoDevelop.Debugger.csproj" />
-		<ProjectReference Include="..\UnitTesting\Project\UnoDevelop.UnitTesting.csproj" />
+		<ProjectReference Include="..\..\AddIns\Analysis\UnitTesting\UnitTesting.csproj" />
 		<ProjectReference Include="..\..\Libraries\ResourceFiles\LeXtudio.OpenDevelop.ResourceFiles.csproj" />
 		<ProjectReference Include="..\..\AddIns\Misc\AddinScout\Project\AddinScout.csproj"
 		                  ReferenceOutputAssembly="false"
@@ -44,6 +44,12 @@
 		<ProjectReference Include="..\..\AddIns\DisplayBindings\XamlDesigner\Project\ICSharpCode.XamlDesigner.csproj"
 		                  ReferenceOutputAssembly="false"
 		                  PrivateAssets="all" />
+		<ProjectReference Include="..\..\AddIns\Misc\AndroidDeviceManager\Project\AndroidDeviceManager.csproj"
+		                  ReferenceOutputAssembly="false"
+		                  PrivateAssets="all" />
+		<ProjectReference Include="..\..\AddIns\Misc\AndroidSdkManager\Project\AndroidSdkManager.csproj"
+		                  ReferenceOutputAssembly="false"
+		                  PrivateAssets="all" />
 		<ProjectReference Include="..\..\AddIns\Analysis\CodeCoverage\Project\CodeCoverage.csproj"
 		                  ReferenceOutputAssembly="false"
 		                  PrivateAssets="all" />
@@ -57,6 +63,9 @@
 		                  ReferenceOutputAssembly="false"
 		                  PrivateAssets="all" />
 		<ProjectReference Include="..\..\AddIns\Misc\StartPage\Project\StartPage.csproj"
+		                  ReferenceOutputAssembly="false"
+		                  PrivateAssets="all" />
+		<ProjectReference Include="..\..\AddIns\BackendBindings\FSharpBinding\Project\FSharpBinding.csproj"
 		                  ReferenceOutputAssembly="false"
 		                  PrivateAssets="all" />
 	</ItemGroup>
@@ -147,6 +156,9 @@
 			<IconEditorOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\DisplayBindings\IconEditor\Project\bin\$(Configuration)\net10.0-desktop\UnoDevelop.IconEditor.*" Exclude="**\*.addin" />
 			<GitAddInOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\VersionControl\GitAddIn\Project\bin\$(Configuration)\net10.0-desktop\UnoDevelop.GitAddIn.*" Exclude="**\*.addin" />
 			<XamlDesignerOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\DisplayBindings\XamlDesigner\Project\bin\$(Configuration)\net10.0-desktop\ICSharpCode.XamlDesigner.*" Exclude="**\*.addin" />
+			<FSharpBindingOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\BackendBindings\FSharpBinding\Project\bin\$(Configuration)\net10.0-desktop\FSharpBinding.*" Exclude="**\*.addin" />
+			<AndroidDeviceManagerOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\Misc\AndroidDeviceManager\Project\bin\$(Configuration)\net10.0-desktop\UnoDevelop.AndroidDeviceManager.*" Exclude="**\*.addin" />
+			<AndroidSdkManagerOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\Misc\AndroidSdkManager\Project\bin\$(Configuration)\net10.0-desktop\UnoDevelop.AndroidSdkManager.*" Exclude="**\*.addin" />
 		</ItemGroup>
 		<MakeDir Directories="$(OutputPath)AddIns\Misc\AddinScout\Project\" />
 		<MakeDir Directories="$(OutputPath)AddIns\Misc\RegExpTk\Project\" />
@@ -162,6 +174,9 @@
 		<MakeDir Directories="$(OutputPath)AddIns\DisplayBindings\IconEditor\Project\" />
 		<MakeDir Directories="$(OutputPath)AddIns\VersionControl\GitAddIn\Project\" />
 		<MakeDir Directories="$(OutputPath)AddIns\DisplayBindings\XamlDesigner\Project\" />
+		<MakeDir Directories="$(OutputPath)AddIns\BackendBindings\FSharpBinding\Project\" />
+		<MakeDir Directories="$(OutputPath)AddIns\Misc\AndroidDeviceManager\Project\" />
+		<MakeDir Directories="$(OutputPath)AddIns\Misc\AndroidSdkManager\Project\" />
 		<Copy SourceFiles="@(AddInScoutOutput)"
 		      DestinationFolder="$(OutputPath)AddIns\Misc\AddinScout\Project\"
 		      SkipUnchangedFiles="true" />
@@ -203,6 +218,15 @@
 		      SkipUnchangedFiles="true" />
 		<Copy SourceFiles="@(XamlDesignerOutput)"
 		      DestinationFolder="$(OutputPath)AddIns\DisplayBindings\XamlDesigner\Project\"
+		      SkipUnchangedFiles="true" />
+		<Copy SourceFiles="@(FSharpBindingOutput)"
+		      DestinationFolder="$(OutputPath)AddIns\BackendBindings\FSharpBinding\Project\"
+		      SkipUnchangedFiles="true" />
+		<Copy SourceFiles="@(AndroidDeviceManagerOutput)"
+		      DestinationFolder="$(OutputPath)AddIns\Misc\AndroidDeviceManager\Project\"
+		      SkipUnchangedFiles="true" />
+		<Copy SourceFiles="@(AndroidSdkManagerOutput)"
+		      DestinationFolder="$(OutputPath)AddIns\Misc\AndroidSdkManager\Project\"
 		      SkipUnchangedFiles="true" />
 	</Target>
 	

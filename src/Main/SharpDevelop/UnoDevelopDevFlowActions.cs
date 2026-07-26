@@ -18,6 +18,7 @@ using ICSharpCode.SharpDevelop.LanguageServices.Lsp;
 using ICSharpCode.SharpDevelop.Project;
 using ICSharpCode.SharpDevelop.Workbench;
 using LeXtudio.DevFlow.Agent.Core;
+using Microsoft.UI.Xaml.Controls;
 using UnoDevelop.Debugger;
 using UnoDevelop.Services;
 using UnoDevelop.UnitTesting;
@@ -51,21 +52,25 @@ public static class UnoDevelopDevFlowActions
     {
         var buildService = ServiceSingleton.GetRequiredService<IBuildService>();
         var projectService = ServiceSingleton.GetRequiredService<IProjectService>();
-        var solution = await SD.MainThread.InvokeAsync(() => projectService.CurrentSolution);
-        if (solution is null)
-            return "ERROR: No solution loaded";
+        var operation = await SD.MainThread.InvokeAsync(async () =>
+        {
+            var solution = projectService.CurrentSolution;
+            if (solution is null)
+                return "ERROR: No solution loaded";
 
-        try
-        {
-            var results = await buildService.BuildAsync(solution,
-                new BuildOptions(BuildTarget.Build));
-            return "{\"result\":\"Success\",\"errors\":" + results.ErrorCount
-                + ",\"warnings\":" + results.WarningCount + "}";
-        }
-        catch (System.Exception ex)
-        {
-            return "{\"result\":\"Error\",\"message\":\"" + ex.Message + "\"}";
-        }
+            try
+            {
+                var results = await buildService.BuildAsync(solution,
+                    new BuildOptions(BuildTarget.Build));
+                return "{\"result\":\"Success\",\"errors\":" + results.ErrorCount
+                    + ",\"warnings\":" + results.WarningCount + "}";
+            }
+            catch (System.Exception ex)
+            {
+                return JsonSerializer.Serialize(new { result = "Error", message = ex.Message });
+            }
+        });
+        return await operation;
     }
 
     [DevFlowAction("ide-is-building", Description = "Check if a build is currently in progress. Returns 'true' or 'false'.")]
@@ -110,6 +115,18 @@ public static class UnoDevelopDevFlowActions
 
             return JsonSerializer.Serialize(names);
         });
+    }
+
+    [DevFlowAction("ide-list-addins", Description = "List loaded AddIn identities as JSON.")]
+    public static string ListAddIns()
+    {
+        return SD.MainThread.InvokeIfRequired(() =>
+            JsonSerializer.Serialize(
+                ServiceSingleton.GetRequiredService<IAddInTree>().AddIns
+                    .Where(addIn => addIn.Enabled)
+                    .SelectMany(addIn => addIn.Manifest.Identities.Keys)
+                    .OrderBy(identity => identity, StringComparer.Ordinal)
+                    .ToArray()));
     }
 
     [DevFlowAction("ide-close-solution", Description = "Close the current solution.")]
@@ -1166,6 +1183,303 @@ public static class UnoDevelopDevFlowActions
         => window.ViewContents.IndexOf(view) == 0 && window.ViewContents.Count > 1
             ? "Code"
             : view.TabPageText;
+
+    /// <summary>
+    /// Finds a type in an AddIn's runtime assembly, forcing that assembly to load if it hasn't
+    /// been touched yet - AddIns whose codons are never built at startup (e.g. Misc tool windows
+    /// with no /SharpDevelop/Services registration) never get their assembly loaded into the
+    /// AppDomain otherwise, so a naive AppDomain.CurrentDomain.GetAssemblies() lookup silently
+    /// fails. Mirrors the established pattern in ServiceBootstrapper.InitializeTextTemplatingAddIn
+    /// (addIn.Runtimes -> runtime.LoadedAssembly, which lazily loads on first access).
+    /// </summary>
+    private static Type? FindAddInType(string addInIdentity, string typeFullName)
+    {
+        var addIn = ServiceSingleton.GetRequiredService<IAddInTree>().AddIns
+            .FirstOrDefault(candidate => candidate.Manifest.Identities.ContainsKey(addInIdentity));
+        if (addIn is null)
+            return null;
+
+        foreach (var runtime in addIn.Runtimes)
+        {
+            var type = runtime.LoadedAssembly?.GetType(typeFullName);
+            if (type is not null)
+                return type;
+        }
+
+        return null;
+    }
+
+    [DevFlowAction("ide-open-android-device-manager",
+        Description = "Open the Android Device Manager tool view. Optional args: [sdkRoot]. Returns {opened} JSON.")]
+    public static string OpenAndroidDeviceManager(string? sdkRoot = null)
+    {
+        return SD.MainThread.InvokeIfRequired(() =>
+        {
+            var workbench = ServiceSingleton.GetRequiredService<IWorkbench>();
+            var type = FindAddInType("ICSharpCode.AndroidDeviceManager", "ICSharpCode.AndroidDeviceManager.AndroidDeviceManagerViewContent");
+            if (type is null)
+                return """{"opened":false,"error":"AndroidDeviceManager assembly/type not found"}""";
+
+            var view = Activator.CreateInstance(type) as IViewContent;
+            if (view is null)
+                return """{"opened":false,"error":"Could not construct AndroidDeviceManagerViewContent"}""";
+
+            if (!string.IsNullOrEmpty(sdkRoot))
+            {
+                var sdkPathBoxField = type.GetField("_sdkPathBox", BindingFlags.NonPublic | BindingFlags.Instance);
+                if (sdkPathBoxField?.GetValue(view) is TextBox sdkPathBox)
+                    sdkPathBox.Text = sdkRoot;
+            }
+
+            workbench.ShowView(view, true);
+            return """{"opened":true}""";
+        });
+    }
+
+    [DevFlowAction("ide-android-device-refresh",
+        Description = "Refresh the active Android Device Manager view's AVD list (runs the real `avdmanager list avd`). Returns {success} JSON.")]
+    public static async Task<string> RefreshAndroidDeviceManager()
+    {
+        var view = await SD.MainThread.InvokeAsync(() => SD.Workbench.ActiveViewContent);
+        var type = view?.GetType();
+        if (type?.FullName != "ICSharpCode.AndroidDeviceManager.AndroidDeviceManagerViewContent")
+            return """{"success":false,"error":"Active view is not the Android Device Manager"}""";
+
+        var method = type.GetMethod("RefreshAsync");
+        if (method?.Invoke(view, null) is Task task)
+            await task;
+        return """{"success":true}""";
+    }
+
+    [DevFlowAction("ide-android-device-list",
+        Description = "List the AVDs currently shown in the active Android Device Manager view. Returns {found, avds:[{name,device,target,basedOn}]} JSON.")]
+    public static string ListAndroidDevices()
+    {
+        return SD.MainThread.InvokeIfRequired(() =>
+        {
+            var view = SD.Workbench.ActiveViewContent;
+            var type = view?.GetType();
+            if (type?.FullName != "ICSharpCode.AndroidDeviceManager.AndroidDeviceManagerViewContent")
+                return """{"found":false}""";
+
+            var method = type.GetMethod("GetAvdsForTesting");
+            var avds = (method?.Invoke(view, null) as System.Collections.IEnumerable)?.Cast<object>()
+                .Select(avd =>
+                {
+                    var avdType = avd.GetType();
+                    return new
+                    {
+                        name = avdType.GetProperty("Name")?.GetValue(avd) as string,
+                        device = avdType.GetProperty("Device")?.GetValue(avd) as string,
+                        target = avdType.GetProperty("Target")?.GetValue(avd) as string,
+                        basedOn = avdType.GetProperty("BasedOn")?.GetValue(avd) as string
+                    };
+                }).ToArray() ?? Array.Empty<object>();
+
+            return JsonSerializer.Serialize(new { found = true, avds });
+        });
+    }
+
+    [DevFlowAction("ide-open-addin-scout",
+        Description = "Open the AddIn Scout tool view (lists loaded AddIns, their enabled state, and the AddInTree). Returns {opened} JSON.")]
+    public static string OpenAddInScout()
+    {
+        return SD.MainThread.InvokeIfRequired(() =>
+        {
+            var workbench = ServiceSingleton.GetRequiredService<IWorkbench>();
+            var type = FindAddInType("UnoDevelop.AddInScout", "UnoDevelop.AddIns.Misc.AddInScout.AddInScoutViewContent");
+            if (type is null)
+                return """{"opened":false,"error":"AddInScout assembly/type not found"}""";
+
+            var view = Activator.CreateInstance(type) as IViewContent;
+            if (view is null)
+                return """{"opened":false,"error":"Could not construct AddInScoutViewContent"}""";
+
+            workbench.ShowView(view, true);
+            return """{"opened":true}""";
+        });
+    }
+
+    [DevFlowAction("ide-addin-scout-list",
+        Description = "List the AddIns shown in the active AddIn Scout view. Returns {found, addIns:[{name,identity,enabled,preinstalled}]} JSON.")]
+    public static string ListAddInScoutAddIns()
+    {
+        return SD.MainThread.InvokeIfRequired(() =>
+        {
+            var view = SD.Workbench.ActiveViewContent;
+            var type = view?.GetType();
+            if (type?.FullName != "UnoDevelop.AddIns.Misc.AddInScout.AddInScoutViewContent")
+                return """{"found":false}""";
+
+            var method = type.GetMethod("GetAddInsForTesting");
+            var addIns = (method?.Invoke(view, null) as System.Collections.IEnumerable)?.Cast<object>()
+                .Select(item =>
+                {
+                    var itemType = item.GetType();
+                    return new
+                    {
+                        name = itemType.GetField("Item1")?.GetValue(item) as string,
+                        identity = itemType.GetField("Item2")?.GetValue(item) as string,
+                        enabled = itemType.GetField("Item3")?.GetValue(item) as bool?,
+                        preinstalled = itemType.GetField("Item4")?.GetValue(item) as bool?
+                    };
+                }).ToArray() ?? Array.Empty<object>();
+
+            return JsonSerializer.Serialize(new { found = true, addIns });
+        });
+    }
+
+    [DevFlowAction("ide-addin-toggle-enabled",
+        Description = "Toggle an AddIn's enabled state by name or primary identity, via the active AddIn Scout view. Persists via the real upstream AddInManager. Returns {success, enabled} JSON.")]
+    public static string ToggleAddInEnabled(string nameOrIdentity)
+    {
+        return SD.MainThread.InvokeIfRequired(() =>
+        {
+            var view = SD.Workbench.ActiveViewContent;
+            var type = view?.GetType();
+            if (type?.FullName != "UnoDevelop.AddIns.Misc.AddInScout.AddInScoutViewContent")
+                return """{"success":false,"error":"Active view is not the AddIn Scout"}""";
+
+            var method = type.GetMethod("ToggleEnabledByName");
+            var result = method?.Invoke(view, new object[] { nameOrIdentity }) as bool?;
+            if (result is null)
+                return JsonSerializer.Serialize(new { success = false, error = $"AddIn '{nameOrIdentity}' not found" });
+
+            return JsonSerializer.Serialize(new { success = true, enabled = result.Value });
+        });
+    }
+
+    [DevFlowAction("ide-resolve-resource-key",
+        Description = "Resolve a resource key to its value by searching all .resx files under a directory (contract-first slice of OpenDevelop's Hornung.ResourceToolkit ResourceResolverService - directory-scoped key lookup, not full editor-caret AST resolution). Args: [directory, keyName]. Returns {found, file, value, comment} JSON.")]
+    public static string ResolveResourceKey(string directory, string keyName)
+    {
+        if (string.IsNullOrEmpty(directory) || !System.IO.Directory.Exists(directory))
+            return """{"found":false,"error":"Directory not found"}""";
+
+        foreach (var file in System.IO.Directory.EnumerateFiles(directory, "*.resx", System.IO.SearchOption.AllDirectories))
+        {
+            LeXtudio.OpenDevelop.ResourceFiles.ResourceEntry? match;
+            try
+            {
+                match = LeXtudio.OpenDevelop.ResourceFiles.ResourceFileReader.Read(file)
+                    .FirstOrDefault(entry => string.Equals(entry.Name, keyName, StringComparison.OrdinalIgnoreCase));
+            }
+            catch
+            {
+                continue;
+            }
+
+            if (match is not null)
+            {
+                return JsonSerializer.Serialize(new
+                {
+                    found = true,
+                    file,
+                    value = match.Value,
+                    comment = match.Comment
+                });
+            }
+        }
+
+        return """{"found":false}""";
+    }
+
+    [DevFlowAction("ide-open-android-sdk-manager",
+        Description = "Open the Android SDK Manager tool view. Optional args: [sdkRoot]. Returns {opened} JSON.")]
+    public static string OpenAndroidSdkManager(string? sdkRoot = null)
+    {
+        return SD.MainThread.InvokeIfRequired(() =>
+        {
+            var workbench = ServiceSingleton.GetRequiredService<IWorkbench>();
+            var type = FindAddInType("ICSharpCode.AndroidSdkManager", "ICSharpCode.AndroidSdkManager.AndroidSdkManagerViewContent");
+            if (type is null)
+                return """{"opened":false,"error":"AndroidSdkManager assembly/type not found"}""";
+
+            var view = Activator.CreateInstance(type) as IViewContent;
+            if (view is null)
+                return """{"opened":false,"error":"Could not construct AndroidSdkManagerViewContent"}""";
+
+            if (!string.IsNullOrEmpty(sdkRoot))
+            {
+                var sdkPathBoxField = type.GetField("_sdkPathBox", BindingFlags.NonPublic | BindingFlags.Instance);
+                if (sdkPathBoxField?.GetValue(view) is TextBox sdkPathBox)
+                    sdkPathBox.Text = sdkRoot;
+            }
+
+            workbench.ShowView(view, true);
+            return """{"opened":true}""";
+        });
+    }
+
+    [DevFlowAction("ide-android-sdk-refresh",
+        Description = "Refresh the active Android SDK Manager view's package list (runs the real `sdkmanager --list --verbose`). Returns {success} JSON.")]
+    public static async Task<string> RefreshAndroidSdkManager()
+    {
+        var view = await SD.MainThread.InvokeAsync(() => SD.Workbench.ActiveViewContent);
+        var type = view?.GetType();
+        if (type?.FullName != "ICSharpCode.AndroidSdkManager.AndroidSdkManagerViewContent")
+            return """{"success":false,"error":"Active view is not the Android SDK Manager"}""";
+
+        var method = type.GetMethod("RefreshAsync");
+        if (method?.Invoke(view, null) is Task task)
+            await task;
+        return """{"success":true}""";
+    }
+
+    [DevFlowAction("ide-android-sdk-list",
+        Description = "List the packages currently shown in the active Android SDK Manager view. Returns {found, packages:[{id,versionText,statusText,isInstalled,hasUpdate}]} JSON.")]
+    public static string ListAndroidSdkPackages()
+    {
+        return SD.MainThread.InvokeIfRequired(() =>
+        {
+            var view = SD.Workbench.ActiveViewContent;
+            var type = view?.GetType();
+            if (type?.FullName != "ICSharpCode.AndroidSdkManager.AndroidSdkManagerViewContent")
+                return """{"found":false}""";
+
+            var method = type.GetMethod("GetPackagesForTesting");
+            var packages = (method?.Invoke(view, null) as System.Collections.IEnumerable)?.Cast<object>()
+                .Select(package =>
+                {
+                    var packageType = package.GetType();
+                    return new
+                    {
+                        id = packageType.GetProperty("Id")?.GetValue(package) as string,
+                        versionText = packageType.GetProperty("VersionText")?.GetValue(package) as string,
+                        statusText = packageType.GetProperty("StatusText")?.GetValue(package) as string,
+                        isInstalled = packageType.GetProperty("IsInstalled")?.GetValue(package) as bool?,
+                        hasUpdate = packageType.GetProperty("HasUpdate")?.GetValue(package) as bool?
+                    };
+                }).ToArray() ?? Array.Empty<object>();
+
+            return JsonSerializer.Serialize(new { found = true, packages });
+        });
+    }
+
+    [DevFlowAction("ide-resource-entries",
+        Description = "List the resource entries of the active .resx/.resources viewer. Returns {found, canEdit, entries:[{name,type,displaySummary,isEditable}]} JSON.")]
+    public static string GetResourceEntries()
+    {
+        return SD.MainThread.InvokeIfRequired(() =>
+        {
+            var view = SD.Workbench.ActiveViewContent as UnoDevelop.Workbench.ResourceViewerViewContent;
+            if (view is null)
+                return """{"found":false}""";
+
+            return JsonSerializer.Serialize(new
+            {
+                found = true,
+                canEdit = !view.IsReadOnly,
+                entries = view.Entries.Select(entry => new
+                {
+                    name = entry.Name,
+                    type = entry.Type,
+                    displaySummary = entry.DisplaySummary,
+                    isEditable = entry.IsEditable
+                }).ToArray()
+            });
+        });
+    }
 
     [DevFlowAction("ide-xaml-designer-select",
         Description = "Select a rendered XAML element by runtime type name.")]

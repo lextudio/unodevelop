@@ -19,6 +19,7 @@ public sealed class AddInScoutViewContent : IViewContent
     private readonly ObservableCollection<AddInScoutAddInItem> _addIns = new();
     private readonly Grid _control;
     private readonly TextBlock _details;
+    private ListView? _addInList;
 
     public AddInScoutViewContent()
     {
@@ -42,9 +43,24 @@ public sealed class AddInScoutViewContent : IViewContent
             ItemsSource = _addIns,
             SelectionMode = ListViewSelectionMode.Single,
             ItemTemplate = CreateAddInTemplate(),
-            Margin = new Thickness(8)
+            Margin = new Thickness(8, 8, 8, 0)
         };
         addInList.SelectionChanged += (_, _) => SelectAddIn(addInList.SelectedItem as AddInScoutAddInItem);
+        _addInList = addInList;
+
+        var toggleEnabled = new Button { Content = "Enable/Disable selected", Margin = new Thickness(8) };
+        toggleEnabled.Click += (_, _) =>
+        {
+            if (addInList.SelectedItem is AddInScoutAddInItem item)
+                ToggleEnabledByName(item.Identity ?? item.Name);
+        };
+        var addInsPanel = new Grid();
+        addInsPanel.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+        addInsPanel.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        Grid.SetRow(addInList, 0);
+        Grid.SetRow(toggleEnabled, 1);
+        addInsPanel.Children.Add(addInList);
+        addInsPanel.Children.Add(toggleEnabled);
 
         var tabs = new TabView
         {
@@ -53,7 +69,7 @@ public sealed class AddInScoutViewContent : IViewContent
             Margin = new Thickness(0)
         };
         tabs.TabItems.Add(new TabViewItem { Header = "Tree", Content = pathList });
-        tabs.TabItems.Add(new TabViewItem { Header = "AddIns", Content = addInList });
+        tabs.TabItems.Add(new TabViewItem { Header = "AddIns", Content = addInsPanel });
 
         _details = new TextBlock
         {
@@ -144,6 +160,51 @@ public sealed class AddInScoutViewContent : IViewContent
 
         IsDisposed = true;
         Disposed?.Invoke(this, EventArgs.Empty);
+    }
+
+    /// <summary>Read-only snapshot for DevFlow/integration-test inspection.</summary>
+    public IReadOnlyList<(string Name, string? Identity, bool Enabled, bool Preinstalled)> GetAddInsForTesting()
+        => _addIns.Select(item => (item.Name, item.Identity, item.Enabled, item.Preinstalled)).ToList();
+
+    /// <summary>
+    /// Toggles an AddIn's enabled state by name or primary identity, persisting the change via
+    /// the real upstream <see cref="AddInManager"/> (Enable/Disable + SaveAddInConfiguration -
+    /// already linked into ICSharpCode.Core.csproj, previously unused by any UI in this repo).
+    /// Preinstalled AddIns can only be disabled/re-enabled, never uninstalled - matches upstream
+    /// AddInManager's documented semantics.
+    /// </summary>
+    public bool? ToggleEnabledByName(string nameOrIdentity)
+    {
+        var addInTree = ServiceSingleton.GetRequiredService<IAddInTree>();
+        var addIn = addInTree.AddIns.FirstOrDefault(candidate =>
+            string.Equals(candidate.Manifest?.PrimaryIdentity, nameOrIdentity, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(candidate.Name, nameOrIdentity, StringComparison.OrdinalIgnoreCase));
+        if (addIn is null)
+            return null;
+
+        var addIns = new List<AddIn> { addIn };
+        if (addIn.Enabled)
+            AddInManager.Disable(addIns);
+        else
+            AddInManager.Enable(addIns);
+
+        var disabled = addInTree.AddIns.Where(candidate => !candidate.Enabled)
+            .Select(candidate => candidate.Manifest?.PrimaryIdentity)
+            .Where(identity => !string.IsNullOrEmpty(identity))
+            .Select(identity => identity!)
+            .ToList();
+        AddInManager.SaveAddInConfiguration(new List<string>(), disabled);
+
+        var index = _addIns.ToList().FindIndex(item =>
+            string.Equals(item.Identity, addIn.Manifest?.PrimaryIdentity, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(item.Name, addIn.Name, StringComparison.OrdinalIgnoreCase));
+        if (index >= 0)
+        {
+            var old = _addIns[index];
+            _addIns[index] = old with { Enabled = addIn.Enabled };
+        }
+
+        return addIn.Enabled;
     }
 
     private void LoadModel()

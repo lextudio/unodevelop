@@ -1,0 +1,23 @@
+<Project Sdk="Uno.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0-desktop</TargetFramework>
+    <RootNamespace>FSharpBinding</RootNamespace>
+    <AssemblyName>FSharpBinding</AssemblyName>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\Main\Core\Project\ICSharpCode.Core.csproj" />
+    <ProjectReference Include="..\..\..\..\Main\Base\Project\ICSharpCode.SharpDevelop.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="FSharpBinding.addin" CopyToOutputDirectory="Always" />
+    <EmbeddedResource Include="..\..\..\..\..\externals\SharpDevelop\src\AddIns\BackendBindings\FSharpBinding\Resources\FS-Mode.xshd"
+                      Link="Resources\FS-Mode.xshd" />
+    <Compile Include="Src\FSharpProject.cs" />
+    <Compile Include="Src\FSharpProjectBinding.cs" />
+    <Compile Include="Src\FSharpBindingStartup.cs" />
+  </ItemGroup>
+</Project>

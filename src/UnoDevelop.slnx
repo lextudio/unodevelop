@@ -15,10 +15,6 @@
   <Folder Name="/Main/Debugger/Project/">
     <Project Path="Main/Debugger/Project/UnoDevelop.Debugger.csproj" />
   </Folder>
-  <Folder Name="/Main/UnitTesting/" />
-  <Folder Name="/Main/UnitTesting/Project/">
-    <Project Path="Main/UnitTesting/Project/UnoDevelop.UnitTesting.csproj" />
-  </Folder>
 
   <!-- External projects (submodules) -->
   <Folder Name="/Externals/" />
@@ -38,9 +34,15 @@
 
   <!-- AddIn projects -->
   <Folder Name="/AddIns/" />
+  <Folder Name="/AddIns/BackendBindings/FSharpBinding/">
+    <Project Path="AddIns/BackendBindings/FSharpBinding/Project/FSharpBinding.csproj" />
+  </Folder>
   <Folder Name="/AddIns/Analysis/" />
   <Folder Name="/AddIns/Analysis/CodeCoverage/">
     <Project Path="AddIns/Analysis/CodeCoverage/Project/CodeCoverage.csproj" />
+  </Folder>
+  <Folder Name="/AddIns/Analysis/UnitTesting/">
+    <Project Path="AddIns/Analysis/UnitTesting/UnitTesting.csproj" />
   </Folder>
   <Folder Name="/AddIns/DisplayBindings/" />
   <Folder Name="/AddIns/DisplayBindings/HexEditor/">
@@ -50,6 +52,12 @@
     <Project Path="AddIns/DisplayBindings/SettingsEditor/Project/SettingsEditor.csproj" />
   </Folder>
   <Folder Name="/AddIns/Misc/" />
+  <Folder Name="/AddIns/Misc/AndroidDeviceManager/">
+    <Project Path="AddIns/Misc/AndroidDeviceManager/Project/AndroidDeviceManager.csproj" />
+  </Folder>
+  <Folder Name="/AddIns/Misc/AndroidSdkManager/">
+    <Project Path="AddIns/Misc/AndroidSdkManager/Project/AndroidSdkManager.csproj" />
+  </Folder>
   <Folder Name="/AddIns/Misc/AddinScout/">
     <Project Path="AddIns/Misc/AddinScout/Project/AddinScout.csproj" />
   </Folder>

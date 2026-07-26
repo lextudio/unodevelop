@@ -1,0 +1,13 @@
+<AddIn name="Android SDK Manager"
+       author="LeXtudio"
+       description="Tool window for listing/installing/uninstalling Android SDK packages via the command-line sdkmanager tool."
+       addInManagerHidden="preinstalled">
+
+  <Manifest>
+    <Identity name="ICSharpCode.AndroidSdkManager"/>
+  </Manifest>
+
+  <Runtime>
+    <Import assembly="UnoDevelop.AndroidSdkManager.dll"/>
+  </Runtime>
+</AddIn>

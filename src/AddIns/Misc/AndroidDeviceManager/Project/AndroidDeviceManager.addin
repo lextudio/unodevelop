@@ -1,0 +1,13 @@
+<AddIn name="Android Device Manager"
+       author="LeXtudio"
+       description="Tool window for creating, listing, launching and removing Android Virtual Devices (AVDs) via the Android command-line avdmanager/emulator tools."
+       addInManagerHidden="preinstalled">
+
+  <Manifest>
+    <Identity name="ICSharpCode.AndroidDeviceManager"/>
+  </Manifest>
+
+  <Runtime>
+    <Import assembly="UnoDevelop.AndroidDeviceManager.dll"/>
+  </Runtime>
+</AddIn>

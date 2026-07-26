@@ -86,6 +86,18 @@ namespace UnoDevelop.Core.Tests
         }
 
         [Test]
+        public void CreateDefault_MapsFSharpToRepositoryTool()
+        {
+            var registry = LspServerRegistry.CreateDefault();
+
+            Assert.That(registry.TryGetLaunchSpec(".fs", out var implementation), Is.True);
+            Assert.That(registry.TryGetLaunchSpec(".fsi", out var signature), Is.True);
+            Assert.That(implementation.Command, Is.EqualTo("dotnet"));
+            Assert.That(implementation.Arguments, Is.EqualTo(new[] { "tool", "run", "fsautocomplete", "--" }));
+            Assert.That(signature, Is.SameAs(implementation));
+        }
+
+        [Test]
         public async Task GetCodeActionsAsync_ReturnsEmpty_WhenServerCommandIsMissing()
         {
             var spec = new LspServerLaunchSpec("nonexistent", "unodevelop-lsp-server-that-does-not-exist");

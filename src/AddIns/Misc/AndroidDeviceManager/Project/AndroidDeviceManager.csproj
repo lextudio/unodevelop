@@ -1,0 +1,18 @@
+<Project Sdk="Uno.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0-desktop</TargetFramework>
+    <RootNamespace>ICSharpCode.AndroidDeviceManager</RootNamespace>
+    <AssemblyName>UnoDevelop.AndroidDeviceManager</AssemblyName>
+    <UnoSingleProject>true</UnoSingleProject>
+    <UnoFeatures>SkiaRenderer</UnoFeatures>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\Main\Core\Project\ICSharpCode.Core.csproj" />
+    <ProjectReference Include="..\..\..\..\Main\Base\Project\ICSharpCode.SharpDevelop.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="AndroidDeviceManager.addin" CopyToOutputDirectory="Always" />
+  </ItemGroup>
+</Project>

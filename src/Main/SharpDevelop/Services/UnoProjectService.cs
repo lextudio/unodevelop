@@ -40,7 +40,7 @@ internal sealed class UnoProjectService : IProjectService, IProjectServiceRaiseE
     internal sealed record ProjectDisplayItem(string PhysicalPath, string DisplayPath, string? DependentUpon = null, bool IsLinked = false, bool Exists = true, ProjectItem? ProjectItem = null);
 
     private readonly SynchronizedModelCollection<IProject> _allProjects = new(new SimpleModelCollection<IProject>());
-    private readonly IReadOnlyList<ProjectBindingDescriptor> _projectBindings;
+    private readonly List<ProjectBindingDescriptor> _projectBindings;
     private ISolution _currentSolution;
     private IProject _currentProject;
 
@@ -88,7 +88,7 @@ internal sealed class UnoProjectService : IProjectService, IProjectServiceRaiseE
 
     public UnoProjectService()
     {
-        _projectBindings = new[]
+        _projectBindings = new List<ProjectBindingDescriptor>
         {
             new ProjectBindingDescriptor(
                 new UnoCSharpProjectBinding(this),
@@ -100,6 +100,21 @@ internal sealed class UnoProjectService : IProjectService, IProjectServiceRaiseE
 
         _currentSolution = new UnoSolutionModel("", "Untitled", _allProjects);
         _currentProject = null!;
+    }
+
+    internal void LoadAddInProjectBindings(IAddInTree addInTree)
+    {
+        foreach (var descriptor in addInTree.BuildItems<ProjectBindingDescriptor>(
+                     "/SharpDevelop/Workbench/ProjectBindings", this, false))
+        {
+            if (_projectBindings.Any(existing =>
+                    string.Equals(existing.ProjectFileExtension, descriptor.ProjectFileExtension, StringComparison.OrdinalIgnoreCase)))
+            {
+                continue;
+            }
+
+            _projectBindings.Add(descriptor);
+        }
     }
 
     public IProject FindProjectContainingFile(FileName fileName)
@@ -131,7 +146,8 @@ internal sealed class UnoProjectService : IProjectService, IProjectServiceRaiseE
             return false;
         }
 
-        if (path.EndsWith(".csproj", StringComparison.OrdinalIgnoreCase))
+        if (_projectBindings.Any(binding =>
+                path.EndsWith(binding.ProjectFileExtension, StringComparison.OrdinalIgnoreCase)))
         {
             Dbg("loading as .csproj");
             try
@@ -168,11 +184,12 @@ internal sealed class UnoProjectService : IProjectService, IProjectServiceRaiseE
     {
         Dbg($"OpenSolution START: solution={solution.Name}, project count={solution.Projects.Count}");
 
+        var projectSnapshot = solution.Projects.ToList();
+
         // Close existing solution first (matching SharpDevelop behavior)
         if (_currentSolution is not null)
             CloseSolution(allowCancel: false);
 
-        var projectSnapshot = solution.Projects.CreateSnapshot();
         var old = _currentSolution;
         _currentSolution = solution;
 
@@ -1635,7 +1652,7 @@ internal sealed class UnoProjectService : IProjectService, IProjectServiceRaiseE
                 .Select(ParseProjectPathFromSlnLine)
                 .Where(path => !string.IsNullOrWhiteSpace(path))
                 .Select(path => Path.GetFullPath(Path.Combine(rootDir, path!)))
-                .Where(path => (path.EndsWith(".csproj", StringComparison.OrdinalIgnoreCase) || path.EndsWith(".vbproj", StringComparison.OrdinalIgnoreCase)) && File.Exists(path))
+                .Where(path => IsSupportedProjectPath(path!) && File.Exists(path))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .OrderBy(path => path, StringComparer.OrdinalIgnoreCase);
 
@@ -1653,6 +1670,12 @@ internal sealed class UnoProjectService : IProjectService, IProjectServiceRaiseE
             }
 
             return model;
+        }
+
+        private static bool IsSupportedProjectPath(string path)
+        {
+            return SD.ProjectService.ProjectBindings.Any(binding =>
+                path.EndsWith(binding.ProjectFileExtension, StringComparison.OrdinalIgnoreCase));
         }
 
         internal void RegisterProject(IProject project)
