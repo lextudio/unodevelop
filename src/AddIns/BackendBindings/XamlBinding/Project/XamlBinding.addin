@@ -1,0 +1,24 @@
+<AddIn name="XAML Binding"
+       author="LeXtudio"
+       description="Language binding for .xaml files — syntax highlighting and file-type registration."
+       addInManagerHidden="preinstalled">
+
+  <Manifest>
+    <Identity name="ICSharpCode.XamlBinding"/>
+  </Manifest>
+
+  <Runtime>
+    <Import assembly="ICSharpCode.XamlBinding.dll"/>
+  </Runtime>
+
+  <Path name="/SharpDevelop/Workbench/FileFilter">
+    <FileFilter id="Xaml" insertbefore="AllFiles"
+      name="XAML files (*.xaml)" extensions="*.xaml"/>
+  </Path>
+
+  <Path name="/SharpDevelop/Workbench/LanguageBindings">
+    <LanguageBinding id="XAML"
+      class="ICSharpCode.XamlBinding.XamlLanguageBinding"
+      extensions=".xaml"/>
+  </Path>
+</AddIn>

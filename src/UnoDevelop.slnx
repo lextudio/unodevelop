@@ -75,7 +75,7 @@
     <Project Path="Tests/UnoDevelop.Core.Tests/UnoDevelop.Core.Tests.csproj" />
   </Folder>
   <Folder Name="/Tests/DebugTestApp/">
-    <Project Path="Tests/DebugTestApp/DebugTestApp.csproj" />
+    <Project Path="Tests/fixtures/DebugTestApp/DebugTestApp.csproj" />
   </Folder>
   <Folder Name="/Tests/Fixtures/" />
   <Folder Name="/Tests/Fixtures/SampleMtpTests/">

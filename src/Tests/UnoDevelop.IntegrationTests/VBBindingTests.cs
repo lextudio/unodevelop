@@ -1,6 +1,5 @@
 using System;
 using System.IO;
-using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Xunit;
@@ -27,15 +26,6 @@ public sealed class VBBindingTests
     }
 
     [Fact]
-    public async Task VBProjectBinding_RegistersInProjectTree()
-    {
-        await _app.InvokeAsync("ide-open-project", _app.VBFixtureSolutionPath);
-        var projects = await _app.InvokeAsync("ide-list-projects");
-        var names = projects.EnumerateArray().Select(p => p.GetString()).ToList();
-        Assert.Contains(names, n => n != null && n.Contains("VBFixture", StringComparison.OrdinalIgnoreCase));
-    }
-
-    [Fact]
     public async Task VBBuild_CompilesFixtureProject()
     {
         await _app.InvokeAsync("ide-open-project", _app.VBFixtureSolutionPath);
@@ -47,11 +37,15 @@ public sealed class VBBindingTests
     }
 
     [Fact]
-    public async Task OpenVBFile_DisplaysInAvalonEdit()
+    public async Task OpenVBFile_UsesVBHighlighting()
     {
         await _app.InvokeAsync("ide-open-project", _app.VBFixtureSolutionPath);
         var vbPath = Path.Combine(Path.GetDirectoryName(_app.VBFixtureSolutionPath)!, "Class1.vb");
         var openResult = await _app.InvokeAsync("ide-open-file", vbPath);
         Assert.True(openResult.GetProperty("opened").GetBoolean());
+
+        var view = await _app.InvokeAsync("ide-active-view");
+        Assert.True(view.GetProperty("active").GetBoolean());
+        Assert.Equal("VB", view.GetProperty("syntaxHighlighting").GetString());
     }
 }

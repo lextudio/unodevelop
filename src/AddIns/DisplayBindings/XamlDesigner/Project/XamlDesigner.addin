@@ -1,0 +1,20 @@
+<AddIn name="XAML Designer"
+       author="LeXtudio"
+       description="Visual XAML designer for .xaml files."
+       addInManagerHidden="preinstalled">
+
+  <Manifest>
+    <Identity name="ICSharpCode.XamlDesigner"/>
+  </Manifest>
+
+  <Runtime>
+    <Import assembly="ICSharpCode.XamlDesigner.dll"/>
+  </Runtime>
+
+  <Path name="/SharpDevelop/Workbench/DisplayBindings">
+    <DisplayBinding id="XamlDesigner"
+                    type="Secondary"
+                    class="ICSharpCode.XamlDesigner.XamlDesignerDisplayBinding"
+                    fileNamePattern="\.xaml$" />
+  </Path>
+</AddIn>

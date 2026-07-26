@@ -95,10 +95,6 @@
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 			<Link>AddIns\%(RecursiveDir)%(Filename)%(Extension)</Link>
 		</Content>
-		<Content Include="..\..\..\..\UnoEdit\src\UnoEdit\ICSharpCode.AvalonEdit.addin">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-			<Link>AddIns\ICSharpCode.AvalonEdit.addin</Link>
-		</Content>
 	</ItemGroup>
 
 	<ItemGroup>

@@ -9,6 +9,21 @@ namespace ICSharpCode.SharpDevelop.LanguageServices.Lsp
     {
         static readonly LspServerRegistry registry = LspServerRegistry.CreateDefault();
         static readonly Dictionary<string, LspLanguageService> services = new(StringComparer.OrdinalIgnoreCase);
+        static readonly object _lock = new();
+
+        /// <summary>
+        /// Allows addins to register additional LSP server mappings at startup.
+        /// Called by addin startup commands, not from the Base project.
+        /// </summary>
+        public static void RegisterExtension(string extension, LspServerLaunchSpec spec)
+        {
+            if (spec is null)
+                throw new ArgumentNullException(nameof(spec));
+            lock (_lock)
+            {
+                registry.Register(extension, spec);
+            }
+        }
 
         public static LspLanguageService GetService(string fileName)
         {

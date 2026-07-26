@@ -107,7 +107,6 @@ public partial class MainPage : Page, IUnoSolutionExplorerHost
         (ServiceSingleton.ServiceProvider as System.ComponentModel.Design.IServiceContainer)
             ?.AddService(typeof(UnoDevelop.Debugger.IDebuggerService), _debugService);
         HookProjectServiceEvents();
-        HookOutputPadEvents();
         HookRunServiceEvents();
         HookWorkbenchPadEvents();
         LoadAddInPads();
@@ -118,7 +117,6 @@ public partial class MainPage : Page, IUnoSolutionExplorerHost
         HookTestServiceEvents();
         UnoDevelop.Debugger.DebuggerAddin.Initialize(_debugService);
         UpdateShellChrome();
-        // AutoOpenAndBuildForTesting();
         OpenOnStartIfRequested();
     }
 
@@ -142,39 +140,6 @@ public partial class MainPage : Page, IUnoSolutionExplorerHost
                 return;
             }
         }
-    }
-
-    private async void AutoOpenAndBuildForTesting()
-    {
-        const string testProject = @"C:\Users\lextudio\source\repos\uno-tools\Uno2D\src\Win2D.UnoCompat\Win2D.UnoCompat.csproj";
-        if (!File.Exists(testProject)) return;
-
-        await Task.Delay(500);
-        _projectService?.OpenSolution(ICSharpCode.Core.FileName.Create(testProject)!);
-        await Task.Delay(1500);
-
-        var solution = _projectService?.CurrentSolution;
-        if (solution is null || (solution.Projects?.Count ?? 0) == 0) return;
-
-        SetExplorerStatus("Building...");
-        PrepareExecutionOutputCategory("Build");
-
-        try
-        {
-            var results = await SD.BuildService.BuildAsync(solution,
-                new ICSharpCode.SharpDevelop.Project.BuildOptions(ICSharpCode.SharpDevelop.Project.BuildTarget.Build));
-            SetExplorerStatus(results.ErrorCount == 0 ? "Build succeeded." : $"Build failed: {results.ErrorCount} error(s).");
-        }
-        catch (Exception ex)
-        {
-            SetExplorerStatus("Build error: " + ex.Message);
-        }
-    }
-
-    private void HookOutputPadEvents()
-    {
-        // OutputPad subscribes directly to UnoOutputPadService so it can mirror
-        // SharpDevelop's category-aware CompilerMessageView behavior.
     }
 
     private void ClearOutputPad()

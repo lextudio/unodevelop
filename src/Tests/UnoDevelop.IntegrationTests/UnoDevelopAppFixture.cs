@@ -19,16 +19,17 @@ public sealed class UnoDevelopAppFixture : IAsyncLifetime
     public string UnoDevelopProjectPath { get; } = LocateUnoDevelopProject();
     public string FixtureSolutionPath { get; } = LocateFixture("SampleTestProject", "SampleTestProject.csproj");
     public string VBFixtureSolutionPath { get; } = LocateFixture("VBFixture", "VBFixture.sln");
+    public string XamlFixtureFilePath { get; } = LocateFixture("XamlFixture", "MainPage.xaml");
     public string DebugTestProjectPath { get; } = LocateFixture("DebugTestApp", "DebugTestApp.csproj");
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         StopApp();
         await WaitForPortFreeAsync(TimeSpan.FromSeconds(30));
         await StartAsync();
     }
 
-    public async Task DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
         StopApp();
         _http.Dispose();

@@ -5,9 +5,10 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
     <SharpDevelopSourceRoot>$(MSBuildThisFileDirectory)..\externals\SharpDevelop</SharpDevelopSourceRoot>
+    <AXSGRoot>$(MSBuildThisFileDirectory)..\externals\AXSG</AXSGRoot>
     <ProjectSystemSourceRoot>$(MSBuildThisFileDirectory)..\externals\project-system</ProjectSystemSourceRoot>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <CentralPackageTransitivePinningEnabled>false</CentralPackageTransitivePinningEnabled>
-    <UseNuGetPackages>false</UseNuGetPackages>
+    <UseNuGetPackages>true</UseNuGetPackages>
   </PropertyGroup>
 </Project>

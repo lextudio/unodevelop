@@ -6,11 +6,13 @@
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.13.0" />
     <PackageVersion Include="NUnit" Version="3.14.0" />
     <PackageVersion Include="NUnit3TestAdapter" Version="4.6.0" />
+    <PackageVersion Include="xunit.v3.mtp-v2" Version="3.2.2" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5" />
     <PackageVersion Include="LeXtudio.DevFlow.Agent.Uno" Version="0.1.14" />
     <PackageVersion Include="LeXtudio.Windows" Version="0.8.9" />
     <PackageVersion Include="LeXtudio.UnoDock" Version="0.1.12" />
     <PackageVersion Include="LeXtudio.UnoDock.Themes.VS2013" Version="0.1.12" />
-    <PackageVersion Include="LeXtudio.UnoEdit" Version="0.7.8" />
+    <PackageVersion Include="LeXtudio.UnoEdit" Version="0.7.9" />
     <PackageVersion Include="LeXtudio.UnoPropertyGrid" Version="0.4.2" />
     <PackageVersion Include="Microsoft.Build" Version="18.7.1" />
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp.Features" Version="5.3.0" />
@@ -59,5 +61,8 @@
          default component registration so built-in .NET SDK templates are discoverable without
          hand-wiring providers/generators ourselves. -->
     <PackageVersion Include="Microsoft.TemplateEngine.IDE" Version="10.0.301" />
+    <!-- XAML Studio Designer packages -->
+    <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+
   </ItemGroup>
 </Project>

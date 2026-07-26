@@ -1635,7 +1635,7 @@ internal sealed class UnoProjectService : IProjectService, IProjectServiceRaiseE
                 .Select(ParseProjectPathFromSlnLine)
                 .Where(path => !string.IsNullOrWhiteSpace(path))
                 .Select(path => Path.GetFullPath(Path.Combine(rootDir, path!)))
-                .Where(path => path.EndsWith(".csproj", StringComparison.OrdinalIgnoreCase) && File.Exists(path))
+                .Where(path => (path.EndsWith(".csproj", StringComparison.OrdinalIgnoreCase) || path.EndsWith(".vbproj", StringComparison.OrdinalIgnoreCase)) && File.Exists(path))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .OrderBy(path => path, StringComparer.OrdinalIgnoreCase);
 

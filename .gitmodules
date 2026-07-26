@@ -20,3 +20,6 @@
 [submodule "externals/XAMLStudio"]
 	path = externals/XAMLStudio
 	url = https://github.com/dotnet/XAMLStudio.git
+[submodule "externals/AXSG"]
+	path = externals/AXSG
+	url = https://github.com/wieslawsoltes/XamlToCSharpGenerator.git

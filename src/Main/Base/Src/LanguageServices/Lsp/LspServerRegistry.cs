@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 
 namespace ICSharpCode.SharpDevelop.LanguageServices.Lsp
 {
@@ -55,6 +56,7 @@ namespace ICSharpCode.SharpDevelop.LanguageServices.Lsp
             registry.Register(".jsx", typeScript);
             var python = new LspServerLaunchSpec("python", "pylsp");
             registry.Register(".py", python);
+
             return registry;
         }
 

@@ -2,7 +2,7 @@
 
 UnoDevelop is a port of the SharpDevelop IDE to the Uno Platform. It is a work in progress and is not yet ready for production use.
 
-This project is discontinued and is no longer maintained. The replacement is [OpenDevelop](https://github.com/lextudio/OpenDevelop), a direct fork of SharpDevelop running on the new cross-platform WPF stack, which is also a work in progress.
+This project is being revived and actively developed toward feature/structure parity with [OpenDevelop](https://github.com/lextudio/OpenDevelop), a direct fork of SharpDevelop running on the new cross-platform WPF stack. See [docs/opendevelop-sync.md](docs/opendevelop-sync.md) for the sync plan.
 
 ## License
 

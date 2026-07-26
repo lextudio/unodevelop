@@ -1,0 +1,18 @@
+<AddIn name="AvalonEdit"
+       author="UnoDevelop"
+       description="AvalonEdit integration for UnoDevelop"
+       addInManagerHidden="preinstalled">
+  <Manifest>
+    <Identity name="ICSharpCode.AvalonEdit" />
+  </Manifest>
+
+  <Runtime>
+    <Import assembly=":UnoDevelop" />
+  </Runtime>
+
+  <Path name="/SharpDevelop/Workbench/DisplayBindings">
+    <DisplayBinding id="Text"
+                    title="${res:Gui.ProjectBrowser.OpenWith.Bindings.TextEditor}"
+                    class="UnoDevelop.Workbench.AvalonEditDisplayBinding" />
+  </Path>
+</AddIn>

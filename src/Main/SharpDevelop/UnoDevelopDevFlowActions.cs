@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.Design;
 using System.Diagnostics;
@@ -7,7 +8,11 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using ICSharpCode.Core;
 using ICSharpCode.SharpDevelop;
+using ICSharpCode.AvalonEdit.Highlighting;
+using ICSharpCode.SharpDevelop.Editor;
 using ICSharpCode.SharpDevelop.Editor.Bookmarks;
+using ICSharpCode.SharpDevelop.LanguageServices;
+using ICSharpCode.SharpDevelop.LanguageServices.Lsp;
 using ICSharpCode.SharpDevelop.Project;
 using ICSharpCode.SharpDevelop.Workbench;
 using LeXtudio.DevFlow.Agent.Core;
@@ -381,10 +386,10 @@ public static class UnoDevelopDevFlowActions
             ServiceSingleton.ServiceProvider.GetService(typeof(UnoDevelop.Debugger.IDebuggerService)) as UnoDevelop.Debugger.IDebuggerService);
         if (debugger is null)
             return "ERROR: Debugger service not available";
-        if (!debugger.IsDebugging)
+        if (!debugger.IsDebugging && !debugger.HasCache)
             return "OK: Not debugging";
 
-        // DebugService.Dispose() terminates the adapter
+        // DebugService.Dispose() terminates the adapter and clears any stale caches.
         if (debugger is IDisposable d)
         {
             await Task.Run(() => d.Dispose());
@@ -930,6 +935,132 @@ public static class UnoDevelopDevFlowActions
         return JsonSerializer.Serialize(new { started = false, error = "No test projects found in solution." });
     }
 #endif
+
+    [DevFlowAction("ide-active-view", Description = "Inspect the active view content.")]
+    public static string GetActiveView()
+    {
+        return SD.MainThread.InvokeIfRequired(() =>
+        {
+            var viewContent = SD.Workbench.ActiveViewContent;
+            if (viewContent == null)
+                return """{"active":false}""";
+
+            var typeName = viewContent.GetType().FullName;
+            var editor = viewContent.GetService<ITextEditor>();
+            string? text = null;
+            try { text = editor?.Document.Text; } catch { }
+            var fileName = viewContent.PrimaryFileName?.ToString();
+
+            string? syntaxHighlighting = null;
+            if (fileName != null)
+            {
+                var ext = System.IO.Path.GetExtension(fileName);
+                if (ext != null)
+                {
+                    try
+                    {
+                        syntaxHighlighting = HighlightingManager.Instance.GetDefinitionByExtension(ext)?.Name;
+                    }
+                    catch { }
+                }
+            }
+
+            return JsonSerializer.Serialize(new
+            {
+                active = true,
+                typeName,
+                isAvalonEdit = typeName != null && typeName.Contains("AvalonEdit"),
+                fileName,
+                syntaxHighlighting,
+                textLength = text?.Length
+            });
+        });
+    }
+
+    [DevFlowAction("ide-parser-status", Description = "Check whether a file has a registered LSP service.")]
+    public static string GetParserStatus(string fileName)
+    {
+        try
+        {
+            var ext = System.IO.Path.GetExtension(fileName);
+            if (string.Equals(ext, ".xaml", StringComparison.OrdinalIgnoreCase))
+                AutoRegisterXamlLsp();
+
+            var service = LspServiceManager.GetService(fileName);
+            return JsonSerializer.Serialize(new
+            {
+                hasService = service != null,
+                language = service?.GetType().Name?.Contains("Lsp") == true ? "LSP" : null,
+                serviceType = service?.GetType().Name
+            });
+        }
+        catch (Exception ex)
+        {
+            return JsonSerializer.Serialize(new { hasService = false, error = ex.Message });
+        }
+    }
+
+    static void AutoRegisterXamlLsp()
+    {
+        var root = FindRepositoryRoot();
+        if (root == null) return;
+
+        var axsgRoot = System.IO.Path.Combine(root, "externals", "AXSG");
+        var lsProject = System.IO.Path.Combine(axsgRoot, "src",
+            "XamlToCSharpGenerator.LanguageServer",
+            "XamlToCSharpGenerator.LanguageServer.csproj");
+
+        if (System.IO.File.Exists(lsProject))
+        {
+            LspServiceManager.RegisterExtension(".xaml",
+                new LspServerLaunchSpec("xaml", "dotnet",
+                    "run", "--project", lsProject, "--"));
+        }
+    }
+
+    static string? FindRepositoryRoot()
+    {
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        while (dir != null)
+        {
+            if (Directory.Exists(Path.Combine(dir.FullName, "externals", "AXSG")) &&
+                Directory.Exists(Path.Combine(dir.FullName, "src", "Main", "Base")))
+                return dir.FullName;
+            dir = dir.Parent;
+        }
+        return null;
+    }
+
+    [DevFlowAction("ide-complete", Description = "Trigger code completion at a given position in a file. Args: [filePath, offset]. Returns completion items JSON.")]
+    public static async Task<string> Complete(string filePath, int offset)
+    {
+        try
+        {
+            var ext = System.IO.Path.GetExtension(filePath);
+            if (string.Equals(ext, ".xaml", StringComparison.OrdinalIgnoreCase))
+                AutoRegisterXamlLsp();
+
+            var service = LspServiceManager.GetService(filePath);
+            if (service == null)
+                return """{"triggered":false,"reason":"No LSP service"}""";
+
+            var documentId = new DocumentId(ICSharpCode.Core.FileName.Create(filePath));
+            var text = System.IO.File.ReadAllText(filePath);
+            await service.UpsertDocumentAsync(documentId, text, CancellationToken.None);
+            var result = await service.GetCompletionsAsync(documentId, offset, CancellationToken.None);
+
+            return JsonSerializer.Serialize(new
+            {
+                triggered = true,
+                itemCount = result.Items.Count,
+                items = result.Items.Select(i => new { label = i.DisplayText }).Take(20).ToList()
+            });
+        }
+        catch (Exception ex)
+        {
+            return JsonSerializer.Serialize(new { triggered = false, error = ex.Message });
+        }
+    }
 
     [DevFlowAction("ide-get-project-property", Description = "Read a property from a .csproj file. Args: [projectPath, propertyName]. Returns the property value or empty string.")]
     public static string GetProjectProperty(string projectPath, string propertyName)

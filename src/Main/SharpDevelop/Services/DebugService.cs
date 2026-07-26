@@ -99,13 +99,31 @@ internal sealed class DebugService : IDisposable, IDebuggerService
     public void Stop()
     {
         _cts?.Cancel();
-        try { _dap?.SendRequestAsync("disconnect",
-            new JsonObject { ["terminateDebuggee"] = true }).GetAwaiter().GetResult(); }
-        catch { }
-        try { _adapterProcess?.Kill(entireProcessTree: true); } catch { }
-        _dap?.Dispose();
+        var dap = _dap;
+        var adapterProcess = _adapterProcess;
         _dap = null;
         _adapterProcess = null;
+        _activeThreadId = 0;
+        _cachedStackFrames.Clear();
+        _cachedLocals.Clear();
+        try
+        {
+            if (dap is not null && adapterProcess is { HasExited: false })
+            {
+                using var disconnectCts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
+                dap.SendRequestAsync("disconnect",
+                    new JsonObject { ["terminateDebuggee"] = true },
+                    disconnectCts.Token).GetAwaiter().GetResult();
+            }
+        }
+        catch { }
+        try { adapterProcess?.Kill(entireProcessTree: true); } catch { }
+        dap?.Dispose();
+        _dap = null;
+        _adapterProcess = null;
+        _activeThreadId = 0;
+        _cachedStackFrames.Clear();
+        _cachedLocals.Clear();
     }
 
     public Task ContinueAsync() =>
