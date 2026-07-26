@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>true</IsPackable>
+    <PackageId>UnoDevelop.Tests.SampleAddIn</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>UnoDevelop Test Fixtures</Authors>
+    <Description>Deterministic local test fixture - a minimal AddIn package for AddInManager2 install/uninstall integration tests. Not a real AddIn, has no assembly payload.</Description>
+    <NoWarn>$(NoWarn);NU5128</NoWarn>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <GenerateDependencyFile>false</GenerateDependencyFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="SampleAddIn.addin" Pack="true" PackagePath="." />
+  </ItemGroup>
+
+</Project>

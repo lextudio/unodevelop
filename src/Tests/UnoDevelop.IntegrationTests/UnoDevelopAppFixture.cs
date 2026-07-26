@@ -29,6 +29,7 @@ public sealed class UnoDevelopAppFixture : IAsyncLifetime
     public string RenameResourceFixtureFilePath { get; } = LocateFixture("ResourceFixture", System.IO.Path.Combine("Rename", "RenameSample.resx"));
     public string DebugTestProjectPath { get; } = LocateFixture("DebugTestApp", "DebugTestApp.csproj");
     public string DebugTestProgramPath { get; } = LocateFixture("DebugTestApp", "Program.cs");
+    public string NuGetAddInFeedPath { get; } = LocateFixtureDirectory("NuGetAddInFeed", "LocalFeed");
 
     public async ValueTask InitializeAsync()
     {
@@ -57,6 +58,7 @@ public sealed class UnoDevelopAppFixture : IAsyncLifetime
             psi.ArgumentList.Add(a);
 
         psi.Environment["UNODEVELOP_OPEN_ON_START"] = FixtureSolutionPath;
+        psi.Environment["UNODEVELOP_ADDIN_NUGET_SOURCE"] = NuGetAddInFeedPath;
 
         _app = Process.Start(psi) ?? throw new InvalidOperationException("Failed to start UnoDevelop");
         _app.OutputDataReceived += (_, _) => { };
@@ -221,6 +223,19 @@ public sealed class UnoDevelopAppFixture : IAsyncLifetime
         }
         throw new FileNotFoundException(
             $"Could not locate tests/fixtures/{fixtureDir}/{projectFile} by walking up from " + AppContext.BaseDirectory);
+    }
+
+    static string LocateFixtureDirectory(string fixtureDir, string subDir)
+    {
+        var dir = AppContext.BaseDirectory;
+        while (dir is not null)
+        {
+            var candidate = Path.Combine(dir, "tests", "fixtures", fixtureDir, subDir);
+            if (Directory.Exists(candidate)) return candidate;
+            dir = Path.GetDirectoryName(dir);
+        }
+        throw new DirectoryNotFoundException(
+            $"Could not locate tests/fixtures/{fixtureDir}/{subDir} by walking up from " + AppContext.BaseDirectory);
     }
 }
 

@@ -2,8 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using ICSharpCode.Core;
 using ICSharpCode.SharpDevelop;
+using ICSharpCode.SharpDevelop.NuGet;
 using ICSharpCode.SharpDevelop.Workbench;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -17,9 +20,14 @@ public sealed class AddInScoutViewContent : IViewContent
     private readonly ObservableCollection<AddInScoutPathItem> _paths = new();
     private readonly ObservableCollection<AddInScoutCodonItem> _codons = new();
     private readonly ObservableCollection<AddInScoutAddInItem> _addIns = new();
+    private readonly ObservableCollection<AddInScoutSearchResultItem> _searchResults = new();
+    private readonly AddInPackageManagerService _packageManager = new();
     private readonly Grid _control;
     private readonly TextBlock _details;
     private ListView? _addInList;
+    private TextBox? _searchBox;
+    private TextBlock? _nuGetStatus;
+    private ListView? _searchResultsList;
 
     public AddInScoutViewContent()
     {
@@ -62,6 +70,8 @@ public sealed class AddInScoutViewContent : IViewContent
         addInsPanel.Children.Add(addInList);
         addInsPanel.Children.Add(toggleEnabled);
 
+        var nuGetPanel = CreateNuGetPanel();
+
         var tabs = new TabView
         {
             TabWidthMode = TabViewWidthMode.SizeToContent,
@@ -70,6 +80,7 @@ public sealed class AddInScoutViewContent : IViewContent
         };
         tabs.TabItems.Add(new TabViewItem { Header = "Tree", Content = pathList });
         tabs.TabItems.Add(new TabViewItem { Header = "AddIns", Content = addInsPanel });
+        tabs.TabItems.Add(new TabViewItem { Header = "NuGet", Content = nuGetPanel });
 
         _details = new TextBlock
         {
@@ -209,15 +220,147 @@ public sealed class AddInScoutViewContent : IViewContent
         return addIn.Enabled;
     }
 
-    private void LoadModel()
+    /// <summary>
+    /// The AddInManager2 "Available" tab equivalent: search configured NuGet feeds
+    /// (<see cref="AddInPackageManagerService"/>, reusing the existing project-reference NuGet
+    /// search infrastructure) and install/uninstall NuGet-packaged AddIns. This is the piece the
+    /// contract-first slice explicitly deferred - real download+extract+register, not just
+    /// enable/disable of already-loaded AddIns.
+    /// </summary>
+    private Grid CreateNuGetPanel()
     {
-        var addInTree = ServiceSingleton.GetRequiredService<IAddInTree>();
-        var root = AddInTree.GetTreeNode(string.Empty);
-        foreach (var item in EnumeratePaths(root, string.Empty).OrderBy(item => item.Path, StringComparer.OrdinalIgnoreCase))
-        {
-            _paths.Add(item);
-        }
+        var searchBox = new TextBox { PlaceholderText = "Search NuGet for AddIns...", Margin = new Thickness(8, 8, 8, 0) };
+        _searchBox = searchBox;
+        var searchButton = new Button { Content = "Search", Margin = new Thickness(8, 8, 8, 0) };
+        var searchRow = new Grid { ColumnSpacing = 8 };
+        searchRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        searchRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        Grid.SetColumn(searchBox, 0);
+        Grid.SetColumn(searchButton, 1);
+        searchRow.Children.Add(searchBox);
+        searchRow.Children.Add(searchButton);
 
+        var resultsList = new ListView
+        {
+            ItemsSource = _searchResults,
+            SelectionMode = ListViewSelectionMode.Single,
+            ItemTemplate = CreateSearchResultTemplate(),
+            Margin = new Thickness(8)
+        };
+        _searchResultsList = resultsList;
+
+        var status = new TextBlock { Text = string.Empty, Margin = new Thickness(8, 0, 8, 8), TextWrapping = TextWrapping.Wrap };
+        _nuGetStatus = status;
+
+        var installButton = new Button { Content = "Install selected", Margin = new Thickness(8, 0, 8, 8) };
+        var uninstallButton = new Button { Content = "Uninstall selected AddIn", Margin = new Thickness(8, 0, 8, 8) };
+        var actionsRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
+        actionsRow.Children.Add(installButton);
+        actionsRow.Children.Add(uninstallButton);
+
+        searchButton.Click += async (_, _) => await SearchNuGetAsync(searchBox.Text ?? string.Empty);
+        installButton.Click += async (_, _) =>
+        {
+            if (resultsList.SelectedItem is AddInScoutSearchResultItem selected)
+                await InstallFromNuGetAsync(selected.Id, selected.Version);
+        };
+        uninstallButton.Click += (_, _) =>
+        {
+            if (_addInList?.SelectedItem is AddInScoutAddInItem item)
+                UninstallByName(item.Identity ?? item.Name);
+        };
+
+        var panel = new Grid();
+        panel.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        panel.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+        panel.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        panel.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        Grid.SetRow(searchRow, 0);
+        Grid.SetRow(resultsList, 1);
+        Grid.SetRow(actionsRow, 2);
+        Grid.SetRow(status, 3);
+        panel.Children.Add(searchRow);
+        panel.Children.Add(resultsList);
+        panel.Children.Add(actionsRow);
+        panel.Children.Add(status);
+        return panel;
+    }
+
+    private static DataTemplate CreateSearchResultTemplate()
+    {
+        return new DataTemplate(() =>
+        {
+            var panel = new StackPanel { Padding = new Thickness(8, 5, 8, 5) };
+            panel.Children.Add(CreateCell("Id", true));
+            panel.Children.Add(CreateCell("Version", false));
+            panel.Children.Add(CreateCell("Description", false));
+            return panel;
+        });
+    }
+
+    /// <summary>Runs a NuGet search for DevFlow/integration-test use, returning results directly.</summary>
+    public async Task<IReadOnlyList<NuGetSearchResult>> SearchNuGetForTestingAsync(string searchTerm, CancellationToken cancellationToken = default)
+    {
+        var results = await _packageManager.SearchAsync(searchTerm, includePrerelease: false, take: 25, cancellationToken);
+        _searchResults.Clear();
+        foreach (var result in results)
+            _searchResults.Add(new AddInScoutSearchResultItem(result.Id, result.Version, result.Description ?? string.Empty));
+        return results;
+    }
+
+    private async Task SearchNuGetAsync(string searchTerm)
+    {
+        if (_nuGetStatus is not null)
+            _nuGetStatus.Text = "Searching...";
+        try
+        {
+            var results = await SearchNuGetForTestingAsync(searchTerm);
+            if (_nuGetStatus is not null)
+                _nuGetStatus.Text = $"{results.Count} result(s)";
+        }
+        catch (Exception ex)
+        {
+            if (_nuGetStatus is not null)
+                _nuGetStatus.Text = $"Search failed: {ex.Message}";
+        }
+    }
+
+    /// <summary>
+    /// Downloads, extracts, and registers a NuGet-packaged AddIn (see
+    /// <see cref="AddInPackageManagerService.InstallAsync"/>), then refreshes the AddIns list so
+    /// the newly installed AddIn shows up immediately.
+    /// </summary>
+    public async Task<AddInPackageInstaller.InstallResult> InstallFromNuGetAsync(string packageId, string version, CancellationToken cancellationToken = default)
+    {
+        if (_nuGetStatus is not null)
+            _nuGetStatus.Text = $"Installing {packageId} {version}...";
+        var result = await _packageManager.InstallAsync(packageId, version, cancellationToken);
+        if (_nuGetStatus is not null)
+            _nuGetStatus.Text = result.Success
+                ? $"Installed {packageId} {version} to {result.InstallDirectory}"
+                : $"Install failed: {result.Error}";
+        if (result.Success)
+            RefreshAddInsList();
+        return result;
+    }
+
+    /// <summary>
+    /// Unregisters and deletes a package-installed AddIn (see
+    /// <see cref="AddInPackageManagerService.Uninstall"/>). Preinstalled AddIns cannot be
+    /// uninstalled this way - only disabled, via <see cref="ToggleEnabledByName"/>.
+    /// </summary>
+    public bool UninstallByName(string identityOrName)
+    {
+        var removed = _packageManager.Uninstall(identityOrName);
+        if (removed)
+            RefreshAddInsList();
+        return removed;
+    }
+
+    private void RefreshAddInsList()
+    {
+        _addIns.Clear();
+        var addInTree = ServiceSingleton.GetRequiredService<IAddInTree>();
         foreach (var addIn in addInTree.AddIns.OrderBy(addIn => addIn.Name, StringComparer.OrdinalIgnoreCase))
         {
             _addIns.Add(new AddInScoutAddInItem(
@@ -229,6 +372,18 @@ public sealed class AddInScoutViewContent : IViewContent
                 addIn.FileName,
                 addIn.Paths.Keys.OrderBy(path => path, StringComparer.OrdinalIgnoreCase).ToArray()));
         }
+    }
+
+    private void LoadModel()
+    {
+        var addInTree = ServiceSingleton.GetRequiredService<IAddInTree>();
+        var root = AddInTree.GetTreeNode(string.Empty);
+        foreach (var item in EnumeratePaths(root, string.Empty).OrderBy(item => item.Path, StringComparer.OrdinalIgnoreCase))
+        {
+            _paths.Add(item);
+        }
+
+        RefreshAddInsList();
     }
 
     private static IEnumerable<AddInScoutPathItem> EnumeratePaths(AddInTreeNode node, string path)
@@ -386,6 +541,8 @@ public sealed class AddInScoutViewContent : IViewContent
         bool Preinstalled,
         string FileName,
         IReadOnlyList<string> Paths);
+
+    private sealed record AddInScoutSearchResultItem(string Id, string Version, string Description);
 
     private sealed record AddInScoutCodonItem(string Path, string Name, string Id, string AddInName, string Properties)
     {

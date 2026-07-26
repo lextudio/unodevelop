@@ -66,6 +66,8 @@
     <Compile Include="..\Src\NuGet\NuGetPackageSourceCatalog.cs" />
     <Compile Include="..\Src\NuGet\NuGetSearchResult.cs" />
     <Compile Include="..\Src\NuGet\NuGetPackageSearchService.cs" />
+    <Compile Include="..\Src\NuGet\AddInPackageInstaller.cs" />
+    <Compile Include="..\Src\NuGet\AddInPackageManagerService.cs" />
     <Compile Include="..\Src\Templates\UnoTemplateEngineHost.cs" />
     <Compile Include="..\Src\Templates\TemplateSummary.cs" />
     <Compile Include="..\Src\Templates\TemplateDiscoveryService.cs" />

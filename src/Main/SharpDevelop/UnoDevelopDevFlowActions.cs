@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using ICSharpCode.Core;
 using ICSharpCode.SharpDevelop;
@@ -1347,6 +1348,84 @@ public static class UnoDevelopDevFlowActions
                 return JsonSerializer.Serialize(new { success = false, error = $"AddIn '{nameOrIdentity}' not found" });
 
             return JsonSerializer.Serialize(new { success = true, enabled = result.Value });
+        });
+    }
+
+    [DevFlowAction("ide-addin-nuget-search",
+        Description = "Search configured NuGet feeds for AddIn packages via the active AddIn Scout view's NuGet tab (AddInManager2's Available-tab equivalent). Args: [searchTerm]. Returns {found, results:[{id,version,description}]} JSON.")]
+    public static async Task<string> SearchAddInNuGetPackages(string searchTerm)
+    {
+        var view = SD.MainThread.InvokeIfRequired(() => SD.Workbench.ActiveViewContent);
+        var type = view?.GetType();
+        if (type?.FullName != "UnoDevelop.AddIns.Misc.AddInScout.AddInScoutViewContent")
+            return """{"found":false,"error":"Active view is not the AddIn Scout"}""";
+
+        var method = type.GetMethod("SearchNuGetForTestingAsync");
+        var task = (Task?)method?.Invoke(view, new object?[] { searchTerm, CancellationToken.None });
+        if (task is null)
+            return """{"found":false,"error":"SearchNuGetForTestingAsync not found"}""";
+
+        await task;
+        var resultProperty = task.GetType().GetProperty("Result");
+        var results = (resultProperty?.GetValue(task) as System.Collections.IEnumerable)?.Cast<object>()
+            .Select(item =>
+            {
+                var itemType = item.GetType();
+                return new
+                {
+                    id = itemType.GetProperty("Id")?.GetValue(item) as string,
+                    version = itemType.GetProperty("Version")?.GetValue(item) as string,
+                    description = itemType.GetProperty("Description")?.GetValue(item) as string
+                };
+            }).ToArray() ?? Array.Empty<object>();
+
+        return JsonSerializer.Serialize(new { found = true, results });
+    }
+
+    [DevFlowAction("ide-addin-nuget-install",
+        Description = "Download, extract, and register a NuGet-packaged AddIn via the active AddIn Scout view's NuGet tab. Args: [packageId, version]. Returns {success, installDirectory, addInFiles, error} JSON.")]
+    public static async Task<string> InstallAddInFromNuGet(string packageId, string version)
+    {
+        var view = SD.MainThread.InvokeIfRequired(() => SD.Workbench.ActiveViewContent);
+        var type = view?.GetType();
+        if (type?.FullName != "UnoDevelop.AddIns.Misc.AddInScout.AddInScoutViewContent")
+            return """{"success":false,"error":"Active view is not the AddIn Scout"}""";
+
+        var method = type.GetMethod("InstallFromNuGetAsync");
+        var task = (Task?)method?.Invoke(view, new object?[] { packageId, version, CancellationToken.None });
+        if (task is null)
+            return """{"success":false,"error":"InstallFromNuGetAsync not found"}""";
+
+        await task;
+        var resultProperty = task.GetType().GetProperty("Result");
+        var result = resultProperty?.GetValue(task);
+        var resultType = result?.GetType();
+
+        return JsonSerializer.Serialize(new
+        {
+            success = resultType?.GetProperty("Success")?.GetValue(result) as bool? ?? false,
+            installDirectory = resultType?.GetProperty("InstallDirectory")?.GetValue(result) as string,
+            addInFiles = (resultType?.GetProperty("AddInFiles")?.GetValue(result) as System.Collections.IEnumerable)?.Cast<string>().ToArray() ?? Array.Empty<string>(),
+            // Named "installError" (not "error") - InvokeAsync treats any "error" JSON property,
+            // even a null one, as a fatal probe failure regardless of "success".
+            installError = resultType?.GetProperty("Error")?.GetValue(result) as string
+        });
+    }
+
+    [DevFlowAction("ide-addin-nuget-uninstall",
+        Description = "Unregister and delete a package-installed AddIn by name or primary identity, via the active AddIn Scout view's NuGet tab. Preinstalled AddIns cannot be uninstalled this way. Returns {success} JSON.")]
+    public static string UninstallAddInFromNuGet(string nameOrIdentity)
+    {
+        return SD.MainThread.InvokeIfRequired(() =>
+        {
+            var view = SD.Workbench.ActiveViewContent;
+            var type = view?.GetType();
+            if (type?.FullName != "UnoDevelop.AddIns.Misc.AddInScout.AddInScoutViewContent")
+                return """{"success":false,"error":"Active view is not the AddIn Scout"}""";
+
+            var method = type.GetMethod("UninstallByName");
+            var result = method?.Invoke(view, new object[] { nameOrIdentity }) as bool?;
+            return JsonSerializer.Serialize(new { success = result ?? false });
         });
     }
 

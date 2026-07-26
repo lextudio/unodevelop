@@ -1,0 +1,9 @@
+<AddIn name="UnoDevelop Sample Test AddIn"
+       author="UnoDevelop Test Fixtures"
+       description="Deterministic fixture AddIn for AddInManager2 install/uninstall integration tests - no assembly payload, manifest-only.">
+
+  <Manifest>
+    <Identity name="UnoDevelop.Tests.SampleAddIn"/>
+  </Manifest>
+
+</AddIn>

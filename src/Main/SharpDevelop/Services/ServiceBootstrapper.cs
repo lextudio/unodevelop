@@ -38,6 +38,11 @@ internal static class ServiceBootstrapper
         // writes directly to this path with no null-check of its own.
         System.IO.Directory.CreateDirectory(propertyService.ConfigDirectory.ToString());
         AddInManager.ConfigurationFileName = Path.Combine(propertyService.ConfigDirectory.ToString(), "AddIns.xml");
+        // Target directory for NuGet-packaged AddIn installs (AddInPackageManagerService /
+        // AddInManager2 parity) - upstream CoreStartup.ConfigureUserAddIns isn't called anywhere
+        // in this bootstrap, so UserAddInPath is otherwise left null.
+        AddInManager.UserAddInPath = Path.Combine(propertyService.ConfigDirectory.ToString(), "AddIns");
+        System.IO.Directory.CreateDirectory(AddInManager.UserAddInPath);
         container.AddService(typeof(ICSharpCode.Core.IResourceService), new ResourceServiceImpl(Path.Combine(propertyService.DataDirectory.ToString(), "resources"), propertyService));
         container.AddService(typeof(ApplicationStateInfoService), new ApplicationStateInfoService());
         container.AddService(typeof(IShutdownService), new UnoShutdownService());
