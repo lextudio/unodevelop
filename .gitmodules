@@ -7,9 +7,6 @@
 [submodule "externals/project-system"]
 	path = externals/project-system
 	url = https://github.com/dotnet/project-system.git
-[submodule "externals/monodevelop-nuget-extensions"]
-	path = externals/monodevelop-nuget-extensions
-	url = https://github.com/mrward/monodevelop-nuget-extensions.git
 [submodule "externals/monodevelop"]
 	path = externals/monodevelop
 	url = https://github.com/mono/monodevelop.git
@@ -23,3 +20,6 @@
 [submodule "externals/AXSG"]
 	path = externals/AXSG
 	url = https://github.com/wieslawsoltes/XamlToCSharpGenerator.git
+[submodule "externals/OpenDevelop"]
+	path = externals/OpenDevelop
+	url = https://github.com/lextudio/OpenDevelop
