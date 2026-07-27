@@ -673,7 +673,7 @@ internal sealed class DebugService : IDisposable, IDebuggerService
         {
             foreach (var config in new[] { "debug", "release" })
             {
-                var dev = Path.Combine(repo, "externals", "sharpdbg", "artifacts",
+                var dev = Path.Combine(repo, "externals", "OpenDevelop", "externals", "sharpdbg", "artifacts",
                     "bin", "SharpDbg.Cli", config, "SharpDbg.Cli.dll");
                 if (File.Exists(dev)) return dev;
             }

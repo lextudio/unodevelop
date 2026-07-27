@@ -126,8 +126,8 @@
 
 	<!-- SharpDbg debug adapter: build from submodule, copy output to Debugger/ -->
 	<PropertyGroup>
-		<SharpDbgProject>$(MSBuildThisFileDirectory)..\..\..\externals\sharpdbg\src\SharpDbg.Cli\SharpDbg.Cli.csproj</SharpDbgProject>
-		<SharpDbgBinDir>$(MSBuildThisFileDirectory)..\..\..\externals\sharpdbg\artifacts\bin\SharpDbg.Cli\$([System.String]::Copy('$(Configuration)').ToLower())\</SharpDbgBinDir>
+		<SharpDbgProject>$(MSBuildThisFileDirectory)..\..\..\externals\OpenDevelop\externals\sharpdbg\src\SharpDbg.Cli\SharpDbg.Cli.csproj</SharpDbgProject>
+		<SharpDbgBinDir>$(MSBuildThisFileDirectory)..\..\..\externals\OpenDevelop\externals\sharpdbg\artifacts\bin\SharpDbg.Cli\$([System.String]::Copy('$(Configuration)').ToLower())\</SharpDbgBinDir>
 	</PropertyGroup>
 
 	<Target Name="BuildSharpDbg" BeforeTargets="Build"
