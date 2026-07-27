@@ -18,7 +18,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\..\..\Main\Core\Project\ICSharpCode.Core.csproj" />
     <ProjectReference Include="..\..\..\..\Main\Base\Project\ICSharpCode.SharpDevelop.csproj" />
-    <ProjectReference Include="..\..\..\..\..\externals\cps-shims\src\ProjectSystem\Microsoft.VisualStudio.ProjectSystem.Shim.csproj" />
+    <ProjectReference Include="..\..\..\..\..\externals\OpenDevelop\externals\cps\src\ProjectSystem\Microsoft.VisualStudio.ProjectSystem.Shim.csproj" />
   </ItemGroup>
 
   <ItemGroup>

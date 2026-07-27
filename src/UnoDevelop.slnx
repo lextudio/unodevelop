@@ -19,8 +19,8 @@
   <!-- External projects (submodules) -->
   <Folder Name="/Externals/" />
   <Folder Name="/Externals/cps-shims/">
-    <Project Path="..\externals\cps-shims\src\ProjectSystem\Microsoft.VisualStudio.ProjectSystem.Shim.csproj" />
-    <Project Path="..\externals\cps-shims\src\ProjectSystemManaged\Microsoft.VisualStudio.ProjectSystem.Managed.csproj" />
+    <Project Path="..\externals\OpenDevelop\externals\cps\src\ProjectSystem\Microsoft.VisualStudio.ProjectSystem.Shim.csproj" />
+    <Project Path="..\externals\OpenDevelop\externals\cps\src\ProjectSystemManaged\Microsoft.VisualStudio.ProjectSystem.Managed.csproj" />
   </Folder>
 
   <!-- Library projects -->

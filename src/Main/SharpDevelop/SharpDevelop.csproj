@@ -22,8 +22,8 @@
 
 	<ItemGroup>
 		<PackageReference Include="Microsoft.Diagnostics.NETCore.Client" />
-		<ProjectReference Include="..\..\..\externals\cps-shims\src\ProjectSystem\Microsoft.VisualStudio.ProjectSystem.Shim.csproj" />
-		<ProjectReference Include="..\..\..\externals\cps-shims\src\ProjectSystemManaged\Microsoft.VisualStudio.ProjectSystem.Managed.csproj" />
+		<ProjectReference Include="..\..\..\externals\OpenDevelop\externals\cps\src\ProjectSystem\Microsoft.VisualStudio.ProjectSystem.Shim.csproj" />
+		<ProjectReference Include="..\..\..\externals\OpenDevelop\externals\cps\src\ProjectSystemManaged\Microsoft.VisualStudio.ProjectSystem.Managed.csproj" />
 		<ProjectReference Include="..\Base\Project\ICSharpCode.SharpDevelop.csproj" />
 		<ProjectReference Include="..\Core\Project\ICSharpCode.Core.csproj" />
 		<ProjectReference Include="..\Debugger\Project\UnoDevelop.Debugger.csproj" />
