@@ -884,10 +884,19 @@ internal sealed class UnoProjectService : IProjectService, IProjectServiceRaiseE
         // and Packages folders, so exclude them from the file tree — otherwise a ProjectReference to an
         // out-of-tree .csproj shows up as a linked file and a "<Reference Include='System.Xml'/>"
         // (extension ".Xml") is mistaken for a missing .xml file.
+        var projectDirectory = Path.GetDirectoryName(project.FileName?.ToString());
         return project.Items.CreateSnapshot()
             .OfType<FileProjectItem>()
             .Where(item => !IsReferenceItemName(item.ItemType.ItemName))
             .Where(item => IsSupportedProjectItemPath(item.FileName.ToString()))
+            // Real MSBuild evaluation legitimately declares some generated sources as ordinary
+            // Compile items with no Visible="false" metadata at all (e.g. Uno.Resizetizer's
+            // obj/**/unoresizetizer/Uno.Resizetizer.WindowIconExtensions.g.cs) - Visual Studio's
+            // own Solution Explorer hides anything physically under bin/obj regardless of
+            // metadata, as a hardcoded convention, not just via Visible. Match that here so
+            // real project-item resolution (this method) doesn't leak build output into the
+            // normal tree the same way the disk-scan overload already excludes it.
+            .Where(item => string.IsNullOrEmpty(projectDirectory) || !IsExcludedProjectPath(item.FileName.ToString(), projectDirectory))
             .Select(item => new ProjectDisplayItem(
                 item.FileName.ToString(),
                 NormalizeDisplayPath(item.VirtualName),
@@ -895,6 +904,16 @@ internal sealed class UnoProjectService : IProjectService, IProjectServiceRaiseE
                 item.IsLink,
                 File.Exists(item.FileName.ToString()),
                 item))
+            // Uno.Sdk single-project apps legitimately register the same physical file under more
+            // than one MSBuild item type/head evaluation (e.g. a .xaml file surfacing as both a
+            // Page item and a None/Content item) - each one becomes a separate ProjectDisplayItem
+            // here, and since the tree builder's AddProjectItemNode adds file leaves unconditionally
+            // (unlike folders, which dedupe by name), that showed up as the same file listed twice
+            // at the same tree level (XAML files, appsettings.json, ...). One node per physical
+            // file, keeping the first item type MSBuild reports for it, is what a real Solution
+            // Explorer shows regardless of how many item types happen to reference the same file.
+            .GroupBy(item => item.PhysicalPath, StringComparer.OrdinalIgnoreCase)
+            .Select(group => group.First())
             .OrderBy(item => item.DisplayPath, StringComparer.OrdinalIgnoreCase)
             .ToArray();
     }
@@ -1750,7 +1769,16 @@ internal sealed class UnoProjectService : IProjectService, IProjectServiceRaiseE
             }
 
             var relativePath = parts[5];
-            return string.IsNullOrWhiteSpace(relativePath) ? null : relativePath;
+            if (string.IsNullOrWhiteSpace(relativePath))
+                return null;
+
+            // .sln project paths are always written with Windows-style backslashes, even for
+            // projects in subdirectories (e.g. "Roma.Host\Roma.Host.csproj") - Path.Combine/
+            // Path.GetFullPath treat '\' as a literal filename character on macOS/Linux, not a
+            // separator, so the combined path never exists and the project silently vanishes from
+            // Solution Explorer. Only test fixtures with projects directly next to their .sln
+            // (no subdirectory, so no backslash) ever exercised this path before.
+            return relativePath.Replace('\\', '/');
         }
 
         private ISolutionFolder EnsureProjectParentFolder(string projectPath)

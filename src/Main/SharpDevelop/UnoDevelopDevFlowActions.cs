@@ -1799,6 +1799,49 @@ public static class UnoDevelopDevFlowActions
         });
     }
 
+    [DevFlowAction("ide-xaml-designer-tap-element",
+        Description = "Simulate a Tapped gesture on a rendered design-surface element (same path as a real click) - selects the element AND brings its document's tab back to the active/highlighted state, even if a different tab was active. Args: [typeName, index]. Returns {tapped, activeDocumentFile} JSON.")]
+    public static string TapXamlDesignerElement(string typeName, int index = 0)
+    {
+        return SD.MainThread.InvokeIfRequired(() =>
+        {
+            // Not FindActiveXamlDesigner(): this action's whole point is reactivating a
+            // currently-INACTIVE XAML designer tab, so it must find the designer regardless of
+            // which window is active right now. XamlDesignerViewContent is a SECONDARY view
+            // content (attached to the .xaml file's primary text-editor view), not a top-level
+            // entry of its own in ViewContentCollection.
+            var designer = SD.Workbench.ViewContentCollection
+                .SelectMany(view => view.SecondaryViewContents)
+                .FirstOrDefault(view => view.GetType().FullName == "ICSharpCode.XamlDesigner.XamlDesignerViewContent");
+            var tapped = designer?.GetType().GetMethod("SimulateElementTapForTesting")
+                ?.Invoke(designer, new object[] { typeName, index }) as bool? ?? false;
+
+            // SD.Workbench.ActiveViewContent is only updated by the app explicitly
+            // opening/activating a view via code - it is NOT wired up to the docking UI's own
+            // LayoutDocument.IsActive, which is what actually drives a tab's active/highlighted
+            // color (see LayoutDocumentPaneControl). Read that directly via MainPage's private
+            // per-view-content LayoutDocument map to verify the tab itself, not just app-level
+            // bookkeeping that clicking a real tab doesn't update either.
+            var documentsField = typeof(MainPage).GetField("_documents", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            var documents = documentsField?.GetValue(MainPage.Current) as System.Collections.IDictionary;
+            string? activeDocumentFile = null;
+            if (documents is not null)
+            {
+                foreach (System.Collections.DictionaryEntry entry in documents)
+                {
+                    var isActive = entry.Value?.GetType().GetProperty("IsActive")?.GetValue(entry.Value) as bool? ?? false;
+                    if (isActive)
+                    {
+                        activeDocumentFile = (entry.Key as IViewContent)?.PrimaryFileName?.ToString();
+                        break;
+                    }
+                }
+            }
+
+            return JsonSerializer.Serialize(new { tapped, activeDocumentFile });
+        });
+    }
+
     [DevFlowAction("ide-xaml-designer-select",
         Description = "Select a rendered XAML element by runtime type name.")]
     public static string SelectXamlDesignerElement(string typeName, int index = 0)
@@ -2048,6 +2091,33 @@ public static class UnoDevelopDevFlowActions
         return MsBuildProjectHelper.SetProperty(projectPath, propertyName, value)
             ? "OK"
             : "ERROR: File not found: " + projectPath;
+    }
+
+    [DevFlowAction("ide-list-project-items",
+        Description = "List the display items Solution Explorer's tree builder resolves for a loaded project (name, projectCount). Diagnostic for Solution Explorer file-visibility issues. Args: [projectPath]. Returns {found, count, items:[{displayPath, physicalPath}]} JSON.")]
+    public static string ListProjectItems(string projectPath)
+    {
+        var projectService = ServiceSingleton.GetRequiredService<IProjectService>();
+        var project = projectService.CurrentSolution?.Projects
+            .FirstOrDefault(p => string.Equals(p.FileName?.ToString(), projectPath, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(p.FileName?.ToString()?.TrimStart('/'), projectPath.TrimStart('/'), StringComparison.OrdinalIgnoreCase)
+                || string.Equals(p.Name, projectPath, StringComparison.OrdinalIgnoreCase));
+        if (project is null)
+            return JsonSerializer.Serialize(new { found = false, count = 0, items = Array.Empty<object>() });
+
+        var realProjectPath = project.FileName!.ToString();
+        var fromProject = UnoDevelop.Services.UnoProjectService.GetProjectDisplayItems(project);
+        var fromDisk = UnoDevelop.Services.UnoProjectService.GetProjectDisplayItems(realProjectPath);
+        return JsonSerializer.Serialize(new
+        {
+            found = true,
+            realProjectPath,
+            fromProjectCount = fromProject.Count,
+            fromDiskCount = fromDisk.Count,
+            fromProjectItems = fromProject.Select(i => new { i.DisplayPath, i.PhysicalPath }).ToArray(),
+            onlyOnDisk = fromDisk.Where(d => !fromProject.Any(p => string.Equals(p.PhysicalPath, d.PhysicalPath, StringComparison.OrdinalIgnoreCase)))
+                .Select(i => new { i.DisplayPath, i.PhysicalPath }).ToArray()
+        });
     }
 
     [DevFlowAction("ide-get-target-framework", Description = "Read TargetFramework from a project. Args: [projectPath]. Returns the TFM or empty string.")]

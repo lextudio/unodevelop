@@ -3,7 +3,7 @@
 	url = https://github.com/lextudio/SharpDevelop.git
 [submodule "externals/sharpdbg"]
 	path = externals/sharpdbg
-	url = https://github.com/MattParkerDev/SharpDbg.git
+	url = https://github.com/lextudio/sharpdbg.git
 [submodule "externals/project-system"]
 	path = externals/project-system
 	url = https://github.com/dotnet/project-system.git
@@ -19,7 +19,7 @@
 	url = https://github.com/lextudio/cps-shims.git
 [submodule "externals/XAMLStudio"]
 	path = externals/XAMLStudio
-	url = https://github.com/dotnet/XAMLStudio.git
+	url = https://github.com/lextudio/xamlstudio.git
 [submodule "externals/AXSG"]
 	path = externals/AXSG
 	url = https://github.com/wieslawsoltes/XamlToCSharpGenerator.git

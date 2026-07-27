@@ -21,7 +21,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Build" />
+    <!-- Runtime assets excluded: MSBuildEnvironmentInitializer registers Microsoft.Build.Locator
+         at app startup, which redirects Microsoft.Build.* assembly resolution to the real
+         installed .NET SDK's own copies - shipping this package's own copies in our bin dir would
+         just create a second, conflicting set (and re-introduce the MSB0001 "type could not be
+         loaded" allowlist mismatch this setup exists to avoid). Compile-time reference only. -->
+    <PackageReference Include="Microsoft.Build" ExcludeAssets="runtime" />
+    <PackageReference Include="Microsoft.Build.Locator" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Features" />
     <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic.Features" />
     <PackageReference Include="System.Composition.Hosting" />
@@ -62,6 +68,7 @@
     <Compile Include="..\Src\LanguageServices\Lsp\LspLanguageService.cs" />
     <Compile Include="..\Src\LanguageServices\Lsp\LspServiceManager.cs" />
     <Compile Include="..\Src\LanguageServices\Lsp\LspCodeCompletionBinding.cs" />
+    <Compile Include="..\Src\MSBuildHosting\MSBuildEnvironmentInitializer.cs" />
     <Compile Include="..\Src\NuGet\UnoNuGetProject.cs" />
     <Compile Include="..\Src\NuGet\NuGetPackageSourceCatalog.cs" />
     <Compile Include="..\Src\NuGet\NuGetSearchResult.cs" />

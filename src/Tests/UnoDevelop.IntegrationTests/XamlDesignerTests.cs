@@ -197,4 +197,25 @@ public sealed class XamlDesignerTests
         Assert.True(pads.GetProperty("propertySnapshot").GetProperty("Width").GetDouble() >= 40);
         Assert.True(pads.GetProperty("propertySnapshot").GetProperty("Height").GetDouble() >= 20);
     }
+
+    [Fact]
+    public async Task TappingDesignSurfaceElement_ReactivatesOwningTab()
+    {
+        // Open the XAML file and switch to Design, then open a second, unrelated document -
+        // this makes the second document's tab the active one, leaving the XAML file's tab
+        // (and its design surface) inactive but still open in the background.
+        await _app.InvokeAsync("ide-open-file", _app.XamlFixtureFilePath);
+        await _app.InvokeAsync("ide-xaml-switch-view", "Design");
+        await _app.InvokeAsync("ide-open-file", _app.DebugTestProgramPath);
+
+        // Tapping a rendered element inside the (now-inactive) XAML design surface should bring
+        // its own document's tab back to the active/highlighted state - LayoutDocument.IsActive,
+        // which actually drives tab coloring in LayoutDocumentPaneControl, not just internal
+        // "active view content" bookkeeping that a real tab click doesn't update either.
+        var result = await _app.InvokeAsync("ide-xaml-designer-tap-element", "Button", 0);
+        Assert.True(result.GetProperty("tapped").GetBoolean(), result.ToString());
+        var activeDocumentFile = result.GetProperty("activeDocumentFile").GetString();
+        Assert.NotNull(activeDocumentFile);
+        Assert.EndsWith(_app.XamlFixtureFilePath, activeDocumentFile, System.StringComparison.OrdinalIgnoreCase);
+    }
 }

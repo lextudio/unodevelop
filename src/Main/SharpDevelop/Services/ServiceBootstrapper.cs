@@ -25,6 +25,11 @@ internal static class ServiceBootstrapper
 {
     public static void Initialize()
     {
+        // Must run before anything else touches a Microsoft.Build.* type (the first real usage
+        // is UnoProjectService's constructor a few lines down, via UnoSolutionModel) - see
+        // MSBuildEnvironmentInitializer's doc comment for why.
+        ICSharpCode.SharpDevelop.MSBuildHosting.MSBuildEnvironmentInitializer.EnsureRegistered();
+
         var container = new SharpDevelopServiceContainer();
         container.AddFallbackProvider(ServiceSingleton.FallbackServiceProvider);
 

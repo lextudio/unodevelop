@@ -16,6 +16,12 @@
     <PackageVersion Include="LeXtudio.UnoPropertyGrid" Version="0.4.2" />
     <PackageVersion Include="Microsoft.Diagnostics.NETCore.Client" Version="0.2.661903" />
     <PackageVersion Include="Microsoft.Build" Version="18.7.1" />
+    <!-- Bootstraps in-process MSBuild against the real installed .NET SDK (not the NuGet-restored
+         Microsoft.Build copy in our own bin dir), so SDK resolvers (Uno.Sdk, Microsoft.NET.Sdk)
+         actually get found - without this, in-process project evaluation silently drops every
+         SDK-default item glob (Compile, Page, ...), the root cause of Solution Explorer's
+         "files missing until Show All Files" bug. See ServiceBootstrapper.Initialize. -->
+    <PackageVersion Include="Microsoft.Build.Locator" Version="1.7.8" />
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp.Features" Version="5.3.0" />
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="5.3.0" />
     <PackageVersion Include="Microsoft.CodeAnalysis.VisualBasic.Features" Version="5.3.0" />

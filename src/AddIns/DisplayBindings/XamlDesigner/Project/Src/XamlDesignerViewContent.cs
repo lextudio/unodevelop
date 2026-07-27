@@ -110,6 +110,7 @@ namespace ICSharpCode.XamlDesigner
 
             try
             {
+                EnsureOwningProjectAssemblyLoaded(fileName);
                 var xaml = File.ReadAllText(fileName);
                 var element = XamlReader.Load(xaml) as UIElement;
                 _previewHost.Children.Clear();
@@ -132,6 +133,68 @@ namespace ICSharpCode.XamlDesigner
             }
         }
 
+        // XamlReader.Load resolves a "using:Namespace" type by scanning already-loaded assemblies -
+        // it has no notion of "the project this XAML file belongs to". A XAML file that references
+        // its own project's local types (converters, custom controls, ...) via xmlns:x="using:..."
+        // would otherwise always fail with "Unable to find type", even though the type is entirely
+        // real and buildable, simply because that project's own compiled assembly was never loaded
+        // into this (UnoDevelop's own) process. Loading it - once, best-effort, from whatever build
+        // output already exists on disk - lets XamlReader.Load's normal resolution find those types
+        // the same way it already finds Microsoft.UI.Xaml.Controls/System types.
+        static readonly System.Runtime.Loader.AssemblyLoadContext _designerAssemblyContext =
+            System.Runtime.Loader.AssemblyLoadContext.Default;
+        static readonly HashSet<string> _loadedDesignerAssemblyPaths = new(StringComparer.OrdinalIgnoreCase);
+
+        static void EnsureOwningProjectAssemblyLoaded(string xamlFilePath)
+        {
+            var solution = SD.ProjectService?.CurrentSolution;
+            if (solution is null)
+                return;
+
+            var project = solution.Projects
+                .Where(p => !string.IsNullOrEmpty(p.Directory?.ToString())
+                    && xamlFilePath.StartsWith(p.Directory!.ToString(), StringComparison.OrdinalIgnoreCase))
+                .OrderByDescending(p => p.Directory!.ToString().Length)
+                .FirstOrDefault();
+            if (project is null)
+                return;
+
+            var projectDirectory = project.Directory?.ToString();
+            var assemblyName = project.AssemblyName;
+            if (string.IsNullOrEmpty(projectDirectory) || string.IsNullOrEmpty(assemblyName))
+                return;
+
+            var binDirectory = Path.Combine(projectDirectory, "bin");
+            if (!Directory.Exists(binDirectory))
+                return;
+
+            string? assemblyPath;
+            try
+            {
+                assemblyPath = Directory.EnumerateFiles(binDirectory, assemblyName + ".dll", SearchOption.AllDirectories)
+                    .OrderByDescending(File.GetLastWriteTimeUtc)
+                    .FirstOrDefault();
+            }
+            catch (IOException)
+            {
+                return;
+            }
+
+            if (assemblyPath is null || !_loadedDesignerAssemblyPaths.Add(assemblyPath))
+                return;
+
+            try
+            {
+                _designerAssemblyContext.LoadFromAssemblyPath(assemblyPath);
+            }
+            catch
+            {
+                // Best-effort: a load failure (missing dependency, ABI mismatch, project never
+                // built, ...) just leaves XamlReader.Load to fail with its own "unable to find
+                // type" message, same as before this existed.
+            }
+        }
+
         public string? SelectedElementType => _selectedElement?.GetType().Name;
         public bool HasSelectionAdorner => _selectionBorder.Visibility == Visibility.Visible;
 
@@ -143,6 +206,26 @@ namespace ICSharpCode.XamlDesigner
                 .FirstOrDefault();
             SelectElement(match as FrameworkElement);
             return match is FrameworkElement;
+        }
+
+        /// <summary>
+        /// Exercises the exact same path a real Tapped gesture on a rendered design-surface
+        /// element takes (WorkbenchWindow.SelectWindow() + SelectElement) - for DevFlow/integration
+        /// test verification, since simulating a real pointer tap through the UI automation layer
+        /// isn't practical for a specific in-tree element. See OnElementTapped.
+        /// </summary>
+        public bool SimulateElementTapForTesting(string typeName, int index = 0)
+        {
+            var match = EnumerateElements(_previewHost.Children.FirstOrDefault())
+                .Where(element => string.Equals(element.GetType().Name, typeName, StringComparison.OrdinalIgnoreCase))
+                .Skip(Math.Max(0, index))
+                .FirstOrDefault();
+            if (match is not FrameworkElement element)
+                return false;
+
+            WorkbenchWindow?.SelectWindow();
+            SelectElement(element);
+            return true;
         }
 
         public bool AddToolboxItem(string xaml)
@@ -218,6 +301,13 @@ namespace ICSharpCode.XamlDesigner
         {
             if (sender is FrameworkElement element)
             {
+                // Tapping a rendered element inside the design surface should bring this
+                // document's own tab to the active/focused state too, same as clicking the tab
+                // itself - args.Handled = true below stops the Tapped gesture from bubbling
+                // further, so the docking pane's own click-to-activate handling (which listens
+                // for the raw PointerPressed routed event, not Tapped) can't be relied on alone;
+                // ask the workbench window directly instead of hoping it bubbles through.
+                WorkbenchWindow?.SelectWindow();
                 SelectElement(element);
                 args.Handled = true;
             }

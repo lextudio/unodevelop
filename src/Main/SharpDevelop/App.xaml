@@ -7,6 +7,16 @@
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
+                <!-- LeXtudio.Windows' WPF-compat controls (ToggleButton, DataGrid, ...) declare
+                     their styles/templates in Themes/Generic.xaml, relying on WinUI's automatic
+                     per-assembly Generic.xaml discovery for DefaultStyleKey resolution. That
+                     discovery doesn't reliably trigger for controls that are constructed purely
+                     in code and added to a purely code-constructed parent (e.g. the toolbar
+                     builder's ToggleButton instances) rather than declared in a XAML tree -
+                     OnApplyTemplate never fires, so Checked/Unchecked visuals never appear even
+                     though IsChecked itself flips correctly. Merging it explicitly here guarantees
+                     the styles are found via the normal resource-lookup path regardless. -->
+                <ResourceDictionary Source="ms-appx:///LeXtudio.Windows/Themes/Generic.xaml" />
             </ResourceDictionary.MergedDictionaries>
 
             <Style TargetType="swc:ToolBar">
