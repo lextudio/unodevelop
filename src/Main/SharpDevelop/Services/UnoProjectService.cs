@@ -2049,6 +2049,21 @@ internal sealed class UnoProjectService : IProjectService, IProjectServiceRaiseE
             if (!string.IsNullOrEmpty(dotnetRoot) && System.IO.Directory.Exists(dotnetRoot))
                 return dotnetRoot;
 
+            // Same fallback as MSBuildEnvironmentInitializer.GetDotnetRoot(): DOTNET_HOST_PATH/
+            // DOTNET_ROOT are only set by the dotnet CLI muxer, absent for a .app bundle launched
+            // via Finder/`open`. Check well-known macOS install locations directly.
+            string[] macInstallCandidates =
+            {
+                "/usr/local/share/dotnet",
+                "/opt/homebrew/opt/dotnet/libexec",
+                "/usr/local/opt/dotnet/libexec",
+            };
+            foreach (var macCandidate in macInstallCandidates)
+            {
+                if (System.IO.Directory.Exists(Path.Combine(macCandidate, "sdk")))
+                    return macCandidate;
+            }
+
             var programFiles = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
             var candidate = Path.Combine(programFiles, "dotnet");
             if (System.IO.Directory.Exists(candidate))

@@ -75,6 +75,18 @@ public static class MSBuildEnvironmentInitializer
         if (!string.IsNullOrEmpty(dotnetRoot) && Directory.Exists(dotnetRoot))
             return dotnetRoot;
 
+        // DOTNET_HOST_PATH/DOTNET_ROOT are only set by the dotnet CLI muxer for its own child
+        // processes - a macOS .app bundle launched via Finder/`open` inherits neither (no shell
+        // profile, no PATH augmentation), so without this fallback EnsureRegistered() silently
+        // no-ops and Microsoft.Build.Evaluation.ProjectCollection later throws
+        // FileNotFoundException on 'Microsoft.Build' the moment any project/solution model is
+        // constructed. Check well-known install locations directly.
+        foreach (var macCandidate in MacInstallCandidates)
+        {
+            if (Directory.Exists(Path.Combine(macCandidate, "sdk")))
+                return macCandidate;
+        }
+
         var programFiles = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
         var candidate = Path.Combine(programFiles, "dotnet");
         if (Directory.Exists(candidate))
@@ -82,4 +94,17 @@ public static class MSBuildEnvironmentInitializer
 
         return null;
     }
+
+    /// <summary>
+    /// Well-known .NET install locations on macOS: the official installer pkg puts everything
+    /// under /usr/local/share/dotnet on both Intel and Apple Silicon; Homebrew's dotnet formula
+    /// keeps the real toolset under its Cellar keg's libexec/ (not bin/, which is a wrapper
+    /// script), reached via the stable opt/ symlink that always points at the linked keg version.
+    /// </summary>
+    private static readonly string[] MacInstallCandidates =
+    {
+        "/usr/local/share/dotnet",
+        "/opt/homebrew/opt/dotnet/libexec",
+        "/usr/local/opt/dotnet/libexec",
+    };
 }
