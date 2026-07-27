@@ -147,6 +147,20 @@
 		      SkipUnchangedFiles="true" />
 	</Target>
 
+	<!-- dotnet publish computes its own file set (ResolvedFileToPublish) rather than xcopying
+	     $(OutputPath) - files dropped there by AfterTargets="Build" Copy tasks (like the one
+	     above) never make it into the publish output. Mirror the same copy again, this time
+	     into $(PublishDir), so a packaged/published app still finds SharpDbg. -->
+	<Target Name="CopySharpDbgToPublishOutput" AfterTargets="Publish" Condition="'$(PublishDir)' != ''">
+		<ItemGroup>
+			<SharpDbgPublishFiles Include="$(SharpDbgBinDir)**\*.*" />
+		</ItemGroup>
+		<MakeDir Directories="$(PublishDir)Debugger\" />
+		<Copy SourceFiles="@(SharpDbgPublishFiles)"
+		      DestinationFolder="$(PublishDir)Debugger\%(RecursiveDir)"
+		      SkipUnchangedFiles="true" />
+	</Target>
+
 	<Target Name="CopyAddInAssembliesToOutput" AfterTargets="Build">
 		<ItemGroup>
 			<AddInScoutOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\Misc\AddinScout\Project\bin\$(Configuration)\net10.0-desktop\UnoDevelop.AddInScout.*" Exclude="**\*.addin" />
@@ -249,6 +263,116 @@
 			<_DupAddIns Include="$(OutputPath)*.addin" />
 		</ItemGroup>
 		<Delete Files="@(_DupAddIns)" />
+	</Target>
+
+	<!-- dotnet publish computes its own file set (ResolvedFileToPublish) rather than xcopying
+	     $(OutputPath) - none of the 16 AddIn assemblies CopyAddInAssembliesToOutput places there
+	     (AfterTargets="Build") make it into a published/packaged build, so every one of those
+	     AddIns silently fails to load (FileNotFoundException on its own .addin-declared DLL) the
+	     moment the app is published/installed instead of run via `dotnet run`/`dotnet build`.
+	     Mirror the same copies into $(PublishDir). -->
+	<Target Name="CopyAddInAssembliesToPublishOutput" AfterTargets="Publish" Condition="'$(PublishDir)' != ''">
+		<ItemGroup>
+			<AddInScoutPublishOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\Misc\AddinScout\Project\bin\$(Configuration)\net10.0-desktop\UnoDevelop.AddInScout.*" Exclude="**\*.addin" />
+			<RegExpTkPublishOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\Misc\RegExpTk\Project\bin\$(Configuration)\net10.0-desktop\UnoDevelop.RegExpTk.*" Exclude="**\*.addin" />
+			<SettingsEditorPublishOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\DisplayBindings\SettingsEditor\Project\bin\$(Configuration)\net10.0-desktop\UnoDevelop.SettingsEditor.*" Exclude="**\*.addin" />
+			<HexEditorPublishOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\DisplayBindings\HexEditor\Project\bin\$(Configuration)\net10.0-desktop\UnoDevelop.HexEditor.*" Exclude="**\*.addin" />
+			<CodeCoveragePublishOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\Analysis\CodeCoverage\Project\bin\$(Configuration)\net10.0-desktop\UnoDevelop.CodeCoverage.*" Exclude="**\*.addin" />
+			<CodeCoverageAltCoverPublishOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\Analysis\CodeCoverage\Project\bin\$(Configuration)\net10.0-desktop\AltCover\**\*.*" />
+			<TextTemplatingPublishOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\Misc\TextTemplating\Project\bin\$(Configuration)\net10.0-desktop\UnoDevelop.TextTemplating.*" Exclude="**\*.addin" />
+			<PackageManagementPublishOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\Misc\PackageManagement\Project\bin\$(Configuration)\net10.0-desktop\UnoDevelop.PackageManagement.*" Exclude="**\*.addin" />
+			<SearchAndReplacePublishOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\Misc\SearchAndReplace\Project\bin\$(Configuration)\net10.0-desktop\UnoDevelop.SearchAndReplace.*" Exclude="**\*.addin" />
+			<StartPagePublishOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\Misc\StartPage\Project\bin\$(Configuration)\net10.0-desktop\UnoDevelop.StartPage.*" Exclude="**\*.addin" />
+			<XmlEditorPublishOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\DisplayBindings\XmlEditor\Project\bin\$(Configuration)\net10.0-desktop\UnoDevelop.XmlEditor.*" Exclude="**\*.addin" />
+			<IconEditorPublishOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\DisplayBindings\IconEditor\Project\bin\$(Configuration)\net10.0-desktop\UnoDevelop.IconEditor.*" Exclude="**\*.addin" />
+			<GitAddInPublishOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\VersionControl\GitAddIn\Project\bin\$(Configuration)\net10.0-desktop\UnoDevelop.GitAddIn.*" Exclude="**\*.addin" />
+			<XamlDesignerPublishOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\DisplayBindings\XamlDesigner\Project\bin\$(Configuration)\net10.0-desktop\ICSharpCode.XamlDesigner.*" Exclude="**\*.addin" />
+			<FSharpBindingPublishOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\BackendBindings\FSharpBinding\Project\bin\$(Configuration)\net10.0-desktop\FSharpBinding.*" Exclude="**\*.addin" />
+			<AndroidDeviceManagerPublishOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\Misc\AndroidDeviceManager\Project\bin\$(Configuration)\net10.0-desktop\UnoDevelop.AndroidDeviceManager.*" Exclude="**\*.addin" />
+			<AndroidSdkManagerPublishOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\Misc\AndroidSdkManager\Project\bin\$(Configuration)\net10.0-desktop\UnoDevelop.AndroidSdkManager.*" Exclude="**\*.addin" />
+			<UnitTestingPublishOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\Analysis\UnitTesting\bin\$(Configuration)\net10.0-desktop\UnoDevelop.UnitTesting.*" Exclude="**\*.addin" />
+		</ItemGroup>
+		<MakeDir Directories="$(PublishDir)AddIns\Misc\AddinScout\Project\" />
+		<MakeDir Directories="$(PublishDir)AddIns\Misc\RegExpTk\Project\" />
+		<MakeDir Directories="$(PublishDir)AddIns\DisplayBindings\SettingsEditor\Project\" />
+		<MakeDir Directories="$(PublishDir)AddIns\DisplayBindings\HexEditor\Project\" />
+		<MakeDir Directories="$(PublishDir)AddIns\Analysis\CodeCoverage\Project\" />
+		<MakeDir Directories="$(PublishDir)AddIns\Analysis\CodeCoverage\Project\AltCover\" />
+		<MakeDir Directories="$(PublishDir)AddIns\Misc\TextTemplating\Project\" />
+		<MakeDir Directories="$(PublishDir)AddIns\Misc\PackageManagement\Project\" />
+		<MakeDir Directories="$(PublishDir)AddIns\Misc\SearchAndReplace\Project\" />
+		<MakeDir Directories="$(PublishDir)AddIns\Misc\StartPage\Project\" />
+		<MakeDir Directories="$(PublishDir)AddIns\DisplayBindings\XmlEditor\Project\" />
+		<MakeDir Directories="$(PublishDir)AddIns\DisplayBindings\IconEditor\Project\" />
+		<MakeDir Directories="$(PublishDir)AddIns\VersionControl\GitAddIn\Project\" />
+		<MakeDir Directories="$(PublishDir)AddIns\DisplayBindings\XamlDesigner\Project\" />
+		<MakeDir Directories="$(PublishDir)AddIns\BackendBindings\FSharpBinding\Project\" />
+		<MakeDir Directories="$(PublishDir)AddIns\Misc\AndroidDeviceManager\Project\" />
+		<MakeDir Directories="$(PublishDir)AddIns\Misc\AndroidSdkManager\Project\" />
+		<MakeDir Directories="$(PublishDir)AddIns\Analysis\UnitTesting\" />
+		<Copy SourceFiles="@(AddInScoutPublishOutput)"
+		      DestinationFolder="$(PublishDir)AddIns\Misc\AddinScout\Project\"
+		      SkipUnchangedFiles="true" />
+		<Copy SourceFiles="@(RegExpTkPublishOutput)"
+		      DestinationFolder="$(PublishDir)AddIns\Misc\RegExpTk\Project\"
+		      SkipUnchangedFiles="true" />
+		<Copy SourceFiles="@(SettingsEditorPublishOutput)"
+		      DestinationFolder="$(PublishDir)AddIns\DisplayBindings\SettingsEditor\Project\"
+		      SkipUnchangedFiles="true" />
+		<Copy SourceFiles="@(HexEditorPublishOutput)"
+		      DestinationFolder="$(PublishDir)AddIns\DisplayBindings\HexEditor\Project\"
+		      SkipUnchangedFiles="true" />
+		<Copy SourceFiles="@(CodeCoveragePublishOutput)"
+		      DestinationFolder="$(PublishDir)AddIns\Analysis\CodeCoverage\Project\"
+		      SkipUnchangedFiles="true" />
+		<Copy SourceFiles="@(CodeCoverageAltCoverPublishOutput)"
+		      DestinationFolder="$(PublishDir)AddIns\Analysis\CodeCoverage\Project\AltCover\%(RecursiveDir)"
+		      SkipUnchangedFiles="true" />
+		<Copy SourceFiles="@(TextTemplatingPublishOutput)"
+		      DestinationFolder="$(PublishDir)AddIns\Misc\TextTemplating\Project\"
+		      SkipUnchangedFiles="true" />
+		<Copy SourceFiles="@(PackageManagementPublishOutput)"
+		      DestinationFolder="$(PublishDir)AddIns\Misc\PackageManagement\Project\"
+		      SkipUnchangedFiles="true" />
+		<Copy SourceFiles="@(SearchAndReplacePublishOutput)"
+		      DestinationFolder="$(PublishDir)AddIns\Misc\SearchAndReplace\Project\"
+		      SkipUnchangedFiles="true" />
+		<Copy SourceFiles="@(StartPagePublishOutput)"
+		      DestinationFolder="$(PublishDir)AddIns\Misc\StartPage\Project\"
+		      SkipUnchangedFiles="true" />
+		<Copy SourceFiles="@(XmlEditorPublishOutput)"
+		      DestinationFolder="$(PublishDir)AddIns\DisplayBindings\XmlEditor\Project\"
+		      SkipUnchangedFiles="true" />
+		<Copy SourceFiles="@(IconEditorPublishOutput)"
+		      DestinationFolder="$(PublishDir)AddIns\DisplayBindings\IconEditor\Project\"
+		      SkipUnchangedFiles="true" />
+		<Copy SourceFiles="@(GitAddInPublishOutput)"
+		      DestinationFolder="$(PublishDir)AddIns\VersionControl\GitAddIn\Project\"
+		      SkipUnchangedFiles="true" />
+		<Copy SourceFiles="@(XamlDesignerPublishOutput)"
+		      DestinationFolder="$(PublishDir)AddIns\DisplayBindings\XamlDesigner\Project\"
+		      SkipUnchangedFiles="true" />
+		<Copy SourceFiles="@(FSharpBindingPublishOutput)"
+		      DestinationFolder="$(PublishDir)AddIns\BackendBindings\FSharpBinding\Project\"
+		      SkipUnchangedFiles="true" />
+		<Copy SourceFiles="@(AndroidDeviceManagerPublishOutput)"
+		      DestinationFolder="$(PublishDir)AddIns\Misc\AndroidDeviceManager\Project\"
+		      SkipUnchangedFiles="true" />
+		<Copy SourceFiles="@(AndroidSdkManagerPublishOutput)"
+		      DestinationFolder="$(PublishDir)AddIns\Misc\AndroidSdkManager\Project\"
+		      SkipUnchangedFiles="true" />
+		<Copy SourceFiles="@(UnitTestingPublishOutput)"
+		      DestinationFolder="$(PublishDir)AddIns\Analysis\UnitTesting\"
+		      SkipUnchangedFiles="true" />
+	</Target>
+
+	<!-- Same duplicate-.addin cleanup as CleanDuplicateAddInFiles, but for the publish output. -->
+	<Target Name="CleanDuplicateAddInFilesInPublish" AfterTargets="CopyAddInAssembliesToPublishOutput" Condition="'$(PublishDir)' != ''">
+		<ItemGroup>
+			<_DupPublishAddIns Include="$(PublishDir)AddIns\**\bin\**\*.addin" />
+			<_DupPublishAddIns Include="$(PublishDir)*.addin" />
+		</ItemGroup>
+		<Delete Files="@(_DupPublishAddIns)" />
 	</Target>
 
 	<!-- UnoDock and UnoEdit only when not using local project builds -->
