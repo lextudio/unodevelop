@@ -4,7 +4,7 @@
     <!-- <Nullable>enable</Nullable> -->
     <ImplicitUsings>enable</ImplicitUsings>
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
-    <SharpDevelopSourceRoot>$(MSBuildThisFileDirectory)..\externals\SharpDevelop</SharpDevelopSourceRoot>
+    <SharpDevelopSourceRoot>$(MSBuildThisFileDirectory)..\externals\OpenDevelop</SharpDevelopSourceRoot>
     <AXSGRoot>$(MSBuildThisFileDirectory)..\externals\OpenDevelop\externals\vscode-wpf\external\wxsg\external\XamlToCSharpGenerator</AXSGRoot>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>

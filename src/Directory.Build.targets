@@ -1,6 +1,6 @@
 <Project>
   <Target Name="ValidateSharpDevelopSourceRoot" BeforeTargets="PrepareForBuild">
     <Error Condition="!Exists('$(SharpDevelopSourceRoot)')"
-           Text="SharpDevelop source root not found: $(SharpDevelopSourceRoot). Ensure externals/SharpDevelop is present." />
+           Text="SharpDevelop source root not found: $(SharpDevelopSourceRoot). Ensure externals/OpenDevelop is present." />
   </Target>
 </Project>

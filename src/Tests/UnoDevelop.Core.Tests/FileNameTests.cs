@@ -46,7 +46,7 @@ namespace UnoDevelop.Core.Tests
         {
             var fn = FileName.Create("/path/to/file.cs");
             string path = fn!;
-            Assert.That(path, Is.EqualTo("//path/to/file.cs"));
+            Assert.That(path, Is.EqualTo("/path/to/file.cs"));
         }
     }
 }

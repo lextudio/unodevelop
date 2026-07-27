@@ -14,7 +14,7 @@
 
   <ItemGroup>
     <None Include="FSharpBinding.addin" CopyToOutputDirectory="Always" />
-    <EmbeddedResource Include="..\..\..\..\..\externals\SharpDevelop\src\AddIns\BackendBindings\FSharpBinding\Resources\FS-Mode.xshd"
+    <EmbeddedResource Include="..\..\..\..\..\externals\OpenDevelop\src\AddIns\BackendBindings\FSharpBinding\Resources\FS-Mode.xshd"
                       Link="Resources\FS-Mode.xshd" />
     <Compile Include="Src\FSharpProject.cs" />
     <Compile Include="Src\FSharpProjectBinding.cs" />

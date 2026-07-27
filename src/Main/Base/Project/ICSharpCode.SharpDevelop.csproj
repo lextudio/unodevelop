@@ -10,8 +10,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="..\Src\GlobalUsings.uno.cs" />
-    <Compile Include="..\Src\SD.uno.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -287,8 +285,6 @@
              Link="Upstream\Parser\IParserService.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Project\Converter\IUpgradableProject.cs"
              Link="Upstream\Project\Converter\IUpgradableProject.cs" />
-    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Parser\ParserBackend.cs"
-             Link="Upstream\Parser\ParserBackend.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Project\Build\BuildTarget.cs"
              Link="Upstream\Project\Build\BuildTarget.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Project\Build\BuildOutputVerbosity.cs"
@@ -414,6 +410,10 @@
          Link="Upstream\Project\MSBuildEnums.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Project\MSBuildInternals.cs"
          Link="Upstream\Project\MSBuildInternals.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Project\Sdk\DotNetSdkInfo.cs"
+         Link="Upstream\Project\Sdk\DotNetSdkInfo.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Project\Sdk\DotNetSdkService.cs"
+         Link="Upstream\Project\Sdk\DotNetSdkService.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Project\ISolution.cs"
              Link="Upstream\Project\ISolution.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Project\ISolutionFolder.cs"
@@ -448,6 +448,24 @@
              Link="Upstream\Project\MSBuildBasedProject.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Project\AbstractProject.cs"
              Link="Upstream\Project\AbstractProject.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Project\NamespaceNameGenerator.cs"
+             Link="Upstream\Project\NamespaceNameGenerator.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Workbench\SimpleViewContent.cs"
+             Link="Upstream\Workbench\SimpleViewContent.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Util\TextLocationConversionExtensions.cs"
+             Link="Upstream\Util\TextLocationConversionExtensions.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Project\Items\ProjectReferenceProjectItem.cs"
+             Link="Upstream\Project\Items\ProjectReferenceProjectItem.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Gui\Pads\Stubs\ProjectBrowserPadStub.cs"
+             Link="Upstream\Gui\Pads\Stubs\ProjectBrowserPadStub.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Project\PortableLibrary\ProfileList.cs"
+             Link="Upstream\Project\PortableLibrary\ProfileList.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Project\PortableLibrary\Profile.cs"
+             Link="Upstream\Project\PortableLibrary\Profile.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Project\PortableLibrary\SupportedFramework.cs"
+             Link="Upstream\Project\PortableLibrary\SupportedFramework.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Project\PortableLibrary\CheckPortableLibraryInstalled.cs"
+             Link="Upstream\Project\PortableLibrary\CheckPortableLibraryInstalled.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Project\Behaviors\DefaultProjectBehavior.cs"
              Link="Upstream\Project\Behaviors\DefaultProjectBehavior.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Services\AmbienceService\DefaultAmbience.cs"

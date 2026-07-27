@@ -19,6 +19,7 @@
 using System;
 using ICSharpCode.AvalonEdit.Document;
 using ICSharpCode.TypeSystem;
+using TextLocation = ICSharpCode.AvalonEdit.Document.TextLocation;
 
 namespace ICSharpCode.SharpDevelop.Editor
 {

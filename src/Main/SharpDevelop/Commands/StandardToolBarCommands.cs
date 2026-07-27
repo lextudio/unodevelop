@@ -118,7 +118,7 @@ internal sealed class SaveFileShellCommand : AbstractMenuCommand
                 var dir = Path.GetDirectoryName(fileName);
                 if (dir is not null) Directory.CreateDirectory(dir);
                 using var fileStream = File.Create(fileName);
-                stream.CopyTo(fileStream);
+                await stream.CopyToAsync(fileStream).ConfigureAwait(false);
                 SD.FileService.RecentOpen.AddRecentFile(fileName);
             }
             catch (Exception ex)

@@ -6,8 +6,8 @@
     <UnoSingleProject>true</UnoSingleProject>
     <UnoFeatures>SkiaRenderer</UnoFeatures>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-    <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <NoWarn>$(NoWarn);CA1416</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

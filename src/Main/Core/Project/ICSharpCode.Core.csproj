@@ -60,8 +60,6 @@
              Link="Upstream\Util\CallbackOnDispose.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Core\Project\Src\Util\WeakCollection.cs"
              Link="Upstream\Util\WeakCollection.cs" />
-    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Core\Project\Src\Util\EmptyList.cs"
-             Link="Upstream\Util\EmptyList.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Core\Project\Src\Services\FileUtility\FileNameEventHandler.cs"
              Link="Upstream\Services\FileUtility\FileNameEventHandler.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Core\Project\Src\Util\AbstractCommand.cs"
