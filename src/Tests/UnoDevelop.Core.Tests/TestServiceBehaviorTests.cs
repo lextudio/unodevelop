@@ -1,6 +1,6 @@
 using System.Threading.Tasks;
 using NUnit.Framework;
-using UnoDevelop.UnitTesting;
+using ICSharpCode.UnitTesting.Simple;
 
 namespace UnoDevelop.Core.Tests;
 

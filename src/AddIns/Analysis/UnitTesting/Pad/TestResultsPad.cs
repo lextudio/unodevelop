@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using ICSharpCode.Core;
 using ICSharpCode.SharpDevelop;
 using ICSharpCode.SharpDevelop.LanguageServices;
+using ICSharpCode.UnitTesting.Simple;
 using Microsoft.UI;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;

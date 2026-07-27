@@ -5,7 +5,7 @@ using ICSharpCode.SharpDevelop.Project;
 using NUnit.Framework;
 using UnoDevelop.AddIns.Analysis.CodeCoverage;
 using UnoDevelop.Services;
-using UnoDevelop.UnitTesting;
+using ICSharpCode.UnitTesting.Simple;
 
 namespace UnoDevelop.Core.Tests;
 

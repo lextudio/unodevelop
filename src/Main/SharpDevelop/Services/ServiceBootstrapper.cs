@@ -17,7 +17,7 @@ using IOutputPad = ICSharpCode.SharpDevelop.Workbench.IOutputPad;
 using ILanguageService = ICSharpCode.SharpDevelop.ILanguageService;
 using IBookmarkManager = ICSharpCode.SharpDevelop.Editor.Bookmarks.IBookmarkManager;
 using IClipboard = ICSharpCode.SharpDevelop.IClipboard;
-using UnoDevelop.UnitTesting;
+using ICSharpCode.UnitTesting.Simple;
 
 namespace UnoDevelop.Services;
 

@@ -1,7 +1,7 @@
 using System;
 using System.IO;
 using NUnit.Framework;
-using UnoDevelop.UnitTesting;
+using ICSharpCode.UnitTesting.Simple;
 
 namespace UnoDevelop.Core.Tests;
 

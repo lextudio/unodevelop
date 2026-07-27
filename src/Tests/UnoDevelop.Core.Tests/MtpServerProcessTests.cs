@@ -4,7 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using NUnit.Framework;
-using UnoDevelop.UnitTesting.Mtp;
+using ICSharpCode.UnitTesting.Mtp;
 
 namespace UnoDevelop.Core.Tests;
 

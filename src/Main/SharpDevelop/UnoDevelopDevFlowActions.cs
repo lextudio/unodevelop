@@ -23,7 +23,7 @@ using LeXtudio.DevFlow.Agent.Core;
 using Microsoft.UI.Xaml.Controls;
 using UnoDevelop.Debugger;
 using UnoDevelop.Services;
-using UnoDevelop.UnitTesting;
+using ICSharpCode.UnitTesting.Simple;
 
 namespace UnoDevelop;
 

@@ -42,6 +42,7 @@ using UnoDevelop.Controls;
 using UnoDevelop.Debugger;
 using UnoDevelop.OptionPanels;
 using UnoDevelop.Services;
+using ICSharpCode.UnitTesting.Simple;
 using UnoDevelop.UnitTesting;
 using UnoDevelop.Workbench;
 
@@ -956,16 +957,22 @@ public partial class MainPage : Page, IUnoSolutionExplorerHost
         var liveDescendents = DockManager.Layout?.Descendents().ToHashSet() ?? new HashSet<AvalonDock.Layout.ILayoutElement>();
         return new
         {
-            leftPane = LeftPane.Children.Select(c => new { contentId = (c as LayoutAnchorable)?.ContentId, title = (c as LayoutAnchorable)?.Title }).ToArray(),
-            rightPane = RightPane.Children.Select(c => new { contentId = (c as LayoutAnchorable)?.ContentId, title = (c as LayoutAnchorable)?.Title }).ToArray(),
-            bottomPane = BottomPane.Children.Select(c => new { contentId = (c as LayoutAnchorable)?.ContentId, title = (c as LayoutAnchorable)?.Title }).ToArray(),
-            documentPane = DocumentPane.Children.Select(c => new { contentId = (c as LayoutDocument)?.ContentId, title = (c as LayoutDocument)?.Title }).ToArray(),
-            leftPaneIsLive = liveDescendents.Contains(LeftPane),
-            rightPaneIsLive = liveDescendents.Contains(RightPane),
-            bottomPaneIsLive = liveDescendents.Contains(BottomPane),
-            documentPaneIsLive = liveDescendents.Contains(DocumentPane),
+            leftPane = DescribePaneChildren(LeftPane),
+            rightPane = DescribePaneChildren(RightPane),
+            bottomPane = DescribePaneChildren(BottomPane),
+            documentPane = DocumentPane?.Children.Select(c => new { contentId = (c as LayoutDocument)?.ContentId, title = (c as LayoutDocument)?.Title }).ToArray() ?? [],
+            leftPaneIsLive = LeftPane is not null && liveDescendents.Contains(LeftPane),
+            rightPaneIsLive = RightPane is not null && liveDescendents.Contains(RightPane),
+            bottomPaneIsLive = BottomPane is not null && liveDescendents.Contains(BottomPane),
+            documentPaneIsLive = DocumentPane is not null && liveDescendents.Contains(DocumentPane),
         };
     }
+
+    // RightPane (and, in principle, any empty anchorable pane) can be legitimately garbage-collected
+    // by AvalonDock even without a layout restore - see the RightPane comment in
+    // LayoutConfigurationTests.SaveAndRestoreLayout_RoundTripsPadsAndKeepsPanesLive.
+    private static object[] DescribePaneChildren(LayoutAnchorablePane? pane)
+        => pane?.Children.Select(c => new { contentId = (c as LayoutAnchorable)?.ContentId, title = (c as LayoutAnchorable)?.Title }).ToArray() ?? [];
 
     private LayoutAnchorablePane? FindAnchorablePaneByName(string name)
         => DockManager.Layout?.Descendents().OfType<LayoutAnchorablePane>()

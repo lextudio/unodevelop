@@ -8,10 +8,24 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="Service/*.cs" />
     <Compile Include="Pad/*.cs" />
-    <Compile Include="TestRunner/*.cs" />
-    <Compile Include="Mtp/*.cs" />
+    <!-- Mtp/*.cs is plain JSON-RPC client code with zero WPF/UI coupling and is otherwise a
+         byte-for-byte match with OpenDevelop's copy (formatting/namespace aside) - link it
+         instead of maintaining a hand-forked duplicate. -->
+    <Compile Include="$(SharpDevelopSourceRoot)/src/AddIns/Analysis/UnitTesting/Mtp/MtpServerCapabilities.cs" Link="Mtp/MtpServerCapabilities.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)/src/AddIns/Analysis/UnitTesting/Mtp/MtpServerProcess.cs" Link="Mtp/MtpServerProcess.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)/src/AddIns/Analysis/UnitTesting/Mtp/MtpTestNode.cs" Link="Mtp/MtpTestNode.cs" />
+    <!-- ITestService/TestService/TestProjectDetector/DotNetTestRunner used to live here as a local
+         fork; they have zero WPF/UI coupling (unlike OpenDevelop's own classic ITestFramework/
+         ITestSolution/ITest tree, a different multi-framework abstraction this flatter, MTP-only
+         contract doesn't fit), so they were moved into OpenDevelop's Simple/ folder as the shared
+         canonical source (namespace ICSharpCode.UnitTesting.Simple) and are linked back here -
+         same reuse pattern as Mtp/*.cs above, so a future WPF port (e.g. LibreWPF) can link the
+         same source instead of forking it again. -->
+    <Compile Include="$(SharpDevelopSourceRoot)/src/AddIns/Analysis/UnitTesting/Simple/ITestService.cs" Link="Simple/ITestService.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)/src/AddIns/Analysis/UnitTesting/Simple/TestService.cs" Link="Simple/TestService.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)/src/AddIns/Analysis/UnitTesting/Simple/TestProjectDetector.cs" Link="Simple/TestProjectDetector.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)/src/AddIns/Analysis/UnitTesting/Simple/DotNetTestRunner.cs" Link="Simple/DotNetTestRunner.cs" />
   </ItemGroup>
 
   <ItemGroup>
