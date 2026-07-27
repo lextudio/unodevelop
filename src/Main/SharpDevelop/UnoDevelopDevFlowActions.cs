@@ -821,6 +821,14 @@ public static class UnoDevelopDevFlowActions
         return JsonSerializer.Serialize(new { text });
     }
 
+    [DevFlowAction("ide-build-output", Description = "Return the 'Build' output category text. Returns JSON: {text}.")]
+    public static string BuildOutputText()
+    {
+        var outputPad = ServiceSingleton.ServiceProvider.GetService(typeof(IOutputPad)) as UnoOutputPadService;
+        var text = outputPad?.Categories.FirstOrDefault(c => c.DisplayCategory == "Build")?.Text ?? string.Empty;
+        return JsonSerializer.Serialize(new { text });
+    }
+
     [DevFlowAction("ide-tests-output", Description = "Return the 'Tests' output category text (build/discovery/run log, including MTP-upgrade warnings for non-MTP test projects). Returns JSON: {text}.")]
     public static string TestsOutput()
     {

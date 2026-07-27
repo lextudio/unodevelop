@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
 
@@ -135,8 +136,29 @@ public static class StringParser
             }
         }
 
+        if (propertyName.StartsWith("res:", StringComparison.OrdinalIgnoreCase))
+        {
+            var key = propertyName.Substring(4);
+            if (ResourceStrings.TryGetValue(key, out var value))
+                return value;
+            return null;
+        }
+
         return null;
     }
+
+    // UnoDevelop has no ported resource-string service/StringResources.resx (unlike SharpDevelop/
+    // OpenDevelop) - this covers only the ${res:...} keys actually reachable from linked-but-
+    // unported upstream SharpDevelop code (BuildEngine.cs), copied verbatim from
+    // externals/SharpDevelop/data/resources/StringResources.resx.
+    static readonly Dictionary<string, string> ResourceStrings = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["MainWindow.CompilerMessages.BuildStarted"] = "Build started.",
+        ["MainWindow.CompilerMessages.BuildCancelled"] = "Build was cancelled.",
+        ["MainWindow.CompilerMessages.BuildFailed"] = "Build failed.",
+        ["MainWindow.CompilerMessages.BuildFinished"] = "Build finished successfully.",
+        ["MainWindow.CompilerMessages.BuildVerb"] = "Building",
+    };
 
     public static string Format(string formatstring, params object[] formatitems)
     {
