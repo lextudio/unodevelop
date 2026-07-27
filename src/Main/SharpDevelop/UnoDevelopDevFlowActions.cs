@@ -2208,7 +2208,7 @@ public static class UnoDevelopDevFlowActions
         var root = FindRepositoryRoot();
         if (root == null) return;
 
-        var axsgRoot = System.IO.Path.Combine(root, "externals", "AXSG");
+        var axsgRoot = System.IO.Path.Combine(root, "externals", "OpenDevelop", "externals", "vscode-wpf", "external", "wxsg", "external", "XamlToCSharpGenerator");
         var lsProject = System.IO.Path.Combine(axsgRoot, "src",
             "XamlToCSharpGenerator.LanguageServer",
             "XamlToCSharpGenerator.LanguageServer.csproj");
@@ -2226,7 +2226,7 @@ public static class UnoDevelopDevFlowActions
         var dir = new DirectoryInfo(AppContext.BaseDirectory);
         while (dir != null)
         {
-            if (Directory.Exists(Path.Combine(dir.FullName, "externals", "AXSG")) &&
+            if (Directory.Exists(Path.Combine(dir.FullName, "externals", "OpenDevelop", "externals", "vscode-wpf", "external", "wxsg", "external", "XamlToCSharpGenerator")) &&
                 Directory.Exists(Path.Combine(dir.FullName, "src", "Main", "Base")))
                 return dir.FullName;
             dir = dir.Parent;

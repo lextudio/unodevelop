@@ -11,9 +11,6 @@
 [submodule "externals/XAMLStudio"]
 	path = externals/XAMLStudio
 	url = https://github.com/lextudio/xamlstudio.git
-[submodule "externals/AXSG"]
-	path = externals/AXSG
-	url = https://github.com/wieslawsoltes/XamlToCSharpGenerator.git
 [submodule "externals/OpenDevelop"]
 	path = externals/OpenDevelop
 	url = https://github.com/lextudio/OpenDevelop
