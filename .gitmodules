@@ -1,9 +1,6 @@
 [submodule "externals/SharpDevelop"]
 	path = externals/SharpDevelop
 	url = https://github.com/lextudio/SharpDevelop.git
-[submodule "externals/project-system"]
-	path = externals/project-system
-	url = https://github.com/dotnet/project-system.git
 [submodule "externals/monodevelop"]
 	path = externals/monodevelop
 	url = https://github.com/mono/monodevelop.git
