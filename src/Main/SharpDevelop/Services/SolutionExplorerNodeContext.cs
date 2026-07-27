@@ -55,7 +55,8 @@ internal sealed record SolutionExplorerNodeContext(
     ISolutionItem? BoundItem = null,
     IProjectTree? BoundProjectTree = null,
     string? ProjectPathHint = null,
-    string? IncludeHint = null) : ICSharpCode.Core.IOwnerState
+    string? IncludeHint = null,
+    GitFileStatus GitStatus = GitFileStatus.None) : ICSharpCode.Core.IOwnerState
 {
 
     public Enum InternalState => State;

@@ -82,7 +82,10 @@ internal sealed class LayoutConfiguration
         var src = Path.Combine(DataLayoutPath, "Default.xml");
         var dst = Path.Combine(ConfigLayoutPath, l.fileName);
         if (File.Exists(src))
+        {
+            Directory.CreateDirectory(ConfigLayoutPath);
             File.Copy(src, dst);
+        }
         Layouts.Add(l);
         return l;
     }

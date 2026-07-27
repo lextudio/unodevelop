@@ -40,7 +40,11 @@ public partial class App : Application
         MainWindow.Title = "UnoDevelop";
         Microsoft.Win32.FileDialogHost.ActiveWindow = MainWindow;
         MainWindow.Content = new MainPage();
-        MainWindow.Closed += (_, _) => ICSharpCode.Core.PropertyService.Save();
+        MainWindow.Closed += (_, _) =>
+        {
+            UnoDevelop.Workbench.ChooseLayoutComboBox.StoreCurrentLayout();
+            ICSharpCode.Core.PropertyService.Save();
+        };
         MainWindow.Activate();
     }
 

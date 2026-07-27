@@ -15,7 +15,9 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
+using AvalonDock.Core;
 using AvalonDock.Layout;
+using AvalonDock.Serializer.Xml;
 using ICSharpCode.Core;
 using ICSharpCode.SharpDevelop;
 using ICSharpCode.SharpDevelop.Editor;
@@ -110,6 +112,10 @@ public partial class MainPage : Page, IUnoSolutionExplorerHost
         HookRunServiceEvents();
         HookWorkbenchPadEvents();
         LoadAddInPads();
+        // OnPadAdded runs on an enqueued turn per pad (see HookWorkbenchPadEvents), so enqueue the
+        // startup layout restore too - it lands after all of LoadAddInPads' pad-add callbacks, once
+        // _padWindows is fully populated and LayoutSerializationCallback can resolve every ContentId.
+        DispatcherQueue.TryEnqueue(() => UnoDevelop.Workbench.ChooseLayoutComboBox.LoadCurrentLayout());
         PopulateAddInToolbar();
         PopulateMainMenus();
         PopulateViewMenu();
@@ -192,6 +198,13 @@ public partial class MainPage : Page, IUnoSolutionExplorerHost
     private void ShowErrorsPad()
     {
         var pad = _workbench?.GetPad(typeof(UnoDevelop.Workbench.ErrorListPad));
+        if (pad is not null)
+            ShowPad(pad);
+    }
+
+    private void ShowSolutionExplorerPad()
+    {
+        var pad = _workbench?.GetPad(typeof(UnoDevelop.Workbench.SolutionExplorerPad));
         if (pad is not null)
             ShowPad(pad);
     }
@@ -390,6 +403,7 @@ public partial class MainPage : Page, IUnoSolutionExplorerHost
         ICSharpCode.Core.PropertyService.Save();
         await LoadLanguageServiceProjectsAsync(e.Solution);
         await RefreshSolutionTreeAsync();
+        ShowSolutionExplorerPad();
         UpdateShellChrome();
         UpdateExecutionButtonsEnabled();
     }
@@ -841,6 +855,139 @@ public partial class MainPage : Page, IUnoSolutionExplorerHost
     {
         if (_workbench is null) return;
         _workbench.PadAdded += (_, pad) => DispatcherQueue.TryEnqueue(() => OnPadAdded(pad));
+    }
+
+    /// <summary>Serializes the current docking arrangement (pane sizes/positions, visible pads) to disk.</summary>
+    internal void SaveCurrentLayout(string fileName)
+    {
+        try
+        {
+            var dir = Path.GetDirectoryName(fileName);
+            if (!string.IsNullOrEmpty(dir))
+                Directory.CreateDirectory(dir);
+            new XmlLayoutSerializer(DockManager).Serialize(fileName);
+        }
+        catch (Exception ex)
+        {
+            LoggingService.Warn("Failed to save layout to " + fileName + ": " + ex);
+        }
+    }
+
+    /// <summary>Test/tooling hook: toggles a pad (by PadDescriptor.ClassName) between docked and auto-hidden.</summary>
+    internal bool ToggleAutoHideForTesting(string contentId)
+    {
+        if (_padWindows.TryGetValue(contentId, out var anchorable))
+        {
+            anchorable.ToggleSingleAutoHide();
+            return true;
+        }
+        return false;
+    }
+
+    /// <summary>Test/tooling hook: hides a pad (by PadDescriptor.ClassName) so its layout can be authored.</summary>
+    internal bool HidePadForTesting(string contentId)
+    {
+        if (_padWindows.TryGetValue(contentId, out var anchorable))
+        {
+            anchorable.Hide();
+            return true;
+        }
+        return false;
+    }
+
+    /// <summary>Test/tooling hook: re-shows a pad previously hidden via HidePadForTesting.</summary>
+    internal bool ShowPadForTesting(string contentId)
+    {
+        if (_padWindows.TryGetValue(contentId, out var anchorable))
+        {
+            anchorable.Show();
+            return true;
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// Deserializes a saved docking arrangement. Only pads (LayoutAnchorable, matched to their live
+    /// control by ContentId == PadDescriptor.ClassName) are restored - open documents are not part
+    /// of a layout switch, so any LayoutDocument entries are skipped, matching OpenDevelop's
+    /// DockWorkspace.LayoutSerializationCallback.
+    /// </summary>
+    internal void RestoreLayout(string fileName)
+    {
+        if (!File.Exists(fileName))
+            return;
+        try
+        {
+            var serializer = new XmlLayoutSerializer(DockManager);
+            serializer.LayoutSerializationCallback += OnLayoutSerializationCallback;
+            try
+            {
+                serializer.Deserialize(fileName);
+            }
+            finally
+            {
+                serializer.LayoutSerializationCallback -= OnLayoutSerializationCallback;
+            }
+        }
+        catch (Exception ex)
+        {
+            LoggingService.Warn("Failed to restore layout from " + fileName + ": " + ex);
+            return;
+        }
+
+        // Deserialize replaces DockManager.Layout wholesale with a brand-new tree, so the
+        // LeftPane/RightPane/BottomPane/DocumentPane fields captured at InitializeComponent time
+        // now point at orphaned panes. Re-resolve them from the new tree (anchorable panes carry
+        // their model-level Name through serialization; there's always exactly one document pane)
+        // so later pad additions (OnPadAdded's targetPane routing) keep landing in the visible tree.
+        LeftPane = FindAnchorablePaneByName("LeftPane") ?? LeftPane;
+        RightPane = FindAnchorablePaneByName("RightPane") ?? RightPane;
+        BottomPane = FindAnchorablePaneByName("BottomPane") ?? BottomPane;
+        DocumentPane = DockManager.Layout?.Descendents().OfType<LayoutDocumentPane>().FirstOrDefault() ?? DocumentPane;
+    }
+
+    /// <summary>
+    /// Test hook: reports each dock pane's live child ContentIds (post-reassignment if a
+    /// RestoreLayout swapped the panes), to verify layout save/restore round-trips correctly and
+    /// that pad routing (OnPadAdded's targetPane) still lands in the visible tree afterward.
+    /// </summary>
+    internal object GetDockPaneDiagForTesting()
+    {
+        var liveDescendents = DockManager.Layout?.Descendents().ToHashSet() ?? new HashSet<AvalonDock.Layout.ILayoutElement>();
+        return new
+        {
+            leftPane = LeftPane.Children.Select(c => new { contentId = (c as LayoutAnchorable)?.ContentId, title = (c as LayoutAnchorable)?.Title }).ToArray(),
+            rightPane = RightPane.Children.Select(c => new { contentId = (c as LayoutAnchorable)?.ContentId, title = (c as LayoutAnchorable)?.Title }).ToArray(),
+            bottomPane = BottomPane.Children.Select(c => new { contentId = (c as LayoutAnchorable)?.ContentId, title = (c as LayoutAnchorable)?.Title }).ToArray(),
+            documentPane = DocumentPane.Children.Select(c => new { contentId = (c as LayoutDocument)?.ContentId, title = (c as LayoutDocument)?.Title }).ToArray(),
+            leftPaneIsLive = liveDescendents.Contains(LeftPane),
+            rightPaneIsLive = liveDescendents.Contains(RightPane),
+            bottomPaneIsLive = liveDescendents.Contains(BottomPane),
+            documentPaneIsLive = liveDescendents.Contains(DocumentPane),
+        };
+    }
+
+    private LayoutAnchorablePane? FindAnchorablePaneByName(string name)
+        => DockManager.Layout?.Descendents().OfType<LayoutAnchorablePane>()
+            .FirstOrDefault(p => p.Name == name);
+
+    private void OnLayoutSerializationCallback(object? sender, LayoutSerializationCallbackEventArgs e)
+    {
+        if (e.Model is LayoutDocument)
+        {
+            e.Cancel = true;
+            return;
+        }
+
+        if (e.Model is LayoutAnchorable anchorable
+            && _padWindows.TryGetValue(anchorable.ContentId, out var existing)
+            && existing.Content is not null)
+        {
+            e.Content = existing.Content;
+            return;
+        }
+
+        e.Cancel = true;
     }
 
     private void LoadAddInPads()

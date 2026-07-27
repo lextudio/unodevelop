@@ -111,6 +111,13 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<Content Include="data\layouts\**\*">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<Link>data\layouts\%(RecursiveDir)%(Filename)%(Extension)</Link>
+		</Content>
+	</ItemGroup>
+
+	<ItemGroup>
 		<Content Include="Templates\Bundled\**\*">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 			<Link>Templates\Bundled\%(RecursiveDir)%(Filename)%(Extension)</Link>

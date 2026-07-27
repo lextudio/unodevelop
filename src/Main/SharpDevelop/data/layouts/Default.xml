@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LayoutRoot>
+  <RootPanel Orientation="Horizontal">
+    <LayoutAnchorablePane DockWidth="280" Id="d1e25324-55c5-4a2c-9007-94a9113e85e1" Name="LeftPane">
+      <LayoutAnchorable Title="Solution Explorer" ContentId="UnoDevelop.Workbench.SolutionExplorerPad" IsSelected="true" AutoHideMinWidth="100" AutoHideMinHeight="100" />
+    </LayoutAnchorablePane>
+    <LayoutPanel Orientation="Vertical">
+      <LayoutDocumentPane>
+        <LayoutDocument Title="Start Page" ContentId="doc-Start Page" IsSelected="true" IsLastFocusedDocument="true" LastActivationTimeStamp="07/27/2026 00:02:10" />
+      </LayoutDocumentPane>
+      <LayoutAnchorablePane DockHeight="180" Id="604baa32-cbd5-4b99-9cc2-ba4147ca01ca" Name="BottomPane">
+        <LayoutAnchorable Title="Errors" ContentId="UnoDevelop.Workbench.ErrorListPad" AutoHideMinWidth="100" AutoHideMinHeight="100" />
+        <LayoutAnchorable Title="Output" ContentId="UnoDevelop.Workbench.OutputPad" IsSelected="true" AutoHideMinWidth="100" AutoHideMinHeight="100" />
+      </LayoutAnchorablePane>
+    </LayoutPanel>
+    <LayoutAnchorablePane DockWidth="300" Id="bc352a34-aadf-49b3-90ff-6b89b33649f5" Name="RightPane" />
+  </RootPanel>
+  <TopSide />
+  <RightSide>
+    <LayoutAnchorGroup PreviousContainerId="bc352a34-aadf-49b3-90ff-6b89b33649f5">
+      <LayoutAnchorable Title="Properties" ContentId="UnoDevelop.Workbench.PropertiesPad" IsSelected="true" AutoHideMinWidth="100" AutoHideMinHeight="100" />
+    </LayoutAnchorGroup>
+  </RightSide>
+  <LeftSide>
+    <LayoutAnchorGroup PreviousContainerId="d1e25324-55c5-4a2c-9007-94a9113e85e1">
+      <LayoutAnchorable Title="Toolbox" ContentId="UnoDevelop.Workbench.ToolboxPad" AutoHideMinWidth="100" AutoHideMinHeight="100" />
+    </LayoutAnchorGroup>
+  </LeftSide>
+  <BottomSide />
+  <FloatingWindows />
+  <Hidden>
+    <LayoutAnchorable Title="Outline" ContentId="UnoDevelop.Workbench.OutlinePad" PreviousContainerId="d1e25324-55c5-4a2c-9007-94a9113e85e1" PreviousContainerIndex="1" AutoHideMinWidth="100" AutoHideMinHeight="100" />
+    <LayoutAnchorable Title="Breakpoints" ContentId="UnoDevelop.Debugger.BreakpointsPad" PreviousContainerId="604baa32-cbd5-4b99-9cc2-ba4147ca01ca" PreviousContainerIndex="0" AutoHideMinWidth="100" AutoHideMinHeight="100" />
+    <LayoutAnchorable Title="Locals" ContentId="UnoDevelop.Debugger.LocalsPad" PreviousContainerId="604baa32-cbd5-4b99-9cc2-ba4147ca01ca" PreviousContainerIndex="0" AutoHideMinWidth="100" AutoHideMinHeight="100" />
+    <LayoutAnchorable Title="Call Stack" ContentId="UnoDevelop.Debugger.CallStackPad" PreviousContainerId="604baa32-cbd5-4b99-9cc2-ba4147ca01ca" PreviousContainerIndex="0" AutoHideMinWidth="100" AutoHideMinHeight="100" />
+    <LayoutAnchorable Title="Watch" ContentId="UnoDevelop.Debugger.WatchPad" PreviousContainerId="604baa32-cbd5-4b99-9cc2-ba4147ca01ca" PreviousContainerIndex="0" AutoHideMinWidth="100" AutoHideMinHeight="100" />
+    <LayoutAnchorable Title="Immediate" ContentId="UnoDevelop.Debugger.ImmediatePad" PreviousContainerId="604baa32-cbd5-4b99-9cc2-ba4147ca01ca" PreviousContainerIndex="0" AutoHideMinWidth="100" AutoHideMinHeight="100" />
+    <LayoutAnchorable Title="Threads" ContentId="UnoDevelop.Debugger.ThreadsPad" PreviousContainerId="604baa32-cbd5-4b99-9cc2-ba4147ca01ca" PreviousContainerIndex="0" AutoHideMinWidth="100" AutoHideMinHeight="100" />
+    <LayoutAnchorable Title="Modules" ContentId="UnoDevelop.Debugger.ModulesPad" PreviousContainerId="604baa32-cbd5-4b99-9cc2-ba4147ca01ca" PreviousContainerIndex="0" AutoHideMinWidth="100" AutoHideMinHeight="100" />
+    <LayoutAnchorable Title="Tests" ContentId="UnoDevelop.UnitTesting.TestResultsPad" PreviousContainerId="604baa32-cbd5-4b99-9cc2-ba4147ca01ca" PreviousContainerIndex="0" AutoHideMinWidth="100" AutoHideMinHeight="100" />
+    <LayoutAnchorable Title="Search Results" ContentId="UnoDevelop.Workbench.SearchResultsPad" PreviousContainerId="604baa32-cbd5-4b99-9cc2-ba4147ca01ca" PreviousContainerIndex="1" AutoHideMinWidth="100" AutoHideMinHeight="100" />
+    <LayoutAnchorable Title="Code Coverage" ContentId="UnoDevelop.AddIns.Analysis.CodeCoverage.CodeCoveragePad" PreviousContainerId="604baa32-cbd5-4b99-9cc2-ba4147ca01ca" PreviousContainerIndex="1" AutoHideMinWidth="100" AutoHideMinHeight="100" />
+  </Hidden>
+</LayoutRoot>

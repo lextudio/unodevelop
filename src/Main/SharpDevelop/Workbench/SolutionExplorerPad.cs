@@ -119,7 +119,7 @@ public sealed class SolutionExplorerPad : UserControl
             });
             text.SetBinding(TextBlock.ForegroundProperty, new Binding
             {
-                Path = new PropertyPath("Content.Kind"),
+                Path = new PropertyPath("Content"),
                 Converter = NodeForegroundConverter.Instance
             });
             text.SetBinding(TextBlock.FontStyleProperty, new Binding
@@ -189,16 +189,35 @@ public sealed class SolutionExplorerPad : UserControl
         }
     }
 
+    // Bound to the whole node context (not just Kind) so it can weigh Kind and GitStatus
+    // together: a missing file stays red regardless of git status, but everything else defers
+    // to git status color (VS convention: orange = modified, green = added/untracked, gray
+    // strikethrough-ish = deleted) when there is one, falling back to the default text color.
     private sealed class NodeForegroundConverter : IValueConverter
     {
         public static readonly NodeForegroundConverter Instance = new();
         private static readonly SolidColorBrush MissingBrush = new(Color.FromArgb(0xFF, 0xA4, 0x26, 0x2C));
+        private static readonly SolidColorBrush ModifiedBrush = new(Color.FromArgb(0xFF, 0xE3, 0x7D, 0x00));
+        private static readonly SolidColorBrush AddedBrush = new(Color.FromArgb(0xFF, 0x00, 0x8A, 0x00));
+        private static readonly SolidColorBrush ConflictedBrush = new(Color.FromArgb(0xFF, 0xD2, 0x1B, 0x1B));
+        private static readonly SolidColorBrush DeletedBrush = new(Color.FromArgb(0xFF, 0x80, 0x80, 0x80));
 
         public object? Convert(object value, Type targetType, object parameter, string language)
         {
-            return value is SolutionExplorerNodeKind.MissingFile
-                ? MissingBrush
-                : null;
+            if (value is not SolutionExplorerNodeContext context)
+                return null;
+
+            if (context.Kind == SolutionExplorerNodeKind.MissingFile)
+                return MissingBrush;
+
+            return context.GitStatus switch
+            {
+                GitFileStatus.Modified or GitFileStatus.Renamed => ModifiedBrush,
+                GitFileStatus.Added or GitFileStatus.Untracked => AddedBrush,
+                GitFileStatus.Conflicted => ConflictedBrush,
+                GitFileStatus.Deleted => DeletedBrush,
+                _ => null
+            };
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, string language)

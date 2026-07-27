@@ -51,10 +51,14 @@ internal static class SolutionExplorerTreeBuilder
     public static async Task<TreeViewNode> CreateSolutionNodeAsync(ISolution solution)
     {
         VisitedProjectPaths.Clear();
+        GitStatusService.ClearCache();
+        var solutionDirectory = Path.GetDirectoryName(solution.FileName.ToString());
+        if (!string.IsNullOrEmpty(solutionDirectory))
+            GitStatusService.Refresh(solutionDirectory);
 
         var rootNode = new TreeViewNode
         {
-            Content = new SolutionExplorerNodeContext(solution.Name, solution.FileName.ToString(), true, SolutionExplorerNodeKind.Solution, solution),
+            Content = new SolutionExplorerNodeContext(solution.Name, solution.FileName.ToString(), true, SolutionExplorerNodeKind.Solution, solution, GitStatus: GitStatusService.GetStatus(solutionDirectory)),
             IsExpanded = true
         };
 
@@ -75,11 +79,13 @@ internal static class SolutionExplorerTreeBuilder
     public static async Task<TreeViewNode> CreateSolutionNodeAsync(string solutionPath, string projectRoot)
     {
         VisitedProjectPaths.Clear();
+        GitStatusService.ClearCache();
+        GitStatusService.Refresh(projectRoot);
 
         var solutionName = Path.GetFileNameWithoutExtension(solutionPath);
         var rootNode = new TreeViewNode
         {
-            Content = new SolutionExplorerNodeContext(solutionName, solutionPath, true, SolutionExplorerNodeKind.Solution),
+            Content = new SolutionExplorerNodeContext(solutionName, solutionPath, true, SolutionExplorerNodeKind.Solution, GitStatus: GitStatusService.GetStatus(projectRoot)),
             IsExpanded = true
         };
 
@@ -103,6 +109,10 @@ internal static class SolutionExplorerTreeBuilder
 
         foreach (var projectPath in projectPaths)
         {
+            var projectDirectory = Path.GetDirectoryName(projectPath);
+            if (!string.IsNullOrEmpty(projectDirectory))
+                GitStatusService.Refresh(projectDirectory);
+
             rootNode.Children.Add(await CreateProjectNodeAsync(projectPath));
         }
 
@@ -150,7 +160,7 @@ internal static class SolutionExplorerTreeBuilder
             }
 
             node.Children.Add(CreateDirectoryNode(
-                new SolutionExplorerNodeContext(folderName, childDirectory, true),
+                new SolutionExplorerNodeContext(folderName, childDirectory, true, GitStatus: GitStatusService.GetStatus(childDirectory)),
                 depth + 1,
                 maxDepth));
         }
@@ -164,7 +174,7 @@ internal static class SolutionExplorerTreeBuilder
 
             node.Children.Add(new TreeViewNode
             {
-                Content = new SolutionExplorerNodeContext(Path.GetFileName(childFile), childFile, false, SolutionExplorerNodeKind.File)
+                Content = new SolutionExplorerNodeContext(Path.GetFileName(childFile), childFile, false, SolutionExplorerNodeKind.File, GitStatus: GitStatusService.GetStatus(childFile))
             });
         }
 
@@ -179,7 +189,7 @@ internal static class SolutionExplorerTreeBuilder
                 ?? folder.ParentSolution.FileName.ToString();
             var folderNode = new TreeViewNode
             {
-                Content = new SolutionExplorerNodeContext(GetSolutionItemDisplayName(folder), folderPath, true, SolutionExplorerNodeKind.Folder, folder),
+                Content = new SolutionExplorerNodeContext(GetSolutionItemDisplayName(folder), folderPath, true, SolutionExplorerNodeKind.Folder, folder, GitStatus: GitStatusService.GetStatus(folderPath)),
                 IsExpanded = true
             };
 
@@ -200,7 +210,7 @@ internal static class SolutionExplorerTreeBuilder
             var filePath = fileItem.FileName.ToString();
             return new TreeViewNode
             {
-                Content = new SolutionExplorerNodeContext(Path.GetFileName(filePath), filePath, false, SolutionExplorerNodeKind.File, fileItem)
+                Content = new SolutionExplorerNodeContext(Path.GetFileName(filePath), filePath, false, SolutionExplorerNodeKind.File, fileItem, GitStatus: GitStatusService.GetStatus(filePath))
             };
         }
 
@@ -209,6 +219,14 @@ internal static class SolutionExplorerTreeBuilder
             var projectPath = TryGetSolutionItemPath(project);
             if (!string.IsNullOrEmpty(projectPath))
             {
+                // Each project may live in its own git repository (e.g. a sibling repo pulled in
+                // via ProjectReference, like a WindowsShims-style dependency) - refresh per project
+                // directory, not just once for the solution's own directory, so files outside the
+                // solution's repo still get real status instead of silently showing none.
+                var projectDirectory = Path.GetDirectoryName(projectPath);
+                if (!string.IsNullOrEmpty(projectDirectory))
+                    GitStatusService.Refresh(projectDirectory);
+
                 return await CreateProjectNodeAsync(projectPath, GetSolutionItemDisplayName(project), project);
             }
 

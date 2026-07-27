@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LayoutRoot>
+  <RootPanel Orientation="Horizontal">
+    <LayoutAnchorablePane DockWidth="280" Id="d1e25324-55c5-4a2c-9007-94a9113e85e1" Name="LeftPane" />
+    <LayoutPanel Orientation="Vertical">
+      <LayoutDocumentPane>
+        <LayoutDocument Title="Start Page" ContentId="doc-Start Page" IsSelected="true" IsLastFocusedDocument="true" LastActivationTimeStamp="07/27/2026 00:02:49" />
+      </LayoutDocumentPane>
+      <LayoutAnchorablePane DockHeight="180" Id="604baa32-cbd5-4b99-9cc2-ba4147ca01ca" Name="BottomPane" />
+    </LayoutPanel>
+    <LayoutAnchorablePane DockWidth="300" Id="edd4452e-9452-4b38-ab64-8eae90545d0c" Name="RightPane" />
+  </RootPanel>
+  <TopSide />
+  <RightSide />
+  <LeftSide />
+  <BottomSide />
+  <FloatingWindows />
+  <Hidden>
+    <LayoutAnchorable Title="Outline" ContentId="UnoDevelop.Workbench.OutlinePad" PreviousContainerId="d1e25324-55c5-4a2c-9007-94a9113e85e1" PreviousContainerIndex="2" AutoHideMinWidth="100" AutoHideMinHeight="100" />
+    <LayoutAnchorable Title="Tests" ContentId="UnoDevelop.UnitTesting.TestResultsPad" PreviousContainerId="604baa32-cbd5-4b99-9cc2-ba4147ca01ca" PreviousContainerIndex="0" AutoHideMinWidth="100" AutoHideMinHeight="100" />
+    <LayoutAnchorable Title="Search Results" ContentId="UnoDevelop.Workbench.SearchResultsPad" PreviousContainerId="604baa32-cbd5-4b99-9cc2-ba4147ca01ca" PreviousContainerIndex="1" AutoHideMinWidth="100" AutoHideMinHeight="100" />
+    <LayoutAnchorable Title="Code Coverage" ContentId="UnoDevelop.AddIns.Analysis.CodeCoverage.CodeCoveragePad" PreviousContainerId="604baa32-cbd5-4b99-9cc2-ba4147ca01ca" PreviousContainerIndex="1" AutoHideMinWidth="100" AutoHideMinHeight="100" />
+    <LayoutAnchorable Title="Toolbox" ContentId="UnoDevelop.Workbench.ToolboxPad" PreviousContainerId="d1e25324-55c5-4a2c-9007-94a9113e85e1" PreviousContainerIndex="1" AutoHideMinWidth="100" AutoHideMinHeight="100" />
+    <LayoutAnchorable Title="Solution Explorer" ContentId="UnoDevelop.Workbench.SolutionExplorerPad" PreviousContainerId="d1e25324-55c5-4a2c-9007-94a9113e85e1" PreviousContainerIndex="0" AutoHideMinWidth="100" AutoHideMinHeight="100" />
+    <LayoutAnchorable Title="Properties" ContentId="UnoDevelop.Workbench.PropertiesPad" PreviousContainerId="edd4452e-9452-4b38-ab64-8eae90545d0c" PreviousContainerIndex="0" AutoHideMinWidth="100" AutoHideMinHeight="100" />
+    <LayoutAnchorable Title="Modules" ContentId="UnoDevelop.Debugger.ModulesPad" LastActivationTimeStamp="07/27/2026 00:02:49" PreviousContainerId="604baa32-cbd5-4b99-9cc2-ba4147ca01ca" PreviousContainerIndex="0" AutoHideMinWidth="100" AutoHideMinHeight="100" />
+    <LayoutAnchorable Title="Threads" ContentId="UnoDevelop.Debugger.ThreadsPad" LastActivationTimeStamp="07/27/2026 00:02:49" PreviousContainerId="604baa32-cbd5-4b99-9cc2-ba4147ca01ca" PreviousContainerIndex="0" AutoHideMinWidth="100" AutoHideMinHeight="100" />
+    <LayoutAnchorable Title="Immediate" ContentId="UnoDevelop.Debugger.ImmediatePad" LastActivationTimeStamp="07/27/2026 00:02:49" PreviousContainerId="604baa32-cbd5-4b99-9cc2-ba4147ca01ca" PreviousContainerIndex="0" AutoHideMinWidth="100" AutoHideMinHeight="100" />
+    <LayoutAnchorable Title="Watch" ContentId="UnoDevelop.Debugger.WatchPad" LastActivationTimeStamp="07/27/2026 00:02:49" PreviousContainerId="604baa32-cbd5-4b99-9cc2-ba4147ca01ca" PreviousContainerIndex="0" AutoHideMinWidth="100" AutoHideMinHeight="100" />
+    <LayoutAnchorable Title="Call Stack" ContentId="UnoDevelop.Debugger.CallStackPad" LastActivationTimeStamp="07/27/2026 00:02:48" PreviousContainerId="604baa32-cbd5-4b99-9cc2-ba4147ca01ca" PreviousContainerIndex="0" AutoHideMinWidth="100" AutoHideMinHeight="100" />
+    <LayoutAnchorable Title="Locals" ContentId="UnoDevelop.Debugger.LocalsPad" LastActivationTimeStamp="07/27/2026 00:02:48" PreviousContainerId="604baa32-cbd5-4b99-9cc2-ba4147ca01ca" PreviousContainerIndex="0" AutoHideMinWidth="100" AutoHideMinHeight="100" />
+    <LayoutAnchorable Title="Breakpoints" ContentId="UnoDevelop.Debugger.BreakpointsPad" LastActivationTimeStamp="07/27/2026 00:02:48" PreviousContainerId="604baa32-cbd5-4b99-9cc2-ba4147ca01ca" PreviousContainerIndex="0" AutoHideMinWidth="100" AutoHideMinHeight="100" />
+    <LayoutAnchorable Title="Errors" ContentId="UnoDevelop.Workbench.ErrorListPad" PreviousContainerId="604baa32-cbd5-4b99-9cc2-ba4147ca01ca" PreviousContainerIndex="0" AutoHideMinWidth="100" AutoHideMinHeight="100" />
+    <LayoutAnchorable Title="Output" ContentId="UnoDevelop.Workbench.OutputPad" PreviousContainerId="604baa32-cbd5-4b99-9cc2-ba4147ca01ca" PreviousContainerIndex="0" AutoHideMinWidth="100" AutoHideMinHeight="100" />
+  </Hidden>
+</LayoutRoot>

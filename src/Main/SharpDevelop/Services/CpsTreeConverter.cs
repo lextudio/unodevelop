@@ -37,7 +37,8 @@ internal static class CpsTreeConverter
             BoundItem:        project,
             BoundProjectTree: node,
             ProjectPathHint:  projectPathHint,
-            IncludeHint:      includeHint);
+            IncludeHint:      includeHint,
+            GitStatus:        GitStatusService.GetStatus(node.FilePath));
 
         var tvNode = new TreeViewNode
         {

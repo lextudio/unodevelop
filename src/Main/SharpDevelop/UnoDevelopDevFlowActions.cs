@@ -258,6 +258,203 @@ public static class UnoDevelopDevFlowActions
         });
     }
 
+    [DevFlowAction("ide-pad-active-state",
+        Description = "Report a pad's docking anchorable IsSelected/IsActive state by class name (e.g. 'UnoDevelop.Workbench.SolutionExplorerPad'). Returns {found, isSelected, isActive} JSON.")]
+    public static string GetPadActiveState(string className)
+    {
+        return SD.MainThread.InvokeIfRequired(() =>
+        {
+            var field = typeof(MainPage).GetField("_padWindows", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            var padWindows = field?.GetValue(MainPage.Current) as System.Collections.IDictionary;
+            var anchorable = padWindows?[className];
+            if (anchorable is null)
+                return """{"found":false}""";
+
+            var isSelected = anchorable.GetType().GetProperty("IsSelected")?.GetValue(anchorable) as bool?;
+            var isActive = anchorable.GetType().GetProperty("IsActive")?.GetValue(anchorable) as bool?;
+            return JsonSerializer.Serialize(new { found = true, isSelected, isActive });
+        });
+    }
+
+    [DevFlowAction("ide-pad-hide", Description = "Hide a pad by ContentId (PadDescriptor.ClassName), so a docking arrangement can be authored before saving it as a layout template. Args: [contentId]. Returns {hidden} JSON.")]
+    public static string HidePad(string contentId)
+    {
+        return SD.MainThread.InvokeIfRequired(() =>
+            JsonSerializer.Serialize(new { hidden = MainPage.Current?.HidePadForTesting(contentId) ?? false }));
+    }
+
+    [DevFlowAction("ide-pad-show", Description = "Re-show a pad previously hidden via ide-pad-hide. Args: [contentId]. Returns {shown} JSON.")]
+    public static string ShowPadByContentId(string contentId)
+    {
+        return SD.MainThread.InvokeIfRequired(() =>
+            JsonSerializer.Serialize(new { shown = MainPage.Current?.ShowPadForTesting(contentId) ?? false }));
+    }
+
+    [DevFlowAction("ide-layout-save", Description = "Serialize the current docking layout to a file via the real AvalonDock XmlLayoutSerializer. Args: [path]. Returns {savedBytes} JSON.")]
+    public static string SaveLayoutToFile(string path)
+    {
+        return SD.MainThread.InvokeIfRequired(() =>
+        {
+            MainPage.Current?.SaveCurrentLayout(path);
+            var savedBytes = System.IO.File.Exists(path) ? new System.IO.FileInfo(path).Length : 0;
+            return JsonSerializer.Serialize(new { savedBytes });
+        });
+    }
+
+    [DevFlowAction("ide-layout-restore", Description = "Deserialize a docking layout from a file via the real AvalonDock XmlLayoutSerializer, restoring pane sizes/positions and re-attaching pad content by ContentId. Args: [path].")]
+    public static string RestoreLayoutFromFile(string path)
+    {
+        return SD.MainThread.InvokeIfRequired(() =>
+        {
+            MainPage.Current?.RestoreLayout(path);
+            return JsonSerializer.Serialize(new { restored = true });
+        });
+    }
+
+    [DevFlowAction("ide-layout-paths-diag", Description = "Diagnostic: report LayoutConfiguration.CurrentLayoutFileName/CurrentLayoutTemplateFileName and their File.Exists state.")]
+    public static string LayoutPathsDiag()
+    {
+        var configFile = UnoDevelop.Workbench.LayoutConfiguration.CurrentLayoutFileName;
+        var templateFile = UnoDevelop.Workbench.LayoutConfiguration.CurrentLayoutTemplateFileName;
+        return JsonSerializer.Serialize(new
+        {
+            currentLayoutName = UnoDevelop.Workbench.LayoutConfiguration.CurrentLayoutName,
+            configFile,
+            configFileExists = configFile is not null && System.IO.File.Exists(configFile),
+            templateFile,
+            templateFileExists = templateFile is not null && System.IO.File.Exists(templateFile),
+        });
+    }
+
+    [DevFlowAction("ide-dock-pane-diag", Description = "Diagnostic: report each dock pane's (Left/Right/Bottom/Document) child ContentIds/titles and DockWidth/DockHeight, to verify layout save/restore round-trips correctly and that panes stay live after a restore. Returns JSON.")]
+    public static string GetDockPaneDiag()
+    {
+        return SD.MainThread.InvokeIfRequired(() =>
+        {
+            var mp = MainPage.Current;
+            if (mp is null) return "{}";
+            return JsonSerializer.Serialize(mp.GetDockPaneDiagForTesting());
+        });
+    }
+
+    [DevFlowAction("ide-layout-list", Description = "List all layouts currently loaded (built-in + custom), as shown in the main toolbar's layout dropdown. Returns {layouts:[{name,displayName,custom,readOnly}]} JSON.")]
+    public static string ListLayouts()
+    {
+        return SD.MainThread.InvokeIfRequired(() =>
+        {
+            var layouts = UnoDevelop.Workbench.LayoutConfiguration.Layouts
+                .Select(l => new { name = l.Name, displayName = l.DisplayName, custom = l.Custom, readOnly = l.ReadOnly })
+                .ToArray();
+            return JsonSerializer.Serialize(new { layouts });
+        });
+    }
+
+    [DevFlowAction("ide-layout-switch", Description = "Switch to a layout by name, exercising the exact Store-old/switch/Load-new sequence the main toolbar's layout dropdown runs. Args: [name]. Returns {currentLayoutName} JSON.")]
+    public static string SwitchLayout(string layoutName)
+    {
+        return SD.MainThread.InvokeIfRequired(() =>
+        {
+            UnoDevelop.Workbench.ChooseLayoutComboBox.SwitchLayoutForTesting(layoutName);
+            return JsonSerializer.Serialize(new { currentLayoutName = UnoDevelop.Workbench.LayoutConfiguration.CurrentLayoutName });
+        });
+    }
+
+    [DevFlowAction("ide-layout-add", Description = "Add (and persist) a custom layout by name, exercising the same reconciliation the Edit Layouts dialog's Save button runs. Args: [name]. Returns {customLayouts} JSON.")]
+    public static string AddLayout(string name)
+    {
+        return SD.MainThread.InvokeIfRequired(() =>
+        {
+            UnoDevelop.Workbench.ChooseLayoutComboBox.AddAndSaveLayoutForTesting(name);
+            return JsonSerializer.Serialize(new { customLayouts = UnoDevelop.Workbench.LayoutConfiguration.Layouts.Where(l => l.Custom).Select(l => l.Name).ToArray() });
+        });
+    }
+
+    [DevFlowAction("ide-layout-remove", Description = "Remove (and persist) a custom layout by name, exercising the same reconciliation the Edit Layouts dialog's Save button runs. Args: [name]. Returns {customLayouts} JSON.")]
+    public static string RemoveLayout(string name)
+    {
+        return SD.MainThread.InvokeIfRequired(() =>
+        {
+            UnoDevelop.Workbench.ChooseLayoutComboBox.RemoveAndSaveLayoutForTesting(name);
+            return JsonSerializer.Serialize(new { customLayouts = UnoDevelop.Workbench.LayoutConfiguration.Layouts.Where(l => l.Custom).Select(l => l.Name).ToArray() });
+        });
+    }
+
+    [DevFlowAction("ide-layout-config-file-exists", Description = "Check whether the custom LayoutConfig.xml file exists on disk and contains the given layout name. Args: [name]. Returns {exists, containsName} JSON.")]
+    public static string LayoutConfigFileContains(string name)
+    {
+        var path = System.IO.Path.Combine(UnoDevelop.Workbench.LayoutConfiguration.ConfigLayoutPath, "LayoutConfig.xml");
+        var exists = System.IO.File.Exists(path);
+        var containsName = exists && System.IO.File.ReadAllText(path).Contains(name, StringComparison.Ordinal);
+        return JsonSerializer.Serialize(new { exists, containsName });
+    }
+
+    [DevFlowAction("ide-git-status", Description = "Report the cached git status for a file path (as computed the last time Solution Explorer's tree was built). Args: [filePath]. Returns {status} JSON.")]
+    public static string GetGitStatus(string filePath)
+    {
+        return JsonSerializer.Serialize(new { status = UnoDevelop.Services.GitStatusService.GetStatus(filePath).ToString() });
+    }
+
+    [DevFlowAction("ide-solution-explorer-node-kinds",
+        Description = "Diagnostic: tally the actual rendered Solution Explorer tree node kinds (File, GhostFile, Folder, GhostFolder, ...) plus the current ShowAllFiles toggle state. Returns {showAllFiles, kindCounts, sampleGhostFiles} JSON.")]
+    public static string GetSolutionExplorerNodeKinds()
+    {
+        return SD.MainThread.InvokeIfRequired(() =>
+        {
+            var pad = SD.Workbench.PadContentCollection.FirstOrDefault(p =>
+                p.ClassName.EndsWith("SolutionExplorerPad", StringComparison.OrdinalIgnoreCase));
+            var control = pad?.PadContent?.Control;
+            var treeProperty = control?.GetType().GetProperty("Tree");
+            var tree = treeProperty?.GetValue(control) as Microsoft.UI.Xaml.Controls.TreeView;
+            if (tree is null)
+                return """{"found":false,"error":"SolutionExplorerPad/Tree not found"}""";
+
+            var kindCounts = new Dictionary<string, int>();
+            var gitStatusCounts = new Dictionary<string, int>();
+            var sampleGhostFiles = new List<string>();
+            var sampleGitStatusFiles = new List<object>();
+
+            void Walk(IEnumerable<Microsoft.UI.Xaml.Controls.TreeViewNode> nodes)
+            {
+                foreach (var node in nodes)
+                {
+                    var context = node.Content;
+                    var kindProperty = context?.GetType().GetProperty("Kind");
+                    var kind = kindProperty?.GetValue(context)?.ToString() ?? "null";
+                    kindCounts[kind] = kindCounts.GetValueOrDefault(kind) + 1;
+
+                    var gitStatus = context?.GetType().GetProperty("GitStatus")?.GetValue(context)?.ToString() ?? "null";
+                    gitStatusCounts[gitStatus] = gitStatusCounts.GetValueOrDefault(gitStatus) + 1;
+
+                    if (kind == "GhostFile" && sampleGhostFiles.Count < 20)
+                    {
+                        var fullPath = context?.GetType().GetProperty("FullPath")?.GetValue(context) as string;
+                        sampleGhostFiles.Add(fullPath ?? "?");
+                    }
+
+                    if (gitStatus != "None" && sampleGitStatusFiles.Count < 20)
+                    {
+                        var fullPath = context?.GetType().GetProperty("FullPath")?.GetValue(context) as string;
+                        sampleGitStatusFiles.Add(new { fullPath, gitStatus });
+                    }
+
+                    Walk(node.Children);
+                }
+            }
+
+            Walk(tree.RootNodes);
+
+            return JsonSerializer.Serialize(new
+            {
+                found = true,
+                showAllFiles = UnoDevelop.Services.SolutionExplorerTreeBuilder.ShowAllFiles,
+                kindCounts,
+                sampleGhostFiles,
+                gitStatusCounts,
+                sampleGitStatusFiles
+            });
+        });
+    }
+
     [DevFlowAction("ide-pads", Description = "List registered workbench pads as JSON array.")]
     public static string Pads()
     {

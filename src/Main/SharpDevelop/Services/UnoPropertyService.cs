@@ -38,6 +38,29 @@ internal sealed class UnoPropertyService : PropertyServiceImpl
 
         _configDirectory = new DirectoryName(config);
         _dataDirectory = new DirectoryName(data);
+
+        SeedBundledData(data);
+    }
+
+    /// <summary>
+    /// DataDirectory lives under LocalAppData, empty on first run - copy app-bundled data (e.g.
+    /// data\layouts\*, shipped via Content items in SharpDevelop.csproj) alongside it so services
+    /// like LayoutConfiguration can find their built-in defaults the same way SharpDevelop/
+    /// OpenDevelop find theirs under their repo-relative data directory.
+    /// </summary>
+    private static void SeedBundledData(string dataDirectory)
+    {
+        var bundled = Path.Combine(AppContext.BaseDirectory, "data");
+        if (!Directory.Exists(bundled))
+            return;
+
+        foreach (var sourceFile in Directory.EnumerateFiles(bundled, "*", SearchOption.AllDirectories))
+        {
+            var relativePath = Path.GetRelativePath(bundled, sourceFile);
+            var destFile = Path.Combine(dataDirectory, relativePath);
+            Directory.CreateDirectory(Path.GetDirectoryName(destFile)!);
+            File.Copy(sourceFile, destFile, overwrite: true);
+        }
     }
 
     public override void Save()
