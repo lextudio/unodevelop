@@ -4,6 +4,8 @@ UnoDevelop is a port of the SharpDevelop IDE to the Uno Platform. It is a work i
 
 This project is being slowly developed toward feature/structure parity with [OpenDevelop](https://github.com/lextudio/OpenDevelop) and SharpDevelop. See [docs/opendevelop-sync.md](docs/opendevelop-sync.md) for the relationship.
 
+![macOS](https://raw.githubusercontent.com/lextudio/UnoDevelop/main/images/macos.png)
+
 ## License
 
 MIT License. See [LICENSE](LICENSE) for details.
