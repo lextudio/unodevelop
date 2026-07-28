@@ -91,6 +91,16 @@
 		         Link="Upstream\Workbench\DisplayBinding\DisplayBindingService.cs" />
 		<Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Project\Build\MultipleProjectBuildable.cs"
 		         Link="Upstream\Project\Build\MultipleProjectBuildable.cs" />
+		<!-- Shared DAP transport/session (Debugger.AddIn's DapClient/DapSession/DapModels) - see
+		     doc/technotes/debugging.md. DebugService.cs wraps DapSession instead of talking to the
+		     adapter process directly, so both hosts share one Content-Length framing implementation
+		     and one launch/attach/capability-negotiation protocol layer. -->
+		<Compile Include="$(SharpDevelopSourceRoot)\src\AddIns\Debugger\Debugger.AddIn\Service\Dap\DapClient.cs"
+		         Link="Upstream\Debugger\Dap\DapClient.cs" />
+		<Compile Include="$(SharpDevelopSourceRoot)\src\AddIns\Debugger\Debugger.AddIn\Service\Dap\DapSession.cs"
+		         Link="Upstream\Debugger\Dap\DapSession.cs" />
+		<Compile Include="$(SharpDevelopSourceRoot)\src\AddIns\Debugger\Debugger.AddIn\Service\Dap\DapModels.cs"
+		         Link="Upstream\Debugger\Dap\DapModels.cs" />
 	</ItemGroup>
 
 	<ItemGroup>
