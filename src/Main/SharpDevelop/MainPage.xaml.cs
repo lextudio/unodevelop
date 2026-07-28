@@ -45,17 +45,18 @@ using UnoDevelop.Services;
 using ICSharpCode.UnitTesting;
 using UnoDevelop.UnitTesting;
 using UnoDevelop.Workbench;
+using ICSharpCode.SharpDevelop.Services;
 
 namespace UnoDevelop;
 
-public partial class MainPage : Page, IUnoSolutionExplorerHost
+public partial class MainPage : Page, IProjectBrowserHost
 {
     /// <summary>Gets the active MainPage instance, or null.</summary>
     public static MainPage? Current { get; private set; }
 
     private readonly UnoWorkbenchService? _workbench;
     private readonly IProjectService? _projectService;
-    private readonly IUnoSolutionExplorerController? _explorerController;
+    private readonly IProjectBrowserController? _explorerController;
     private readonly IUnoAddInContextMenuBuilder? _contextMenuBuilder;
     private readonly UnoFileService? _fileService;
     private readonly ITestService? _testService;
@@ -90,7 +91,7 @@ public partial class MainPage : Page, IUnoSolutionExplorerHost
     private CompletionWindow? _completionWindow;
     private bool _isRefreshingSolutionTree;
     private HashSet<string> _expandedNodeKeys = new(StringComparer.OrdinalIgnoreCase);
-    private SolutionExplorerNodeContext? _selectedTreeItem;
+    private ProjectBrowserNodeContext? _selectedTreeItem;
 
     public MainPage()
     {
@@ -99,7 +100,7 @@ public partial class MainPage : Page, IUnoSolutionExplorerHost
 
         _workbench = ServiceSingleton.ServiceProvider.GetService(typeof(IWorkbench)) as UnoWorkbenchService;
         _projectService = ServiceSingleton.ServiceProvider.GetService(typeof(IProjectService)) as IProjectService;
-        _explorerController = ServiceSingleton.ServiceProvider.GetService(typeof(IUnoSolutionExplorerController)) as IUnoSolutionExplorerController;
+        _explorerController = ServiceSingleton.ServiceProvider.GetService(typeof(IProjectBrowserController)) as IProjectBrowserController;
         _contextMenuBuilder = ServiceSingleton.ServiceProvider.GetService(typeof(IUnoAddInContextMenuBuilder)) as IUnoAddInContextMenuBuilder;
         _fileService = ServiceSingleton.ServiceProvider.GetService(typeof(IFileService)) as UnoFileService;
         _testService = ServiceSingleton.ServiceProvider.GetService(typeof(ITestService)) as ITestService;
@@ -1125,7 +1126,7 @@ public partial class MainPage : Page, IUnoSolutionExplorerHost
     }
 
     // Shows the Properties pad (UnoPropertyGrid) and binds it to the selected node.
-    internal void ShowPropertiesForNode(UnoDevelop.Services.SolutionExplorerNodeContext? node)
+    internal void ShowPropertiesForNode(ProjectBrowserNodeContext? node)
     {
         if (node is null)
             return;
@@ -1135,7 +1136,7 @@ public partial class MainPage : Page, IUnoSolutionExplorerHost
             ShowPad(pad);
 
         void Apply() => _propertiesPad?.SetSelectedObject(
-            new UnoDevelop.Services.SolutionExplorerNodeProperties(node));
+            new ProjectBrowserNodeProperties(node));
 
         // The pad control is attached on an enqueued OnPadAdded turn; if it isn't
         // ready yet, apply after that runs (same FIFO dispatcher queue).

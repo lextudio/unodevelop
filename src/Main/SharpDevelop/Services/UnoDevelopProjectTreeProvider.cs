@@ -9,6 +9,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using ICSharpCode.SharpDevelop.Project;
+using ICSharpCode.SharpDevelop.Services;
 using Microsoft.VisualStudio.ProjectSystem;
 using Microsoft.VisualStudio.ProjectSystem.Tree.Dependencies;
 
@@ -129,7 +130,21 @@ internal sealed class UnoDevelopProjectTreeProvider : ProjectTreeProviderBase
         var projectItemsByInclude = new Dictionary<string, ProjectItem>(StringComparer.OrdinalIgnoreCase);
         var targetFrameworks = GetTargetFrameworks(projectFile).ToImmutableArray();
 
-        if (_project is not null)
+        // UnoDevelop's own IProject implementation, UnoProjectModel, derives from MSBuildBasedProject
+        // too (see doc/technotes/solution-explorer.md) - so this is a real, live branch here, not
+        // source parity for dead code: SDK-style projects now resolve dependencies via a live
+        // MSBuild evaluation (GetEvaluatedProjectItems, previously #if !HAS_UNO'd out with no actual
+        // platform reason - OpenConfiguration/OpenCurrentConfiguration it depends on already worked
+        // under Uno.Sdk elsewhere, e.g. GetEvaluatedProperty) instead of the live IProject.Items
+        // snapshot the "else" branch below uses.
+        if (_project is MSBuildBasedProject msbuildProject && msbuildProject.IsSdkStyleProject)
+        {
+            foreach (var item in ProjectDisplayItems.GetEvaluatedDependencyItems(msbuildProject))
+            {
+                AddDependencyItem(dependencies, item.ItemType, item.EvaluatedInclude, ResolveAbsolutePath(item, projectDir), GetProjectItemMetadata(item));
+            }
+        }
+        else if (_project is not null)
         {
             foreach (var item in _project.Items.CreateSnapshot())
             {
@@ -220,6 +235,11 @@ internal sealed class UnoDevelopProjectTreeProvider : ProjectTreeProviderBase
         }
 
         return builder.ToImmutable();
+    }
+
+    private static IImmutableDictionary<string, string> GetProjectItemMetadata(EvaluatedProjectItem item)
+    {
+        return item.Metadata.ToImmutableDictionary(StringComparer.Ordinal);
     }
 
     private static IImmutableSet<string>? GetConditionTargetFrameworks(XElement item, IReadOnlyCollection<string> allTargetFrameworks)
@@ -410,7 +430,7 @@ internal sealed class UnoDevelopProjectTreeProvider : ProjectTreeProviderBase
     private void AddProjectContentNodes(MutableProjectTree root, string projectFile, string projectDir)
     {
         var projectItems = _project is not null
-            ? UnoProjectService.GetProjectDisplayItems(_project)
+            ? ProjectDisplayItems.GetProjectDisplayItems(_project)
             : UnoProjectService.GetProjectDisplayItems(projectFile);
         var projectItemPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
@@ -444,7 +464,7 @@ internal sealed class UnoDevelopProjectTreeProvider : ProjectTreeProviderBase
         }
     }
 
-    private static void AddProjectItemNode(MutableProjectTree root, string projectDir, UnoProjectService.ProjectDisplayItem item)
+    private static void AddProjectItemNode(MutableProjectTree root, string projectDir, ProjectDisplayItems.ProjectDisplayItem item)
     {
         var segments = SplitDisplayPath(item.DisplayPath);
         if (segments.Length == 0)
@@ -485,7 +505,7 @@ internal sealed class UnoDevelopProjectTreeProvider : ProjectTreeProviderBase
         current.AddChild(CreateFileNode(segments[^1], fullPath, isLinked: false, isMissing: false, isGhost: true, isProjectItem: false));
     }
 
-    private static void AddDependentProjectItemNode(MutableProjectTree root, string projectDir, UnoProjectService.ProjectDisplayItem item, string[] childSegments)
+    private static void AddDependentProjectItemNode(MutableProjectTree root, string projectDir, ProjectDisplayItems.ProjectDisplayItem item, string[] childSegments)
     {
         var current = root;
         for (var i = 0; i < childSegments.Length - 1; i++)
@@ -587,6 +607,29 @@ internal sealed class UnoDevelopProjectTreeProvider : ProjectTreeProviderBase
             var path = item.FileName?.ToString();
             if (path is null) return null;
             return Path.IsPathRooted(path) ? path : Path.GetFullPath(Path.Combine(projectDir, path));
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static string? ResolveAbsolutePath(EvaluatedProjectItem item, string projectDir)
+    {
+        try
+        {
+            if (item.ItemType == "ProjectReference")
+            {
+                return Path.GetFullPath(Path.Combine(projectDir, item.EvaluatedInclude.Replace('\\', Path.DirectorySeparatorChar)));
+            }
+
+            var hintPath = item.GetMetadata("HintPath");
+            if (!string.IsNullOrWhiteSpace(hintPath))
+            {
+                return Path.GetFullPath(Path.Combine(projectDir, hintPath.Replace('\\', Path.DirectorySeparatorChar)));
+            }
+
+            return item.EvaluatedInclude;
         }
         catch
         {

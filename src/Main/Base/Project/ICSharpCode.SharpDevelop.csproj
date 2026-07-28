@@ -465,6 +465,8 @@
              Link="Upstream\Project\MSBuildItemWrapper.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Project\MSBuildBasedProject.cs"
              Link="Upstream\Project\MSBuildBasedProject.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Project\EvaluatedProjectItem.cs"
+             Link="Upstream\Project\EvaluatedProjectItem.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Project\AbstractProject.cs"
              Link="Upstream\Project\AbstractProject.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Project\NamespaceNameGenerator.cs"

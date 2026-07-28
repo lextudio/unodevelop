@@ -103,13 +103,19 @@
                          MTP test discovery can be abandoned instead of waiting it out. -->
                     <Button x:Name="ShellProgressCancelButton"
                             AutomationProperties.AutomationId="ShellProgressCancelButton"
-                            Content="Cancel"
-                            Padding="8,2"
+                            AutomationProperties.Name="Cancel"
+                            ToolTipService.ToolTip="Cancel"
+                            Padding="4"
                             Margin="8,0,0,0"
-                            FontSize="11"
                             VerticalAlignment="Center"
                             Visibility="Collapsed"
-                            Click="OnShellProgressCancelClick" />
+                            Click="OnShellProgressCancelClick">
+                        <Image Width="14" Height="14">
+                            <Image.Source>
+                                <SvgImageSource UriSource="ms-appx:///Icons/Cancel_16x.svg" />
+                            </Image.Source>
+                        </Image>
+                    </Button>
                 </StackPanel>
             </Grid>
         </Border>

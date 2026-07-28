@@ -13,8 +13,8 @@
   </Runtime>
 
   <Path name="/SharpDevelop/Services">
-    <Service id="UnoDevelop.Services.IUnoSolutionExplorerController"
-             class="UnoDevelop.Services.UnoSolutionExplorerController" />
+    <Service id="ICSharpCode.SharpDevelop.Services.IProjectBrowserController"
+             class="UnoDevelop.Services.ProjectBrowserController" />
   </Path>
 
   <!-- Required by DisplayBindingService constructor (throwOnNotFound=true) -->

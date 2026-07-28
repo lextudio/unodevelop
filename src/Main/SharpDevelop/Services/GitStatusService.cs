@@ -5,21 +5,13 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using ICSharpCode.Core;
+// GitFileStatus now lives with the shared ProjectBrowserNodeContext (see
+// doc/technotes/solution-explorer.md) rather than as a UnoDevelop-only type - it's a plain,
+// host-agnostic status enum with no UnoDevelop-specific dependency, and ProjectBrowserNodeContext
+// already carries a GitStatus field of this type for whichever host wires up a provider.
+using ICSharpCode.SharpDevelop.Services;
 
 namespace UnoDevelop.Services;
-
-/// <summary>Per-file git status, as far as Solution Explorer's decoration cares.</summary>
-internal enum GitFileStatus
-{
-    None,
-    Modified,
-    Added,
-    Untracked,
-    Deleted,
-    Renamed,
-    Conflicted,
-    Ignored
-}
 
 /// <summary>
 /// Real <c>git status --porcelain</c> against the actual working tree - not a VCS abstraction,

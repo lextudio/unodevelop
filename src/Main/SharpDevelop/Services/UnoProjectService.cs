@@ -15,30 +15,16 @@ using ICSharpCode.SharpDevelop.Parser;
 using ICSharpCode.SharpDevelop.Project;
 using ICSharpCode.SharpDevelop.Refactoring;
 using ICSharpCode.SharpDevelop.Workbench;
+using ICSharpCode.SharpDevelop.Services;
 
 namespace UnoDevelop.Services;
 
-internal interface IUnoSolutionExplorerService
-{
-    string CreateFolder(string targetDirectory, string baseName = "NewFolder");
-    string CreateFile(string targetDirectory, string baseName = "NewFile", string extension = ".cs", string? initialContent = "// New file\n");
-    IReadOnlyList<string> ImportExistingFiles(string targetDirectory, IEnumerable<string> sourcePaths);
-    string ImportExistingFolder(string targetDirectory, string sourceDirectory);
-    string RenameItem(string sourcePath, bool isDirectory, string newName);
-    void DeleteItem(string sourcePath, bool isDirectory);
-    bool TryIncludeItemInProject(string itemPath, out string includedItemName);
-    bool TryExcludeItemFromProject(string itemPath, bool isDirectory, out string excludedItemName);
-    bool TryRemoveItemFromProject(string itemPath, bool isDirectory, out string removedItemName, string? projectPathHint = null, string? includeHint = null);
-    bool TryRemoveReference(string? projectPathHint, string include, SolutionExplorerNodeKind kind, out string removedName);
-    bool TryRemoveProject(string projectPath, out string removedProjectName);
-    bool TrySetStartupProject(string projectPath, out IProject? project);
-}
+// IProjectBrowserService is now the shared interface (ICSharpCode.SharpDevelop.Services, see
+// doc/technotes/solution-explorer.md) - this used to declare its own mechanically-renamed copy.
 
 internal sealed class UnoProjectService : IProjectService, IProjectServiceRaiseEvents
-    , IUnoSolutionExplorerService
+    , IProjectBrowserService
 {
-    internal sealed record ProjectDisplayItem(string PhysicalPath, string DisplayPath, string? DependentUpon = null, bool IsLinked = false, bool Exists = true, ProjectItem? ProjectItem = null);
-
     private readonly SynchronizedModelCollection<IProject> _allProjects = new(new SimpleModelCollection<IProject>());
     private readonly List<ProjectBindingDescriptor> _projectBindings;
     private ISolution _currentSolution;
@@ -577,7 +563,7 @@ internal sealed class UnoProjectService : IProjectService, IProjectServiceRaiseE
         return true;
     }
 
-    public bool TryRemoveReference(string? projectPathHint, string include, SolutionExplorerNodeKind kind, out string removedName)
+    public bool TryRemoveReference(string? projectPathHint, string include, ProjectBrowserNodeKind kind, out string removedName)
     {
         removedName = include;
         if (string.IsNullOrWhiteSpace(include))
@@ -592,9 +578,9 @@ internal sealed class UnoProjectService : IProjectService, IProjectServiceRaiseE
 
         var itemTypeName = kind switch
         {
-            SolutionExplorerNodeKind.Reference => "Reference",
-            SolutionExplorerNodeKind.ProjectReference => "ProjectReference",
-            SolutionExplorerNodeKind.PackageReference => "PackageReference",
+            ProjectBrowserNodeKind.Reference => "Reference",
+            ProjectBrowserNodeKind.ProjectReference => "ProjectReference",
+            ProjectBrowserNodeKind.PackageReference => "PackageReference",
             _ => string.Empty
         };
         if (string.IsNullOrEmpty(itemTypeName))
@@ -829,30 +815,30 @@ internal sealed class UnoProjectService : IProjectService, IProjectServiceRaiseE
         doc.Save(writer);
     }
 
-    internal static IReadOnlyList<ProjectDisplayItem> GetProjectDisplayItems(string projectPath)
+    internal static IReadOnlyList<ProjectDisplayItems.ProjectDisplayItem> GetProjectDisplayItems(string projectPath)
     {
         if (string.IsNullOrWhiteSpace(projectPath) || !File.Exists(projectPath))
         {
-            return Array.Empty<ProjectDisplayItem>();
+            return Array.Empty<ProjectDisplayItems.ProjectDisplayItem>();
         }
 
         var projectDirectory = Path.GetDirectoryName(projectPath);
         if (string.IsNullOrWhiteSpace(projectDirectory) || !Directory.Exists(projectDirectory))
         {
-            return Array.Empty<ProjectDisplayItem>();
+            return Array.Empty<ProjectDisplayItems.ProjectDisplayItem>();
         }
 
         var doc = XDocument.Load(projectPath, LoadOptions.PreserveWhitespace);
         var projectElement = doc.Root;
         if (projectElement is null)
         {
-            return Array.Empty<ProjectDisplayItem>();
+            return Array.Empty<ProjectDisplayItems.ProjectDisplayItem>();
         }
 
-        var included = new Dictionary<string, ProjectDisplayItem>(StringComparer.OrdinalIgnoreCase);
+        var included = new Dictionary<string, ProjectDisplayItems.ProjectDisplayItem>(StringComparer.OrdinalIgnoreCase);
         foreach (var candidate in EnumerateDefaultProjectFiles(projectDirectory))
         {
-            included[candidate] = new ProjectDisplayItem(candidate, NormalizeDisplayPath(Path.GetRelativePath(projectDirectory, candidate)), Exists: true);
+            included[candidate] = new ProjectDisplayItems.ProjectDisplayItem(candidate, NormalizeDisplayPath(Path.GetRelativePath(projectDirectory, candidate)), Exists: true);
         }
 
         var removed = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -872,51 +858,9 @@ internal sealed class UnoProjectService : IProjectService, IProjectServiceRaiseE
             .ToArray();
     }
 
-    internal static IReadOnlyList<ProjectDisplayItem> GetProjectDisplayItems(IProject project)
-    {
-        if (project is null)
-        {
-            return Array.Empty<ProjectDisplayItem>();
-        }
-
-        // UnoProjectModel.CreateProjectItem wraps *every* evaluated MSBuild item as a FileProjectItem,
-        // so references/packages also surface here. They are rendered separately under the References
-        // and Packages folders, so exclude them from the file tree — otherwise a ProjectReference to an
-        // out-of-tree .csproj shows up as a linked file and a "<Reference Include='System.Xml'/>"
-        // (extension ".Xml") is mistaken for a missing .xml file.
-        var projectDirectory = Path.GetDirectoryName(project.FileName?.ToString());
-        return project.Items.CreateSnapshot()
-            .OfType<FileProjectItem>()
-            .Where(item => !IsReferenceItemName(item.ItemType.ItemName))
-            .Where(item => IsSupportedProjectItemPath(item.FileName.ToString()))
-            // Real MSBuild evaluation legitimately declares some generated sources as ordinary
-            // Compile items with no Visible="false" metadata at all (e.g. Uno.Resizetizer's
-            // obj/**/unoresizetizer/Uno.Resizetizer.WindowIconExtensions.g.cs) - Visual Studio's
-            // own Solution Explorer hides anything physically under bin/obj regardless of
-            // metadata, as a hardcoded convention, not just via Visible. Match that here so
-            // real project-item resolution (this method) doesn't leak build output into the
-            // normal tree the same way the disk-scan overload already excludes it.
-            .Where(item => string.IsNullOrEmpty(projectDirectory) || !IsExcludedProjectPath(item.FileName.ToString(), projectDirectory))
-            .Select(item => new ProjectDisplayItem(
-                item.FileName.ToString(),
-                NormalizeDisplayPath(item.VirtualName),
-                item.DependentUpon,
-                item.IsLink,
-                File.Exists(item.FileName.ToString()),
-                item))
-            // Uno.Sdk single-project apps legitimately register the same physical file under more
-            // than one MSBuild item type/head evaluation (e.g. a .xaml file surfacing as both a
-            // Page item and a None/Content item) - each one becomes a separate ProjectDisplayItem
-            // here, and since the tree builder's AddProjectItemNode adds file leaves unconditionally
-            // (unlike folders, which dedupe by name), that showed up as the same file listed twice
-            // at the same tree level (XAML files, appsettings.json, ...). One node per physical
-            // file, keeping the first item type MSBuild reports for it, is what a real Solution
-            // Explorer shows regardless of how many item types happen to reference the same file.
-            .GroupBy(item => item.PhysicalPath, StringComparer.OrdinalIgnoreCase)
-            .Select(group => group.First())
-            .OrderBy(item => item.DisplayPath, StringComparer.OrdinalIgnoreCase)
-            .ToArray();
-    }
+    // GetProjectDisplayItems(IProject) now lives on the shared ProjectDisplayItems class (see
+    // doc/technotes/solution-explorer.md) - it already carried this method's bin/obj/.git/.vs
+    // exclusion and per-physical-file dedup, both ported there from here.
 
     private static bool RemoveFileFromProject(string projectPath, string projectDirectory, string itemPath)
     {
@@ -1167,7 +1111,7 @@ internal sealed class UnoProjectService : IProjectService, IProjectServiceRaiseE
         name is "Reference" or "ProjectReference" or "PackageReference"
             or "Analyzer" or "COMReference" or "FrameworkReference";
 
-    private static void ApplyProjectItemMutation(string projectDirectory, XElement itemElement, IDictionary<string, ProjectDisplayItem> included, HashSet<string> removed)
+    private static void ApplyProjectItemMutation(string projectDirectory, XElement itemElement, IDictionary<string, ProjectDisplayItems.ProjectDisplayItem> included, HashSet<string> removed)
     {
         if (IsReferenceItemName(itemElement.Name.LocalName))
         {
@@ -1193,7 +1137,7 @@ internal sealed class UnoProjectService : IProjectService, IProjectServiceRaiseE
         {
             foreach (var path in ExpandProjectItemSpec(projectDirectory, updateValue, includeMissingExplicitPath: true))
             {
-                included[path] = new ProjectDisplayItem(
+                included[path] = new ProjectDisplayItems.ProjectDisplayItem(
                     path,
                     NormalizeDisplayPath(linkPath ?? Path.GetRelativePath(projectDirectory, path)),
                     dependentUpon,
@@ -1213,7 +1157,7 @@ internal sealed class UnoProjectService : IProjectService, IProjectServiceRaiseE
 
         foreach (var path in ExpandProjectItemSpec(projectDirectory, includeValue, includeMissingExplicitPath: true))
         {
-            included[path] = new ProjectDisplayItem(
+            included[path] = new ProjectDisplayItems.ProjectDisplayItem(
                 path,
                 NormalizeDisplayPath(linkPath ?? Path.GetRelativePath(projectDirectory, path)),
                 dependentUpon,

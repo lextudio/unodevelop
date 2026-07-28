@@ -8,14 +8,15 @@ using System.Reflection;
 using System.Threading.Tasks;
 using UnoDevelop.Services;
 using System.Runtime.InteropServices;
+using ICSharpCode.SharpDevelop.Services;
 
 namespace UnoDevelop.Commands;
 
 internal abstract class SolutionExplorerCommandBase : AbstractMenuCommand
 {
-    protected IUnoSolutionExplorerController Controller => ServiceSingleton.GetRequiredService<IUnoSolutionExplorerController>();
+    protected IProjectBrowserController Controller => ServiceSingleton.GetRequiredService<IProjectBrowserController>();
 
-    protected SolutionExplorerNodeContext? OwnerNode => Owner as SolutionExplorerNodeContext;
+    protected ProjectBrowserNodeContext? OwnerNode => Owner as ProjectBrowserNodeContext;
 
     protected IProject? ResolveOwnerProject()
     {
@@ -80,7 +81,7 @@ internal abstract class SolutionExplorerCommandBase : AbstractMenuCommand
                     return byPath;
                 }
 
-                if ((OwnerNode.IsFileLike || OwnerNode.Kind == SolutionExplorerNodeKind.Folder)
+                if ((OwnerNode.IsFileLike || OwnerNode.Kind == ProjectBrowserNodeKind.Folder)
                     && File.Exists(normalizedNodePath))
                 {
                     var byContainingFile = SD.ProjectService.FindProjectContainingFile(FileName.Create(normalizedNodePath));
@@ -96,7 +97,7 @@ internal abstract class SolutionExplorerCommandBase : AbstractMenuCommand
             }
         }
 
-        if (OwnerNode.Kind == SolutionExplorerNodeKind.Project)
+        if (OwnerNode.Kind == ProjectBrowserNodeKind.Project)
         {
             var byName = solution.Projects.FirstOrDefault(project =>
                 string.Equals(project.Name, OwnerNode.Name, StringComparison.OrdinalIgnoreCase));
@@ -195,39 +196,39 @@ internal sealed class DeleteSolutionExplorerItemCommand : SolutionExplorerComman
 internal sealed class RemoveFromProjectSolutionExplorerCommand : SolutionExplorerCommandBase
 {
     public override bool IsEnabled => OwnerNode is not null
-        && (OwnerNode.Kind == SolutionExplorerNodeKind.Project
-            || OwnerNode.Kind == SolutionExplorerNodeKind.File
-            || OwnerNode.Kind == SolutionExplorerNodeKind.Folder);
+        && (OwnerNode.Kind == ProjectBrowserNodeKind.Project
+            || OwnerNode.Kind == ProjectBrowserNodeKind.File
+            || OwnerNode.Kind == ProjectBrowserNodeKind.Folder);
 
     public override void Run() => Controller.RemoveFromProject(OwnerNode);
 }
 
 internal sealed class RemoveReferenceSolutionExplorerCommand : SolutionExplorerCommandBase
 {
-    public override bool IsEnabled => OwnerNode?.Kind is SolutionExplorerNodeKind.Reference
-        or SolutionExplorerNodeKind.ProjectReference
-        or SolutionExplorerNodeKind.PackageReference;
+    public override bool IsEnabled => OwnerNode?.Kind is ProjectBrowserNodeKind.Reference
+        or ProjectBrowserNodeKind.ProjectReference
+        or ProjectBrowserNodeKind.PackageReference;
 
     public override void Run() => Controller.RemoveReference(OwnerNode);
 }
 
 internal sealed class OpenProjectReferenceSolutionExplorerCommand : SolutionExplorerCommandBase
 {
-    public override bool IsEnabled => OwnerNode?.Kind == SolutionExplorerNodeKind.ProjectReference;
+    public override bool IsEnabled => OwnerNode?.Kind == ProjectBrowserNodeKind.ProjectReference;
 
     public override void Run() => Controller.OpenProjectReference(OwnerNode);
 }
 
 internal sealed class IncludeInProjectSolutionExplorerCommand : SolutionExplorerCommandBase
 {
-    public override bool IsEnabled => OwnerNode?.Kind == SolutionExplorerNodeKind.GhostFile;
+    public override bool IsEnabled => OwnerNode?.Kind == ProjectBrowserNodeKind.GhostFile;
 
     public override void Run() => Controller.IncludeInProject(OwnerNode);
 }
 
 internal sealed class ExcludeFromProjectSolutionExplorerCommand : SolutionExplorerCommandBase
 {
-    public override bool IsEnabled => OwnerNode?.Kind is SolutionExplorerNodeKind.File or SolutionExplorerNodeKind.LinkedFile;
+    public override bool IsEnabled => OwnerNode?.Kind is ProjectBrowserNodeKind.File or ProjectBrowserNodeKind.LinkedFile;
 
     public override void Run() => Controller.ExcludeFromProject(OwnerNode);
 }
@@ -396,7 +397,7 @@ internal sealed class ToggleShowAllFilesCommand : AbstractCheckableMenuCommand
     public override void Run()
     {
         IsChecked = !IsChecked;
-        ServiceSingleton.GetRequiredService<IUnoSolutionExplorerController>().Refresh();
+        ServiceSingleton.GetRequiredService<IProjectBrowserController>().Refresh();
     }
 }
 

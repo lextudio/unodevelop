@@ -7,6 +7,7 @@ using Microsoft.UI.Xaml.Media.Imaging;
 using UnoDevelop.Services;
 using Windows.UI;
 using WpfToolBar = System.Windows.Controls.ToolBar;
+using ICSharpCode.SharpDevelop.Services;
 
 namespace UnoDevelop.Workbench;
 
@@ -100,14 +101,14 @@ public sealed class SolutionExplorerPad : UserControl
             iconHost.Children.Add(icon);
             iconHost.Children.Add(CreateOverlay(
                 "ms-appx:///Icons/LinkOverlay_16x.svg",
-                SolutionExplorerNodeKind.LinkedFile));
+                ProjectBrowserNodeKind.LinkedFile));
             iconHost.Children.Add(CreateOverlay(
                 "ms-appx:///Icons/MissingOverlay_16x.svg",
-                SolutionExplorerNodeKind.MissingFile));
+                ProjectBrowserNodeKind.MissingFile));
             iconHost.Children.Add(CreateOverlay(
                 "ms-appx:///Icons/GhostOverlay_16x.svg",
-                SolutionExplorerNodeKind.GhostFile,
-                SolutionExplorerNodeKind.GhostFolder));
+                ProjectBrowserNodeKind.GhostFile,
+                ProjectBrowserNodeKind.GhostFolder));
 
             var text = new TextBlock
             {
@@ -137,7 +138,7 @@ public sealed class SolutionExplorerPad : UserControl
     // A corner badge composited over the node's base icon. The VS2017 overlay assets are full
     // 16x16 canvases with the mark in the bottom-right corner and a transparent remainder, so they
     // stack directly on the icon. Visibility is driven by the node kind.
-    private static Image CreateOverlay(string iconUri, params SolutionExplorerNodeKind[] kinds)
+    private static Image CreateOverlay(string iconUri, params ProjectBrowserNodeKind[] kinds)
     {
         var overlay = new Image
         {
@@ -157,13 +158,13 @@ public sealed class SolutionExplorerPad : UserControl
 
     private sealed class NodeKindVisibilityConverter : IValueConverter
     {
-        private readonly SolutionExplorerNodeKind[] _kinds;
+        private readonly ProjectBrowserNodeKind[] _kinds;
 
-        public NodeKindVisibilityConverter(SolutionExplorerNodeKind[] kinds) => _kinds = kinds;
+        public NodeKindVisibilityConverter(ProjectBrowserNodeKind[] kinds) => _kinds = kinds;
 
         public object Convert(object value, Type targetType, object parameter, string language)
         {
-            return value is SolutionExplorerNodeKind kind && Array.IndexOf(_kinds, kind) >= 0
+            return value is ProjectBrowserNodeKind kind && Array.IndexOf(_kinds, kind) >= 0
                 ? Visibility.Visible
                 : Visibility.Collapsed;
         }
@@ -180,7 +181,7 @@ public sealed class SolutionExplorerPad : UserControl
 
         public object Convert(object value, Type targetType, object parameter, string language)
         {
-            return value is SolutionExplorerNodeKind.GhostFile or SolutionExplorerNodeKind.GhostFolder ? 0.58 : 1.0;
+            return value is ProjectBrowserNodeKind.GhostFile or ProjectBrowserNodeKind.GhostFolder ? 0.58 : 1.0;
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, string language)
@@ -204,10 +205,10 @@ public sealed class SolutionExplorerPad : UserControl
 
         public object? Convert(object value, Type targetType, object parameter, string language)
         {
-            if (value is not SolutionExplorerNodeContext context)
+            if (value is not ProjectBrowserNodeContext context)
                 return null;
 
-            if (context.Kind == SolutionExplorerNodeKind.MissingFile)
+            if (context.Kind == ProjectBrowserNodeKind.MissingFile)
                 return MissingBrush;
 
             return context.GitStatus switch
@@ -232,7 +233,7 @@ public sealed class SolutionExplorerPad : UserControl
 
         public object Convert(object value, Type targetType, object parameter, string language)
         {
-            return value is SolutionExplorerNodeKind.LinkedFile
+            return value is ProjectBrowserNodeKind.LinkedFile
                 ? Windows.UI.Text.FontStyle.Italic
                 : Windows.UI.Text.FontStyle.Normal;
         }

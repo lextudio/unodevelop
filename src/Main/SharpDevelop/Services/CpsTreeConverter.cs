@@ -1,4 +1,4 @@
-// Slice 7: bridge CPS IProjectTree → TreeViewNode / SolutionExplorerNodeContext.
+// Slice 7: bridge CPS IProjectTree → TreeViewNode / ProjectBrowserNodeContext.
 // See docs/project-system.md.
 
 using System;
@@ -6,6 +6,7 @@ using System.IO;
 using ICSharpCode.SharpDevelop.Project;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.VisualStudio.ProjectSystem;
+using ICSharpCode.SharpDevelop.Services;
 
 namespace UnoDevelop.Services;
 
@@ -23,13 +24,13 @@ internal static class CpsTreeConverter
     public static TreeViewNode? ToTreeViewNode(IProjectTree node, IProject? project = null)
     {
         var kind = ResolveKind(node);
-        if (kind == SolutionExplorerNodeKind.Unknown)
+        if (kind == ProjectBrowserNodeKind.Unknown)
             return null;
 
         var projectPathHint = node.Root?.FilePath;
         var includeHint = ResolveIncludeHint(node, projectPathHint);
 
-        var context = new SolutionExplorerNodeContext(
+        var context = new ProjectBrowserNodeContext(
             Name:             node.Caption,
             FullPath:         node.FilePath ?? string.Empty,
             IsDirectory:      node.IsFolder,
@@ -100,52 +101,52 @@ internal static class CpsTreeConverter
 
     // ── Flag → Kind mapping ───────────────────────────────────────────────────
 
-    private static SolutionExplorerNodeKind ResolveKind(IProjectTree node)
+    private static ProjectBrowserNodeKind ResolveKind(IProjectTree node)
     {
         var f = node.Flags;
 
         if (f.Contains(ProjectTreeFlags.Common.ProjectRoot))
-            return SolutionExplorerNodeKind.Project;
+            return ProjectBrowserNodeKind.Project;
 
         if (f.Contains(ProjectTreeFlags.Common.DependenciesFolder))
-            return SolutionExplorerNodeKind.DependenciesFolder;
+            return ProjectBrowserNodeKind.DependenciesFolder;
 
         if (f.Contains(ProjectTreeFlags.Common.ReferencesFolder))
-            return SolutionExplorerNodeKind.ReferencesFolder;
+            return ProjectBrowserNodeKind.ReferencesFolder;
 
         if (f.Contains(ProjectTreeFlags.Common.PackagesFolder))
-            return SolutionExplorerNodeKind.PackagesFolder;
+            return ProjectBrowserNodeKind.PackagesFolder;
 
         if (f.Contains(ProjectTreeFlags.Common.PackageReference))
-            return SolutionExplorerNodeKind.PackageReference;
+            return ProjectBrowserNodeKind.PackageReference;
 
         if (f.Contains(ProjectTreeFlags.Common.Reference))
         {
             return f.Contains(ProjectTreeFlags.Common.ProjectReference)
-                ? SolutionExplorerNodeKind.ProjectReference
-                : SolutionExplorerNodeKind.Reference;
+                ? ProjectBrowserNodeKind.ProjectReference
+                : ProjectBrowserNodeKind.Reference;
         }
 
         if (f.Contains(ProjectTreeFlags.Common.Folder) ||
             f.Contains(ProjectTreeFlags.Common.VirtualFolder))
             return f.Contains(ProjectTreeFlags.Common.IncludeInProjectCandidate)
-                ? SolutionExplorerNodeKind.GhostFolder
-                : SolutionExplorerNodeKind.Folder;
+                ? ProjectBrowserNodeKind.GhostFolder
+                : ProjectBrowserNodeKind.Folder;
 
         if (f.Contains(ProjectTreeFlags.Common.SourceFile))
         {
             if (f.Contains(ProjectTreeFlags.Common.IncludeInProjectCandidate))
-                return SolutionExplorerNodeKind.GhostFile;
+                return ProjectBrowserNodeKind.GhostFile;
 
             if (!f.Contains(ProjectTreeFlags.Common.FileSystemEntity))
-                return SolutionExplorerNodeKind.MissingFile;
+                return ProjectBrowserNodeKind.MissingFile;
 
             if (f.Contains(ProjectTreeFlags.Common.LinkedFile))
-                return SolutionExplorerNodeKind.LinkedFile;
+                return ProjectBrowserNodeKind.LinkedFile;
 
-            return SolutionExplorerNodeKind.File;
+            return ProjectBrowserNodeKind.File;
         }
 
-        return SolutionExplorerNodeKind.Unknown;
+        return ProjectBrowserNodeKind.Unknown;
     }
 }

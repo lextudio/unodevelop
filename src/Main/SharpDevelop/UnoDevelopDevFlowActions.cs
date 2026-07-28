@@ -25,6 +25,7 @@ using UnoDevelop.Debugger;
 using UnoDevelop.Services;
 using ICSharpCode.UnitTesting;
 using ICSharpCode.UnitTesting.Mtp;
+using ICSharpCode.SharpDevelop.Services;
 
 namespace UnoDevelop;
 
@@ -2334,7 +2335,7 @@ public static class UnoDevelopDevFlowActions
             return JsonSerializer.Serialize(new { found = false, count = 0, items = Array.Empty<object>() });
 
         var realProjectPath = project.FileName!.ToString();
-        var fromProject = UnoDevelop.Services.UnoProjectService.GetProjectDisplayItems(project);
+        var fromProject = ICSharpCode.SharpDevelop.Services.ProjectDisplayItems.GetProjectDisplayItems(project);
         var fromDisk = UnoDevelop.Services.UnoProjectService.GetProjectDisplayItems(realProjectPath);
         return JsonSerializer.Serialize(new
         {

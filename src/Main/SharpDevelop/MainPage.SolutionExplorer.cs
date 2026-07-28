@@ -15,6 +15,7 @@ using Microsoft.UI.Xaml.Media;
 using Windows.System;
 using UnoDevelop.Services;
 using UnoDevelop.Workbench;
+using ICSharpCode.SharpDevelop.Services;
 
 namespace UnoDevelop;
 
@@ -45,7 +46,7 @@ public partial class MainPage
             return;
         }
 
-        var rootItem = new SolutionExplorerNodeContext(Path.GetFileName(projectRoot), projectRoot, true);
+        var rootItem = new ProjectBrowserNodeContext(Path.GetFileName(projectRoot), projectRoot, true);
         SolutionTree.RootNodes.Add(SolutionExplorerTreeBuilder.CreateDirectoryNode(rootItem, 0, 3));
     }
 
@@ -83,12 +84,12 @@ public partial class MainPage
     {
         var context = args.InvokedItem switch
         {
-            SolutionExplorerNodeContext ctx => ctx,
-            TreeViewNode node => node.Content as SolutionExplorerNodeContext,
+            ProjectBrowserNodeContext ctx => ctx,
+            TreeViewNode node => node.Content as ProjectBrowserNodeContext,
             _ => null
         };
 
-        if (context is null || !context.IsFileLike || context.Kind == SolutionExplorerNodeKind.MissingFile || _workbench is null)
+        if (context is null || !context.IsFileLike || context.Kind == ProjectBrowserNodeKind.MissingFile || _workbench is null)
         {
             return;
         }
@@ -98,7 +99,7 @@ public partial class MainPage
 
     internal void OnSolutionTreeSelectionChanged(TreeView sender, TreeViewSelectionChangedEventArgs args)
     {
-        if (sender.SelectedNodes.FirstOrDefault()?.Content is SolutionExplorerNodeContext selected)
+        if (sender.SelectedNodes.FirstOrDefault()?.Content is ProjectBrowserNodeContext selected)
         {
             _selectedTreeItem = selected;
             PopulateExplorerChrome();
@@ -145,11 +146,11 @@ public partial class MainPage
         }
     }
 
-    private static IEnumerable<(TreeViewNode node, SolutionExplorerNodeContext? context)> EnumerateNodeContexts(IList<TreeViewNode> nodes)
+    private static IEnumerable<(TreeViewNode node, ProjectBrowserNodeContext? context)> EnumerateNodeContexts(IList<TreeViewNode> nodes)
     {
         foreach (var node in nodes)
         {
-            var context = node.Content as SolutionExplorerNodeContext;
+            var context = node.Content as ProjectBrowserNodeContext;
             yield return (node, context);
             foreach (var child in EnumerateNodeContexts(node.Children))
             {
@@ -158,7 +159,7 @@ public partial class MainPage
         }
     }
 
-    private static string BuildNodeKey(SolutionExplorerNodeContext context)
+    private static string BuildNodeKey(ProjectBrowserNodeContext context)
     {
         return $"{context.Kind}|{context.FullPath}";
     }
@@ -221,9 +222,9 @@ public partial class MainPage
         }
 
         var state = (_projectService?.CurrentSolution?.Projects?.Count ?? 0) > 0
-            ? SolutionExplorerNodeState.SolutionOpen
-            : SolutionExplorerNodeState.None;
-        return new SolutionExplorerPadContext(state);
+            ? ProjectBrowserNodeState.SolutionOpen
+            : ProjectBrowserNodeState.None;
+        return new ProjectBrowserPadContext(state);
     }
 
     internal void OnSolutionTreeRightTapped(object sender, RightTappedRoutedEventArgs e)
@@ -272,12 +273,12 @@ public partial class MainPage
         }
     }
 
-    private static SolutionExplorerNodeContext? TryResolveNodeContext(object originalSource)
+    private static ProjectBrowserNodeContext? TryResolveNodeContext(object originalSource)
     {
         for (var current = originalSource as DependencyObject; current is not null; current = VisualTreeHelper.GetParent(current))
         {
             if (current is TreeViewItem item
-                && (item.DataContext as TreeViewNode)?.Content is SolutionExplorerNodeContext context)
+                && (item.DataContext as TreeViewNode)?.Content is ProjectBrowserNodeContext context)
             {
                 return context;
             }
@@ -286,20 +287,20 @@ public partial class MainPage
         return null;
     }
 
-    SolutionExplorerNodeContext? IUnoSolutionExplorerHost.SelectedNode => _selectedTreeItem;
+    ProjectBrowserNodeContext? IProjectBrowserHost.SelectedNode => _selectedTreeItem;
 
-    void IUnoSolutionExplorerHost.RefreshSolutionTree() => _ = RefreshSolutionTreeAsync();
+    void IProjectBrowserHost.RefreshSolutionTree() => _ = RefreshSolutionTreeAsync();
 
-    void IUnoSolutionExplorerHost.OpenFileInWorkbench(string filePath) => OpenFileInWorkbench(filePath);
+    void IProjectBrowserHost.OpenFileInWorkbench(string filePath) => OpenFileInWorkbench(filePath);
 
-    string? IUnoSolutionExplorerHost.ShowInputBox(string title, string prompt, string defaultValue)
+    string? IProjectBrowserHost.ShowInputBox(string title, string prompt, string defaultValue)
         => ServiceSingleton.GetRequiredService<IMessageService>().ShowInputBox(title, prompt, defaultValue);
 
-    bool IUnoSolutionExplorerHost.ConfirmDelete(string name)
+    bool IProjectBrowserHost.ConfirmDelete(string name)
         => ServiceSingleton.GetRequiredService<IMessageService>()
             .AskQuestion($"Delete '{name}'? This cannot be undone.", "UnoDevelop") == true;
 
-    void IUnoSolutionExplorerHost.CloseViewsForPath(string path)
+    void IProjectBrowserHost.CloseViewsForPath(string path)
     {
         var toClose = _openFileViews
             .Where(kv => kv.Key.StartsWith(path, StringComparison.OrdinalIgnoreCase)
@@ -315,7 +316,7 @@ public partial class MainPage
         }
     }
 
-    void IUnoSolutionExplorerHost.RetargetViewForRename(string oldPath, string newPath)
+    void IProjectBrowserHost.RetargetViewForRename(string oldPath, string newPath)
     {
         if (!_openFileViews.TryGetValue(oldPath, out var view) || view is not EditorViewContent editorView)
         {

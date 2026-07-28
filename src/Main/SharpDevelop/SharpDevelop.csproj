@@ -101,6 +101,27 @@
 		         Link="Upstream\Debugger\Dap\DapSession.cs" />
 		<Compile Include="$(SharpDevelopSourceRoot)\src\AddIns\Debugger\Debugger.AddIn\Service\Dap\DapModels.cs"
 		         Link="Upstream\Debugger\Dap\DapModels.cs" />
+		<!-- Shared Project Browser node model (see doc/technotes/solution-explorer.md) - the
+		     framework-agnostic node context/properties/model classes, canonically named
+		     ProjectBrowser* to match OpenDevelop's own running pad. WPF-specific rendering
+		     (ProjectBrowserNodeModel.Wpf.cs) is NOT linked here - UnoDevelop computes its own
+		     icons/overlays in its WinUI tree converter instead. -->
+		<Compile Include="$(SharpDevelopSourceRoot)\src\Main\SharpDevelop\Services\ProjectBrowserNodeContext.cs"
+		         Link="Upstream\Services\ProjectBrowserNodeContext.cs" />
+		<Compile Include="$(SharpDevelopSourceRoot)\src\Main\SharpDevelop\Services\ProjectBrowserNodeProperties.cs"
+		         Link="Upstream\Services\ProjectBrowserNodeProperties.cs" />
+		<Compile Include="$(SharpDevelopSourceRoot)\src\Main\SharpDevelop\Services\ProjectBrowserNodeModel.cs"
+		         Link="Upstream\Services\ProjectBrowserNodeModel.cs" />
+		<!-- Framework-agnostic MSBuild-item -> display-item resolution (see
+		     doc/technotes/solution-explorer.md); UnoProjectService.GetProjectDisplayItems(IProject)
+		     used to duplicate this, now deleted in favor of the shared implementation. -->
+		<Compile Include="$(SharpDevelopSourceRoot)\src\Main\SharpDevelop\Services\ProjectDisplayItems.cs"
+		         Link="Upstream\Services\ProjectDisplayItems.cs" />
+		<!-- Shared Project Browser command/business-logic layer - see
+		     doc/technotes/solution-explorer.md. Only native dialog/clipboard calls stay per-host,
+		     in this project's own ProjectBrowserController.cs. -->
+		<Compile Include="$(SharpDevelopSourceRoot)\src\Main\SharpDevelop\Services\ProjectBrowserControllerBase.cs"
+		         Link="Upstream\Services\ProjectBrowserControllerBase.cs" />
 	</ItemGroup>
 
 	<ItemGroup>
