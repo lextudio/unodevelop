@@ -20,6 +20,28 @@
     <ProjectReference Include="..\..\..\..\Main\Base\Project\ICSharpCode.SharpDevelop.csproj" />
   </ItemGroup>
 
+  <!-- This project used to be a hand-copied duplicate of OpenDevelop's GitAddIn (see
+       doc/technotes/solution-explorer.md's git-status precedent) - Git.cs/GitGuiWrapper.cs/
+       GitMessageView.cs/GitVersionProvider.cs/IsUnderGitControlCondition.cs/AddInOptions.cs were
+       byte-for-byte identical copies, and RegisterEventsCommand.cs had drifted 6 lines behind
+       OpenDevelop's GitStatusCache -> GitStatusService rename. Linked from upstream instead. -->
+  <ItemGroup>
+    <Compile Include="$(SharpDevelopSourceRoot)\src\AddIns\VersionControl\GitAddIn\Src\AddInOptions.cs"
+             Link="Upstream\AddInOptions.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\AddIns\VersionControl\GitAddIn\Src\Git.cs"
+             Link="Upstream\Git.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\AddIns\VersionControl\GitAddIn\Src\GitGuiWrapper.cs"
+             Link="Upstream\GitGuiWrapper.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\AddIns\VersionControl\GitAddIn\Src\GitMessageView.cs"
+             Link="Upstream\GitMessageView.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\AddIns\VersionControl\GitAddIn\Src\GitVersionProvider.cs"
+             Link="Upstream\GitVersionProvider.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\AddIns\VersionControl\GitAddIn\Src\IsUnderGitControlCondition.cs"
+             Link="Upstream\IsUnderGitControlCondition.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\AddIns\VersionControl\GitAddIn\Src\RegisterEventsCommand.cs"
+             Link="Upstream\RegisterEventsCommand.cs" />
+  </ItemGroup>
+
   <ItemGroup>
     <None Include="GitAddIn.addin" CopyToOutputDirectory="Always" />
   </ItemGroup>

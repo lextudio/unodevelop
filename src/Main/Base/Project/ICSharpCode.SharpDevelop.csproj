@@ -71,8 +71,16 @@
     <Compile Include="..\Src\MSBuildHosting\MSBuildEnvironmentInitializer.cs" />
     <Compile Include="..\Src\NuGet\UnoNuGetProject.cs" />
     <Compile Include="..\Src\NuGet\NuGetPackageSourceCatalog.cs" />
-    <Compile Include="..\Src\NuGet\NuGetSearchResult.cs" />
-    <Compile Include="..\Src\NuGet\NuGetPackageSearchService.cs" />
+    <!-- Shared with OpenDevelop (doc/technotes/nuget.md) - OpenDevelop's PackageManagement AddIn had
+         its own independent, single-source, never-actually-wired-up copy (NuGetSearchResultPackage/
+         NuGetPackageSearchService) modeled on this one; this multi-source, actually-used version
+         became canonical. -->
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\NuGet\NuGetPackageSearchEngine.cs"
+             Link="Upstream\NuGet\NuGetPackageSearchEngine.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\NuGet\NuGetSearchResult.cs"
+             Link="Upstream\NuGet\NuGetSearchResult.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\NuGet\NuGetPackageSearchService.cs"
+             Link="Upstream\NuGet\NuGetPackageSearchService.cs" />
     <Compile Include="..\Src\NuGet\AddInPackageInstaller.cs" />
     <Compile Include="..\Src\NuGet\AddInPackageManagerService.cs" />
     <!-- Template system (docs/template-system.md) - shared with OpenDevelop (see

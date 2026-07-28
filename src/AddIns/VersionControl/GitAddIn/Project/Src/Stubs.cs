@@ -4,38 +4,13 @@ using System.IO;
 using System.Threading.Tasks;
 using ICSharpCode.Core;
 
-namespace ICSharpCode.SharpDevelop
-{
-	public class ProcessRunner : IDisposable
-	{
-		public string WorkingDirectory { get; set; } = "";
-		public string? Arguments { get; set; }
-		public string? CommandFileName { get; set; }
-		public string CommandLine { get; set; } = "";
-		public bool RedirectStandardOutput { get; set; }
-		public bool RedirectStandardError { get; set; }
-		public Stream? StandardOutput { get; set; }
-		public event EventHandler? OutputLineReceived;
-		public event EventHandler? ErrorLineReceived;
-		public int ExitCode { get; private set; }
-
-		public void Start() { }
-		public void Start(string cmd, string args) { }
-		public void Start(string cmd, string args, string workDir) { }
-		public void Start(string cmd, string args, string workDir, string input) { }
-		public void Kill() { }
-		public void WaitForExit() { }
-		public void Dispose() { }
-		public StreamReader OpenStandardOutputReader() => new StreamReader(Stream.Null);
-		public StreamReader OpenStandardErrorReader() => new StreamReader(Stream.Null);
-
-		public static int RunCommand(string command, string arguments, string workingDirectory) => 0;
-		public static string RunCommandWithOutput(string command, string arguments, string workingDirectory) => "";
-		public async Task<string> RunCommandWithOutputAsync(string command, string arguments, string workingDirectory) => await Task.FromResult("");
-
-		public async Task<int> RunInOutputPadAsync(object category, string command, string[] args) => await Task.FromResult(0);
-	}
-}
+// ProcessRunner's own fake stub is gone - the real, functional ICSharpCode.SharpDevelop.ProcessRunner
+// (Main/Base/Project/Util/ProcessRunner.cs, already linked into ICSharpCode.SharpDevelop.csproj) has
+// a compatible API surface, since Git.cs/GitVersionProvider.cs (now linked verbatim from OpenDevelop,
+// see GitAddIn.csproj) were always written against the real class. The fake no-op version silently
+// meant every git command this AddIn ran (add/remove-on-file-change, blame-based document versioning,
+// GUI commit/diff/log launch) was inert - `Start()` did nothing and `OpenStandardOutputReader()`
+// returned an empty stream - so removing it is a real functional fix, not just cleanup.
 
 namespace ICSharpCode.SharpDevelop.Editor
 {
