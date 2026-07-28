@@ -122,6 +122,8 @@
 		     in this project's own ProjectBrowserController.cs. -->
 		<Compile Include="$(SharpDevelopSourceRoot)\src\Main\SharpDevelop\Services\ProjectBrowserControllerBase.cs"
 		         Link="Upstream\Services\ProjectBrowserControllerBase.cs" />
+		<Compile Include="$(SharpDevelopSourceRoot)\src\Main\SharpDevelop\Services\ProjectBrowserTreeKindResolver.cs"
+		         Link="Upstream\Services\ProjectBrowserTreeKindResolver.cs" />
 	</ItemGroup>
 
 	<ItemGroup>

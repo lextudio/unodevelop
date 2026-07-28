@@ -467,6 +467,11 @@
              Link="Upstream\Project\MSBuildBasedProject.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Project\EvaluatedProjectItem.cs"
              Link="Upstream\Project\EvaluatedProjectItem.cs" />
+    <!-- Shared git status computation + GitFileStatus enum (see doc/technotes/solution-explorer.md) -
+         was UnoDevelop-only, now also backs OpenDevelop's GitAddIn overlay provider. Lives in Base
+         (not the App-layer SharpDevelop.csproj) because GitAddIn only references Base. -->
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Services\ProjectBrowser\GitStatusService.cs"
+             Link="Upstream\Services\ProjectBrowser\GitStatusService.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Project\AbstractProject.cs"
              Link="Upstream\Project\AbstractProject.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Project\NamespaceNameGenerator.cs"

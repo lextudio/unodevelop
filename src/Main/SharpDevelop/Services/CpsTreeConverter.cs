@@ -99,54 +99,9 @@ internal static class CpsTreeConverter
         }
     }
 
-    // ── Flag → Kind mapping ───────────────────────────────────────────────────
-
-    private static ProjectBrowserNodeKind ResolveKind(IProjectTree node)
-    {
-        var f = node.Flags;
-
-        if (f.Contains(ProjectTreeFlags.Common.ProjectRoot))
-            return ProjectBrowserNodeKind.Project;
-
-        if (f.Contains(ProjectTreeFlags.Common.DependenciesFolder))
-            return ProjectBrowserNodeKind.DependenciesFolder;
-
-        if (f.Contains(ProjectTreeFlags.Common.ReferencesFolder))
-            return ProjectBrowserNodeKind.ReferencesFolder;
-
-        if (f.Contains(ProjectTreeFlags.Common.PackagesFolder))
-            return ProjectBrowserNodeKind.PackagesFolder;
-
-        if (f.Contains(ProjectTreeFlags.Common.PackageReference))
-            return ProjectBrowserNodeKind.PackageReference;
-
-        if (f.Contains(ProjectTreeFlags.Common.Reference))
-        {
-            return f.Contains(ProjectTreeFlags.Common.ProjectReference)
-                ? ProjectBrowserNodeKind.ProjectReference
-                : ProjectBrowserNodeKind.Reference;
-        }
-
-        if (f.Contains(ProjectTreeFlags.Common.Folder) ||
-            f.Contains(ProjectTreeFlags.Common.VirtualFolder))
-            return f.Contains(ProjectTreeFlags.Common.IncludeInProjectCandidate)
-                ? ProjectBrowserNodeKind.GhostFolder
-                : ProjectBrowserNodeKind.Folder;
-
-        if (f.Contains(ProjectTreeFlags.Common.SourceFile))
-        {
-            if (f.Contains(ProjectTreeFlags.Common.IncludeInProjectCandidate))
-                return ProjectBrowserNodeKind.GhostFile;
-
-            if (!f.Contains(ProjectTreeFlags.Common.FileSystemEntity))
-                return ProjectBrowserNodeKind.MissingFile;
-
-            if (f.Contains(ProjectTreeFlags.Common.LinkedFile))
-                return ProjectBrowserNodeKind.LinkedFile;
-
-            return ProjectBrowserNodeKind.File;
-        }
-
-        return ProjectBrowserNodeKind.Unknown;
-    }
+    // Flag -> Kind mapping is now shared (ProjectBrowserTreeKindResolver, see
+    // doc/technotes/solution-explorer.md) - OpenDevelop's ProjectBrowserTreeBuilder uses the same
+    // resolver.
+    private static ProjectBrowserNodeKind ResolveKind(IProjectTree node) =>
+        ProjectBrowserTreeKindResolver.ResolveKind(node);
 }

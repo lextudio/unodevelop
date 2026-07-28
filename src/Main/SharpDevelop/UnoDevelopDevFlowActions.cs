@@ -393,7 +393,7 @@ public static class UnoDevelopDevFlowActions
     [DevFlowAction("ide-git-status", Description = "Report the cached git status for a file path (as computed the last time Solution Explorer's tree was built). Args: [filePath]. Returns {status} JSON.")]
     public static string GetGitStatus(string filePath)
     {
-        return JsonSerializer.Serialize(new { status = UnoDevelop.Services.GitStatusService.GetStatus(filePath).ToString() });
+        return JsonSerializer.Serialize(new { status = ICSharpCode.SharpDevelop.Services.GitStatusService.GetStatus(filePath).ToString() });
     }
 
     [DevFlowAction("ide-solution-explorer-node-kinds",
