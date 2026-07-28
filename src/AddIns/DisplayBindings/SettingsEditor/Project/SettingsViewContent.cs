@@ -4,8 +4,8 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
-using System.Xml.Linq;
 using ICSharpCode.Core;
+using ICSharpCode.SettingsEditor;
 using ICSharpCode.SharpDevelop;
 using ICSharpCode.SharpDevelop.Workbench;
 using Microsoft.UI.Xaml;
@@ -19,7 +19,6 @@ namespace UnoDevelop.AddIns.DisplayBindings.SettingsEditor;
 
 public sealed class SettingsEditorViewContent : IViewContent
 {
-    private const string SettingsNamespace = "http://schemas.microsoft.com/VisualStudio/2004/01/settings";
     private readonly List<OpenedFile> _files = new();
     private readonly ObservableCollection<SettingEntry> _entries = new();
     private readonly Grid _control;
@@ -37,8 +36,7 @@ public sealed class SettingsEditorViewContent : IViewContent
         InfoTip = filePath;
         _files.Add(new SettingsOpenedFile(filePath));
 
-        var document = XDocument.Load(filePath);
-        LoadDocument(document);
+        LoadDocument(SettingsFileDocument.Load(filePath));
 
         _namespaceBox = new TextBox { Header = "Namespace", Text = GeneratedClassNamespace, Margin = new Thickness(8, 8, 4, 4) };
         _classNameBox = new TextBox { Header = "Class", Text = GeneratedClassName, Margin = new Thickness(4, 8, 4, 4) };
@@ -184,74 +182,54 @@ public sealed class SettingsEditorViewContent : IViewContent
         Disposed?.Invoke(this, EventArgs.Empty);
     }
 
-    private void LoadDocument(XDocument document)
+    private void LoadDocument(SettingsFileDocument document)
     {
-        var root = document.Root ?? throw new FormatException("Not a settings file.");
-        GeneratedClassNamespace = (string?)root.Attribute("GeneratedClassNamespace") ?? string.Empty;
-        GeneratedClassName = (string?)root.Attribute("GeneratedClassName") ?? string.Empty;
-        UseMySettingsClassName = string.Equals((string?)root.Attribute("UseMySettingsClassName"), "true", StringComparison.OrdinalIgnoreCase);
+        GeneratedClassNamespace = document.GeneratedClassNamespace;
+        GeneratedClassName = document.GeneratedClassName;
+        UseMySettingsClassName = document.UseMySettingsClassName;
 
-        var settings = root.Elements().FirstOrDefault(element => element.Name.LocalName == "Settings");
-        if (settings is null)
+        foreach (var setting in document.Entries)
         {
-            throw new FormatException("Not a settings file.");
-        }
-
-        foreach (var setting in settings.Elements().Where(element => element.Name.LocalName == "Setting"))
-        {
-            var value = setting.Elements().FirstOrDefault(element => element.Name.LocalName == "Value");
             var entry = new SettingEntry
             {
-                Name = (string?)setting.Attribute("Name") ?? string.Empty,
-                Type = (string?)setting.Attribute("Type") ?? "System.String",
-                Scope = (string?)setting.Attribute("Scope") ?? "User",
-                Value = value?.Value ?? string.Empty,
-                Description = (string?)setting.Attribute("Description") ?? string.Empty
+                Name = setting.Name,
+                Type = setting.Type,
+                Scope = setting.Scope,
+                Value = setting.Value,
+                Description = setting.Description
             };
             TrackEntry(entry);
             _entries.Add(entry);
         }
     }
 
-    private XDocument CreateDocument()
+    private SettingsFileDocument CreateDocument()
     {
-        XNamespace ns = SettingsNamespace;
         GeneratedClassNamespace = _namespaceBox.Text ?? string.Empty;
         GeneratedClassName = _classNameBox.Text ?? string.Empty;
         UseMySettingsClassName = _useMySettingsClassName.IsChecked == true;
 
-        var root = new XElement(ns + "SettingsFile",
-            new XAttribute("CurrentProfile", "(Default)"),
-            new XAttribute("GeneratedClassNamespace", GeneratedClassNamespace),
-            new XAttribute("GeneratedClassName", GeneratedClassName));
-        if (UseMySettingsClassName)
+        var document = new SettingsFileDocument
         {
-            root.Add(new XAttribute("UseMySettingsClassName", "true"));
-        }
+            GeneratedClassNamespace = GeneratedClassNamespace,
+            GeneratedClassName = GeneratedClassName,
+            UseMySettingsClassName = UseMySettingsClassName
+        };
 
-        root.Add(new XElement(ns + "Profiles", new XElement(ns + "Profile", new XAttribute("Name", "(Default)"))));
-        var settings = new XElement(ns + "Settings");
         foreach (var entry in _entries.Where(entry => !string.IsNullOrWhiteSpace(entry.Name)))
         {
-            var setting = new XElement(ns + "Setting",
-                new XAttribute("Name", entry.Name.Trim()),
-                new XAttribute("Type", string.IsNullOrWhiteSpace(entry.Type) ? "System.String" : entry.Type.Trim()),
-                new XAttribute("Scope", NormalizeScope(entry.Scope)));
-            if (!string.IsNullOrWhiteSpace(entry.Description))
+            document.Entries.Add(new SettingsFileEntry
             {
-                setting.Add(new XAttribute("Description", entry.Description));
-            }
-
-            setting.Add(new XElement(ns + "Value", new XAttribute("Profile", "(Default)"), entry.Value ?? string.Empty));
-            settings.Add(setting);
+                Name = entry.Name,
+                Type = entry.Type,
+                Scope = entry.Scope,
+                Value = entry.Value,
+                Description = entry.Description
+            });
         }
 
-        root.Add(settings);
-        return new XDocument(new XDeclaration("1.0", "utf-8", null), root);
+        return document;
     }
-
-    private static string NormalizeScope(string? scope)
-        => string.Equals(scope, "Application", StringComparison.OrdinalIgnoreCase) ? "Application" : "User";
 
     private void AddEntry(string type, string scope)
     {

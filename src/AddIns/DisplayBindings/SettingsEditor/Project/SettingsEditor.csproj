@@ -12,4 +12,9 @@
     <ProjectReference Include="..\..\..\..\Main\Core\Project\ICSharpCode.Core.csproj" />
     <ProjectReference Include="..\..\..\..\Main\Base\Project\ICSharpCode.SharpDevelop.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\..\..\..\externals\OpenDevelop\src\AddIns\DisplayBindings\SettingsEditor\Project\SettingsFileDocument.cs"
+             Link="OpenDevelop\SettingsFileDocument.cs" />
+  </ItemGroup>
 </Project>

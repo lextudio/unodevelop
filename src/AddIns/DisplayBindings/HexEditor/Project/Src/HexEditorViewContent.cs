@@ -1,12 +1,11 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Text;
 using ICSharpCode.Core;
 using ICSharpCode.SharpDevelop;
 using ICSharpCode.SharpDevelop.Workbench;
+using HexEditor.Util;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Windows.ApplicationModel.DataTransfer;
@@ -15,8 +14,6 @@ namespace UnoDevelop.AddIns.DisplayBindings.HexEditor;
 
 public sealed class HexEditorViewContent : IViewContent
 {
-    private const int BytesPerLine = 16;
-
     private readonly FileName _fileName;
     private readonly List<OpenedFile> _files = new();
     private readonly Grid _control;
@@ -97,7 +94,7 @@ public sealed class HexEditorViewContent : IViewContent
 
     public void Save(OpenedFile file, Stream stream)
     {
-        var bytes = ParseHexDump(_hexText.Text);
+        var bytes = HexDumpText.Parse(_hexText.Text);
         stream.SetLength(0);
         stream.Write(bytes, 0, bytes.Length);
         _bytes = bytes;
@@ -110,7 +107,7 @@ public sealed class HexEditorViewContent : IViewContent
         using var memory = new MemoryStream();
         stream.CopyTo(memory);
         _bytes = memory.ToArray();
-        SetHexText(FormatHexDump(_bytes));
+        SetHexText(HexDumpText.Format(_bytes));
         MarkClean();
         UpdateStatus();
     }
@@ -136,14 +133,14 @@ public sealed class HexEditorViewContent : IViewContent
     private void LoadFromDisk()
     {
         _bytes = File.ReadAllBytes(_fileName.ToString());
-        SetHexText(FormatHexDump(_bytes));
+        SetHexText(HexDumpText.Format(_bytes));
         MarkClean();
         UpdateStatus();
     }
 
     private void SaveToDisk()
     {
-        var bytes = ParseHexDump(_hexText.Text);
+        var bytes = HexDumpText.Parse(_hexText.Text);
         File.WriteAllBytes(_fileName.ToString(), bytes);
         _bytes = bytes;
         MarkClean();
@@ -193,76 +190,6 @@ public sealed class HexEditorViewContent : IViewContent
         var package = new DataPackage();
         package.SetText(text);
         Clipboard.SetContent(package);
-    }
-
-    private static string FormatHexDump(byte[] bytes)
-    {
-        var builder = new StringBuilder();
-        for (var offset = 0; offset < bytes.Length; offset += BytesPerLine)
-        {
-            var count = Math.Min(BytesPerLine, bytes.Length - offset);
-            builder.Append(offset.ToString("X8", CultureInfo.InvariantCulture));
-            builder.Append("  ");
-
-            for (var i = 0; i < BytesPerLine; i++)
-            {
-                if (i < count)
-                {
-                    builder.Append(bytes[offset + i].ToString("X2", CultureInfo.InvariantCulture));
-                }
-                else
-                {
-                    builder.Append("  ");
-                }
-
-                builder.Append(i == 7 ? "  " : " ");
-            }
-
-            builder.Append(" |");
-            for (var i = 0; i < count; i++)
-            {
-                var b = bytes[offset + i];
-                builder.Append(b >= 32 && b <= 126 ? (char)b : '.');
-            }
-
-            builder.AppendLine("|");
-        }
-
-        return builder.ToString();
-    }
-
-    private static byte[] ParseHexDump(string text)
-    {
-        var bytes = new List<byte>();
-        foreach (var rawLine in text.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None))
-        {
-            var line = rawLine;
-            var bar = line.IndexOf('|');
-            if (bar >= 0)
-            {
-                line = line[..bar];
-            }
-
-            var parts = line.Split(new[] { ' ', '\t', ':' }, StringSplitOptions.RemoveEmptyEntries);
-            var start = parts.Length > 0 && parts[0].Length == 8 && IsHex(parts[0]) ? 1 : 0;
-            for (var i = start; i < parts.Length; i++)
-            {
-                var token = parts[i];
-                if (token.Length != 2 || !IsHex(token))
-                {
-                    continue;
-                }
-
-                bytes.Add(byte.Parse(token, NumberStyles.HexNumber, CultureInfo.InvariantCulture));
-            }
-        }
-
-        return bytes.ToArray();
-    }
-
-    private static bool IsHex(string value)
-    {
-        return value.All(c => c is >= '0' and <= '9' or >= 'a' and <= 'f' or >= 'A' and <= 'F');
     }
 
     private sealed class HexOpenedFile : OpenedFile
