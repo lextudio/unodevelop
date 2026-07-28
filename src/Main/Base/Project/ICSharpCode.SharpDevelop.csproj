@@ -75,10 +75,17 @@
     <Compile Include="..\Src\NuGet\NuGetPackageSearchService.cs" />
     <Compile Include="..\Src\NuGet\AddInPackageInstaller.cs" />
     <Compile Include="..\Src\NuGet\AddInPackageManagerService.cs" />
-    <Compile Include="..\Src\Templates\UnoTemplateEngineHost.cs" />
-    <Compile Include="..\Src\Templates\TemplateSummary.cs" />
-    <Compile Include="..\Src\Templates\TemplateDiscoveryService.cs" />
-    <Compile Include="..\Src\Templates\TemplateInstantiationResult.cs" />
+    <!-- Template system (docs/template-system.md) - shared with OpenDevelop (see
+         doc/technotes/template-system.md); the two hosts' near-identical *TemplateEngineHost
+         classes were folded into TemplateDiscoveryService's own #if HAS_UNO branch. -->
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Templates\TemplateEngineHost.cs"
+             Link="Upstream\Templates\TemplateEngineHost.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Templates\TemplateSummary.cs"
+             Link="Upstream\Templates\TemplateSummary.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Templates\TemplateDiscoveryService.cs"
+             Link="Upstream\Templates\TemplateDiscoveryService.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Templates\TemplateInstantiationResult.cs"
+             Link="Upstream\Templates\TemplateInstantiationResult.cs" />
     <!-- CustomTool / auto-run-on-save + before-build (docs/t4-templating.md) — linked from
          upstream, guarded with #if !HAS_UNO where WPF-only (ProjectBrowserPad, ExecuteCustomToolCommand). -->
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Project\CustomTool.cs"
