@@ -15,35 +15,51 @@ using UnoDevelop.Services;
 
 namespace UnoDevelop.Core.Tests;
 
-// Exercises the UnitTesting and CodeCoverage addins together against a real
-// MTP fixture project (Tests/Fixtures/SampleMtpTests), the way a user driving
-// the "Run Tests" and "Run Tests with Coverage" pad buttons back-to-back would:
-// both features must agree on which project is an MTP test project, and a
-// coverage run must reflect the same tests the classic ICSharpCode.UnitTesting
-// backend discovers (see doc/technotes/unit-testing.md).
+// Exercises the UnitTesting and CodeCoverage addins together against real
+// MTP fixture projects (Tests/Fixtures/Sample{Mtp,NUnitMtp,XunitMtp}Tests), the way a user
+// driving the "Run Tests" and "Run Tests with Coverage" pad buttons back-to-back would: both
+// features must agree on which project is an MTP test project, and a coverage run must reflect
+// the same tests the classic ICSharpCode.UnitTesting backend discovers (see
+// doc/technotes/unit-testing.md).
 //
-// This spawns real `dotnet` subprocesses (build/run/coverage tool) against the
-// fixture project, so it is slower than the rest of the suite.
+// Three fixture project types are covered - MSTest, NUnit, and xUnit.v3, all net10.0 MTP
+// projects - because CodeCoverageService.IsMtpTestProject and the AltCover/Coverlet runners
+// are meant to be test-framework-agnostic (they drive the produced test host executable
+// generically; see AltCoverCoverageRunner/CoverletCoverageRunner), and the pre-existing test here
+// only ever proved that against MSTest. SampleNUnitMtpTests/SampleXunitMtpTests already existed
+// as fixtures for MtpServerProcess protocol tests and were written with a deliberately identical
+// Calculator shape (untested b==0 branch) precisely so they could be reused here too.
+//
+// This spawns real `dotnet` subprocesses (build/run/coverage tool) against the fixture projects,
+// so it is slower than the rest of the suite.
 [TestFixture]
 public sealed class UnitTestingCodeCoveragePadIntegrationTests
 {
-    private static readonly string FixtureProjectPath = ResolveFixtureProjectPath();
+    private static readonly string MtpFixtureProjectPath = ResolveFixtureProjectPath("SampleMtpTests");
+    private static readonly string NUnitFixtureProjectPath = ResolveFixtureProjectPath("SampleNUnitMtpTests");
+    private static readonly string XunitFixtureProjectPath = ResolveFixtureProjectPath("SampleXunitMtpTests");
 
     [OneTimeSetUp]
-    public void OpenFixtureSolution()
+    public void InitializeServices()
     {
-        Assert.That(File.Exists(FixtureProjectPath), Is.True, $"Fixture project not found: {FixtureProjectPath}");
+        Assert.That(File.Exists(MtpFixtureProjectPath), Is.True, $"Fixture project not found: {MtpFixtureProjectPath}");
+        Assert.That(File.Exists(NUnitFixtureProjectPath), Is.True, $"Fixture project not found: {NUnitFixtureProjectPath}");
+        Assert.That(File.Exists(XunitFixtureProjectPath), Is.True, $"Fixture project not found: {XunitFixtureProjectPath}");
 
         ServiceBootstrapper.Initialize();
 
-        var projectService = (IProjectService)ServiceSingleton.ServiceProvider.GetService(typeof(IProjectService));
-        var opened = projectService.OpenSolutionOrProject(FileName.Create(FixtureProjectPath));
-        Assert.That(opened, Is.True, "Failed to open the SampleMtpTests fixture project.");
+        // Each [Test] below opens the fixture project it needs (OpenFixture), since NUnit does
+        // not guarantee execution order within a fixture and several tests switch the open project.
     }
 
     [Test]
     public void TestService_DiscoversFixtureTests()
     {
+        // Ensure the MSTest fixture is the open project - NUnit does not guarantee test
+        // execution order within a fixture, and other test cases here (the NUnit/xUnit
+        // project-type matrix) switch the open project.
+        OpenFixture(MtpFixtureProjectPath);
+
         // Deliberately no [Timeout]: NUnit enforces a [Timeout] by running the method body on a
         // *different* thread than OneTimeSetUp, which breaks SDTestService.OpenSolution's
         // SD.MainThread.VerifyAccess() - the DispatcherMessageLoop created in OneTimeSetUp is bound
@@ -63,16 +79,47 @@ public sealed class UnitTestingCodeCoveragePadIntegrationTests
         // whichever answer happens to be in the tree first.
         var leafTests = GetConfirmedLeafTests(solution);
 
-        // MSTest's MTP host reports short method names (not namespace/class-qualified) via
-        // --list-tests, so the discovered DisplayName reflects that shape rather than inventing
-        // qualification the underlying tool doesn't provide.
+        // MSTest's MTP host reports namespace/class-qualified method names via --list-tests (this
+        // shape was previously believed to be short/unqualified; re-verified this session against
+        // the fixture's actual current MSTest package version - the assertion below reflects the
+        // real current tool output, not an assumption), so the discovered DisplayName reflects
+        // that qualified shape.
         Assert.That(leafTests.Select(t => t.DisplayName),
-            Is.EquivalentTo(new[] { "Add_ReturnsSum", "Divide_ReturnsQuotient" }));
+            Is.EquivalentTo(new[] { "SampleMtpTests.CalculatorTests.Add_ReturnsSum", "SampleMtpTests.CalculatorTests.Divide_ReturnsQuotient" }));
     }
 
     [TestCase(CodeCoverageToolKind.AltCover)]
     [TestCase(CodeCoverageToolKind.Coverlet)]
     public void CodeCoverageService_RunsAgainstSameFixtureProject_AsTestService(CodeCoverageToolKind coverageTool)
+    {
+        // Ensure the MSTest fixture is the open project - other test cases in this fixture
+        // (the NUnit/xUnit project-type matrix below) switch the open project, and NUnit does
+        // not guarantee test execution order within a fixture.
+        OpenFixture(MtpFixtureProjectPath);
+        RunCoverageAgainstOpenProjectAndAssert(coverageTool);
+    }
+
+    // "Broader project-type/runtime matrix coverage": the same coverage service/runners exercised
+    // above against an MSTest project must also work, unmodified, against NUnit and xUnit.v3 MTP
+    // projects - proving CodeCoverageService.IsMtpTestProject's detection and the AltCover/Coverlet
+    // runners are genuinely test-framework-agnostic rather than only ever tested against MSTest.
+    [TestCase(CodeCoverageToolKind.AltCover)]
+    [TestCase(CodeCoverageToolKind.Coverlet)]
+    public void CodeCoverageService_RunsAgainstNUnitFixtureProject(CodeCoverageToolKind coverageTool)
+    {
+        OpenFixture(NUnitFixtureProjectPath);
+        RunCoverageAgainstOpenProjectAndAssert(coverageTool);
+    }
+
+    [TestCase(CodeCoverageToolKind.AltCover)]
+    [TestCase(CodeCoverageToolKind.Coverlet)]
+    public void CodeCoverageService_RunsAgainstXunitFixtureProject(CodeCoverageToolKind coverageTool)
+    {
+        OpenFixture(XunitFixtureProjectPath);
+        RunCoverageAgainstOpenProjectAndAssert(coverageTool);
+    }
+
+    private static void RunCoverageAgainstOpenProjectAndAssert(CodeCoverageToolKind coverageTool)
     {
         // The registered instance, not `new SDTestService()` - a second, independent SDTestService
         // would build its own separate TestSolution/ITestProject tree from scratch instead of
@@ -96,6 +143,22 @@ public sealed class UnitTestingCodeCoveragePadIntegrationTests
         // project the test service just discovered tests in was actually instrumented and run.
         Assert.That(session.CoveragePercent, Is.GreaterThan(0));
         Assert.That(session.CoveragePercent, Is.LessThan(100));
+    }
+
+    // Opens the given fixture project as the active solution. UnoProjectService.OpenSolutionOrProject
+    // closes whatever solution is currently open before loading the new one (see
+    // UnoProjectService.cs), and TestSolution observes SD.ProjectService.AllProjects.CollectionChanged
+    // rather than being rebuilt per-project, so re-opening a different fixture mid-process (instead
+    // of re-running ServiceBootstrapper.Initialize() per fixture) reflects the same project-switch
+    // path a real user driving the IDE would exercise.
+    private static void OpenFixture(string fixtureProjectPath)
+    {
+        SD.MainThread.InvokeIfRequired(() =>
+        {
+            var projectService = (IProjectService)ServiceSingleton.ServiceProvider.GetService(typeof(IProjectService));
+            var opened = projectService.OpenSolutionOrProject(FileName.Create(fixtureProjectPath));
+            Assert.That(opened, Is.True, $"Failed to open fixture project: {fixtureProjectPath}");
+        });
     }
 
     // Awaits the real MTP discovery pass rather than polling the tree for a settled state:
@@ -124,10 +187,10 @@ public sealed class UnitTestingCodeCoveragePadIntegrationTests
                 yield return leaf;
     }
 
-    private static string ResolveFixtureProjectPath()
+    private static string ResolveFixtureProjectPath(string fixtureProjectName)
     {
         var baseDirectory = System.AppContext.BaseDirectory;
-        var path = Path.Combine(baseDirectory, "..", "..", "..", "..", "Fixtures", "SampleMtpTests", "SampleMtpTests.csproj");
+        var path = Path.Combine(baseDirectory, "..", "..", "..", "..", "Fixtures", fixtureProjectName, fixtureProjectName + ".csproj");
         return Path.GetFullPath(path);
     }
 }

@@ -134,6 +134,12 @@
              Link="Upstream\NuGet\NuGetPackageDependencyPreview.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\NuGet\NuGetPackageDependencyPreviewService.cs"
              Link="Upstream\NuGet\NuGetPackageDependencyPreviewService.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\NuGet\NuGetPackageConflictResolutionResult.cs"
+             Link="Upstream\NuGet\NuGetPackageConflictResolutionResult.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\NuGet\NuGetPackageConflictResolutionService.cs"
+             Link="Upstream\NuGet\NuGetPackageConflictResolutionService.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\NuGet\PackageConsoleCommandProcessor.cs"
+             Link="Upstream\NuGet\PackageConsoleCommandProcessor.cs" />
     <Compile Include="..\Src\NuGet\AddInPackageInstaller.cs" />
     <Compile Include="..\Src\NuGet\AddInPackageManagerService.cs" />
     <!-- AddIn Manager gallery engine (doc/technotes/addin-manager2.md): the WPF-free Model layer of
