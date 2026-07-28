@@ -8,6 +8,26 @@
   </Manifest>
 
   <Runtime>
-    <Import assembly="UnoDevelop.UnitTesting.dll" />
+    <!-- Doozer classes must be declared under a ":AssemblyName" (host-assembly) import, not a
+         plain "X.dll" plugin import - matches every other UnoDevelop .addin's convention (e.g.
+         ICSharpCode.SharpDevelop.addin's own Doozer declarations), unlike OpenDevelop's own
+         UnitTesting.addin which declares it under the plugin's own ".dll" import instead. -->
+    <!-- A single host-assembly import covers both the Doozer class and every other type in
+         this same physical assembly (e.g. MtpTestFramework below) - a second, plugin-style
+         "X.dll" import of the same assembly is unnecessary and, in a headless test host
+         (UnoDevelop.Core.Tests), silently fails to resolve (Runtime.Load swallows the
+         FileNotFoundException/FileLoadException), leaving FindType() unable to locate
+         MtpTestFramework and TestFrameworkDescriptor.TestFramework stuck at null. -->
+    <Import assembly=":UnoDevelop.UnitTesting">
+      <Doozer name="TestFramework" class="ICSharpCode.UnitTesting.TestFrameworkDoozer"/>
+    </Import>
   </Runtime>
+
+  <!-- Registers the single MTP test framework as the classic ICSharpCode.UnitTesting backend's
+       only ITestFramework - see doc/technotes/unit-testing.md. -->
+  <Path name="/SharpDevelop/UnitTesting/TestFrameworks">
+    <TestFramework id="mtpTest"
+                   class="ICSharpCode.UnitTesting.MtpTestFramework"
+                   supportedProjects=".csproj;.vbproj;.fsproj" />
+  </Path>
 </AddIn>

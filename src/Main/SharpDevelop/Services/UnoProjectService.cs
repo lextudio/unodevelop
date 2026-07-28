@@ -2144,8 +2144,53 @@ internal sealed class UnoProjectService : IProjectService, IProjectServiceRaiseE
             set => SetProperty("RootNamespace", value);
         }
 
-        public override FileName OutputAssemblyFullPath =>
-            FileName.Create(Path.Combine(ProjectDirectory, "bin", ActiveConfiguration.Configuration, $"{AssemblyName}.dll"))!;
+        // Asks MSBuild where the output actually goes instead of re-deriving the SDK's layout: the
+        // old "bin/<config>/<AssemblyName>.dll" guess ignored both a custom OutputPath and the
+        // TFM subfolder the SDK inserts for any project that declares a TargetFramework, so it named
+        // a file that is never built (which silently disabled MTP test discovery - see
+        // doc/technotes/unit-testing.md).
+        public override FileName OutputAssemblyFullPath
+        {
+            get
+            {
+                var targetFramework = ProjectTargetFrameworkService.GetTargetFrameworks(this).FirstOrDefault();
+
+                // TargetPath is MSBuild's own fully-resolved answer, and it already accounts for
+                // OutputType (.dll vs apphost/.exe) - prefer it over anything reassembled by hand.
+                var targetPath = GetEvaluatedProperty("TargetPath", targetFramework);
+                if (!string.IsNullOrEmpty(targetPath))
+                    return FileName.Create(ResolveAgainstProjectDirectory(targetPath))!;
+
+                var fileName = GetEvaluatedProperty("TargetFileName", targetFramework);
+                if (string.IsNullOrEmpty(fileName))
+                    fileName = AssemblyName + ".dll";
+
+                var outputPath = GetEvaluatedProperty("OutputPath", targetFramework);
+                if (!string.IsNullOrEmpty(outputPath))
+                    return FileName.Create(ResolveAgainstProjectDirectory(Path.Combine(NormalizeDirectorySeparators(outputPath), fileName)))!;
+
+                // Nothing evaluated (e.g. the project failed to load): fall back to the SDK's default
+                // layout, which is TFM-qualified whenever a TargetFramework is declared.
+                var directory = Path.Combine(ProjectDirectory, "bin", ActiveConfiguration.Configuration);
+                if (!string.IsNullOrEmpty(targetFramework))
+                    directory = Path.Combine(directory, targetFramework);
+                return FileName.Create(Path.Combine(directory, fileName))!;
+            }
+        }
+
+        private string ResolveAgainstProjectDirectory(string path)
+        {
+            var normalized = NormalizeDirectorySeparators(path);
+            return Path.GetFullPath(Path.IsPathRooted(normalized)
+                ? normalized
+                : Path.Combine(ProjectDirectory, normalized));
+        }
+
+        // MSBuild writes Windows separators into path properties ("bin\Debug\") on every platform,
+        // and Path.Combine does not translate them - left as-is they become part of a directory
+        // *name* on Unix rather than a separator.
+        private static string NormalizeDirectorySeparators(string path) =>
+            Path.DirectorySeparatorChar == '\\' ? path : path.Replace('\\', Path.DirectorySeparatorChar);
 
         public override string Language => "C#";
 

@@ -23,7 +23,8 @@ using LeXtudio.DevFlow.Agent.Core;
 using Microsoft.UI.Xaml.Controls;
 using UnoDevelop.Debugger;
 using UnoDevelop.Services;
-using ICSharpCode.UnitTesting.Simple;
+using ICSharpCode.UnitTesting;
+using ICSharpCode.UnitTesting.Mtp;
 
 namespace UnoDevelop;
 
@@ -1082,6 +1083,30 @@ public static class UnoDevelopDevFlowActions
     // Permanent (#if DEBUG) actions consumed by UnoDevelop.IntegrationTests.
     // Never add UX logic here; probes only observe/trigger and return JSON.
 
+    // Flattens the classic ICSharpCode.UnitTesting tree (ITestSolution -> ITestProject ->
+    // MtpTargetFramework -> [namespace] -> class -> method) down to just the leaf MtpTestMethod
+    // nodes, which is what these probe actions have always reported one-per-test - the DevFlow
+    // JSON contract predates and doesn't need to know about the tree shape underneath it.
+    private static IEnumerable<MtpTestMethod> EnumerateLeafTests(ITest test)
+    {
+        if (test is MtpTestMethod method)
+        {
+            yield return method;
+            yield break;
+        }
+        foreach (var child in test.NestedTests)
+            foreach (var leaf in EnumerateLeafTests(child))
+                yield return leaf;
+    }
+
+    private static string MapResult(TestResultType result) => result switch
+    {
+        TestResultType.Success => "Passing",
+        TestResultType.Failure => "Failing",
+        TestResultType.Ignored => "Skipped",
+        _ => "None",
+    };
+
     [DevFlowAction("uno.probe.tests.refresh",
         Description = "Refresh the test panel (clears cache, rediscovers tests). Returns {count}.")]
     public static string TestsRefresh()
@@ -1090,17 +1115,11 @@ public static class UnoDevelopDevFlowActions
         if (testService is null)
             return JsonSerializer.Serialize(new { count = 0 });
 
-        // A single discovery pass, not two: MainPage.RefreshTestsAsync() already clears
-        // TestService's cache and (re)populates it via GetTests() to feed the Test panel UI.
-        // Previously this action ALSO called RefreshTests()+GetTests() itself first, then fired
-        // MainPage's refresh - each one a full, real discovery pass (MTP host spin-up, up to the
-        // per-project 60s bound) - doubling the cost of every refresh for no benefit, since the
-        // second pass just re-discovered the same thing the first one already found.
         Task refreshTask = Task.CompletedTask;
         SD.MainThread.InvokeIfRequired(() => refreshTask = MainPage.Current?.RefreshTestsAsync() ?? Task.CompletedTask);
         refreshTask.GetAwaiter().GetResult();
 
-        var count = testService.GetTests().Count;
+        var count = SD.MainThread.InvokeIfRequired(() => EnumerateLeafTests(testService.OpenSolution).Count());
         return JsonSerializer.Serialize(new { count });
     }
 
@@ -1111,14 +1130,18 @@ public static class UnoDevelopDevFlowActions
         return SD.MainThread.InvokeIfRequired(() =>
         {
             var testService = ServiceSingleton.ServiceProvider.GetService(typeof(ITestService)) as ITestService;
-            var tests = testService?.GetTests() ?? [];
-            var items = tests.Select(t => new
+            var tests = testService is null ? [] : EnumerateLeafTests(testService.OpenSolution);
+            var items = tests.Select(t =>
             {
-                displayName = t.DisplayName,
-                fqn = t.FullyQualifiedName,
-                projectName = t.ProjectName,
-                targetFramework = t.TargetFramework,
-                key = t.EffectiveKey,
+                var fqn = t.FullyQualifiedName;
+                return new
+                {
+                    displayName = t.DisplayName,
+                    fqn,
+                    projectName = t.ParentProject.DisplayName,
+                    targetFramework = t.TargetFramework,
+                    key = fqn,
+                };
             });
             return JsonSerializer.Serialize(items);
         });
@@ -1129,7 +1152,7 @@ public static class UnoDevelopDevFlowActions
     public static string TestsIsRunning()
     {
         var testService = ServiceSingleton.ServiceProvider.GetService(typeof(ITestService)) as ITestService;
-        return JsonSerializer.Serialize(new { isRunning = testService?.IsRunning ?? false });
+        return JsonSerializer.Serialize(new { isRunning = testService?.IsRunningTests ?? false });
     }
 
     [DevFlowAction("uno.probe.tests.run-all",
@@ -1156,32 +1179,31 @@ public static class UnoDevelopDevFlowActions
         Description = "Snapshot results from the last test run. Returns array of {fqn, displayName, targetFramework, key, result, resultLabel}.")]
     public static string TestsResults()
     {
-        var testService = ServiceSingleton.ServiceProvider.GetService(typeof(ITestService)) as ITestService;
-        var tests = testService?.GetTests() ?? [];
-        var lastResults = testService?.GetLastResults() ?? new Dictionary<string, TestResultInfo>();
-        var items = tests.Select(t =>
+        return SD.MainThread.InvokeIfRequired(() =>
         {
-            lastResults.TryGetValue(t.EffectiveKey, out var r);
-            var resultType = r?.Result ?? TestResultType.None;
-            var resultLabel = resultType switch
+            var testService = ServiceSingleton.ServiceProvider.GetService(typeof(ITestService)) as ITestService;
+            var tests = testService is null ? [] : EnumerateLeafTests(testService.OpenSolution);
+            var items = tests.Select(t =>
             {
-                TestResultType.Passing => "Pass",
-                TestResultType.Failing => "Fail",
-                TestResultType.Skipped => "Skip",
-                TestResultType.Running => "Run...",
-                _ => "",
-            };
-            return new
-            {
-                fqn = t.FullyQualifiedName,
-                displayName = t.DisplayName,
-                targetFramework = t.TargetFramework,
-                key = t.EffectiveKey,
-                result = resultType.ToString(),
-                resultLabel,
-            };
+                var resultLabel = t.Result switch
+                {
+                    TestResultType.Success => "Pass",
+                    TestResultType.Failure => "Fail",
+                    TestResultType.Ignored => "Skip",
+                    _ => "",
+                };
+                return new
+                {
+                    fqn = t.FullyQualifiedName,
+                    displayName = t.DisplayName,
+                    targetFramework = t.TargetFramework,
+                    key = t.FullyQualifiedName,
+                    result = MapResult(t.Result),
+                    resultLabel,
+                };
+            });
+            return JsonSerializer.Serialize(items);
         });
-        return JsonSerializer.Serialize(items);
     }
 
     [DevFlowAction("uno.probe.tests.debug",
@@ -1203,13 +1225,14 @@ public static class UnoDevelopDevFlowActions
         if (testService is null)
             return JsonSerializer.Serialize(new { started = false, error = "Test service not available." });
 
-        var tests = testService.GetTests();
-        var projectGroups = tests.GroupBy(t => t.ProjectPath).Where(g => g.Key is not null).ToList();
+        var projectGroups = SD.MainThread.InvokeIfRequired(() => testService.OpenSolution.NestedTests
+            .OfType<MtpTestProject>()
+            .Select(p => p.Project.FileName?.ToString())
+            .Where(path => path is not null)
+            .ToList());
 
-        foreach (var group in projectGroups)
+        foreach (var projectPath in projectGroups)
         {
-            var projectPath = group.Key!;
-
             try
             {
                 if (debugger is DebugService ds)

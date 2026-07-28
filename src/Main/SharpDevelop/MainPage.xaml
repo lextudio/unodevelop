@@ -88,13 +88,29 @@
                            Opacity="0.72"
                            VerticalAlignment="Center"
                            Margin="12,0,12,0" />
-                <ProgressBar x:Name="ShellProgressBar"
-                             Grid.Column="2"
-                             Minimum="0"
-                             Maximum="1"
-                             Height="4"
-                             VerticalAlignment="Center"
-                             Visibility="Collapsed" />
+                <StackPanel Grid.Column="2"
+                            Orientation="Horizontal"
+                            VerticalAlignment="Center">
+                    <ProgressBar x:Name="ShellProgressBar"
+                                 Minimum="0"
+                                 Maximum="1"
+                                 Height="4"
+                                 Width="72"
+                                 VerticalAlignment="Center"
+                                 Visibility="Collapsed" />
+                    <!-- Shown only while the running operation opted in to cancellation
+                         (IStatusBarService.CreateCancellableProgressMonitor), so a long task like
+                         MTP test discovery can be abandoned instead of waiting it out. -->
+                    <Button x:Name="ShellProgressCancelButton"
+                            AutomationProperties.AutomationId="ShellProgressCancelButton"
+                            Content="Cancel"
+                            Padding="8,2"
+                            Margin="8,0,0,0"
+                            FontSize="11"
+                            VerticalAlignment="Center"
+                            Visibility="Collapsed"
+                            Click="OnShellProgressCancelClick" />
+                </StackPanel>
             </Grid>
         </Border>
     </Grid>

@@ -42,7 +42,7 @@ using UnoDevelop.Controls;
 using UnoDevelop.Debugger;
 using UnoDevelop.OptionPanels;
 using UnoDevelop.Services;
-using ICSharpCode.UnitTesting.Simple;
+using ICSharpCode.UnitTesting;
 using UnoDevelop.UnitTesting;
 using UnoDevelop.Workbench;
 
@@ -265,8 +265,25 @@ public partial class MainPage : Page, IUnoSolutionExplorerHost
         ShellStatusText.Text = message;
     }
 
-    internal void UpdateStatusBarProgress(string? taskName, double progress, ICSharpCode.SharpDevelop.OperationStatus status)
+    // The cancel action of whatever operation currently owns the status bar progress bar, or null
+    // when that operation isn't cancellable (or none is running).
+    private Action? _shellProgressCancel;
+
+    private void OnShellProgressCancelClick(object sender, RoutedEventArgs e)
     {
+        // Hide immediately: cancellation is requested once, and the operation may take a moment to
+        // notice, during which a still-enabled button would invite a pointless second click.
+        ShellProgressCancelButton.Visibility = Visibility.Collapsed;
+        var cancel = _shellProgressCancel;
+        _shellProgressCancel = null;
+        cancel?.Invoke();
+    }
+
+    internal void UpdateStatusBarProgress(string? taskName, double progress, ICSharpCode.SharpDevelop.OperationStatus status, Action? cancel)
+    {
+        _shellProgressCancel = cancel;
+        ShellProgressCancelButton.Visibility = cancel is null ? Visibility.Collapsed : Visibility.Visible;
+
         if (double.IsNaN(progress))
         {
             ShellProgressBar.IsIndeterminate = true;
@@ -668,7 +685,7 @@ public partial class MainPage : Page, IUnoSolutionExplorerHost
         ExecutionState.IsRunning = () => _runService.IsRunning;
         ExecutionState.IsDebugging = () => _debugService.IsDebugging;
         ExecutionState.IsPaused = () => _debugPaused;
-        ExecutionState.IsTestsRunning = () => _testService?.IsRunning ?? false;
+        ExecutionState.IsTestsRunning = () => _testService?.IsRunningTests ?? false;
 
         _runService.RunStarted += (_, _) => DispatcherQueue.TryEnqueue(() =>
         {
@@ -797,19 +814,10 @@ public partial class MainPage : Page, IUnoSolutionExplorerHost
 
     private void HookTestServiceEvents()
     {
-        if (_testService is null)
-            return;
-
-        _testService.TestRunStarted += () => DispatcherQueue.TryEnqueue(() =>
-        {
-            UpdateTestsPadButtonsEnabled();
-            SetExplorerStatus("Tests running...");
-        });
-        _testService.TestRunCompleted += () => DispatcherQueue.TryEnqueue(() =>
-        {
-            UpdateTestsPadButtonsEnabled();
-            SetExplorerStatus("Test run completed.");
-        });
+        // The classic ICSharpCode.UnitTesting.ITestService has no TestRunStarted/TestRunCompleted
+        // events (only a polled IsRunningTests bool + per-ITest ResultChanged) - RunAllTestsAsync/
+        // StopTests below refresh the toolbar explicitly around the actions that change
+        // IsRunningTests, instead of reacting to an event that doesn't exist.
     }
 
     internal void RefreshTests()
@@ -817,7 +825,6 @@ public partial class MainPage : Page, IUnoSolutionExplorerHost
 
     internal async Task RefreshTestsAsync()
     {
-        _testService?.RefreshTests();
         ShowTestsPad();
         if (_testResultsPad is not null)
             await _testResultsPad.RefreshTestsAsync();
@@ -825,15 +832,26 @@ public partial class MainPage : Page, IUnoSolutionExplorerHost
 
     internal async Task RunAllTestsAsync()
     {
-        if (_testService is null || _testService.IsRunning)
+        if (_testService is null || _testService.IsRunningTests || _testResultsPad is null)
             return;
 
-        await _testService.RunAllTestsAsync();
+        SetExplorerStatus("Tests running...");
+        UpdateTestsPadButtonsEnabled();
+        try
+        {
+            await _testResultsPad.RunAllAsync();
+        }
+        finally
+        {
+            SetExplorerStatus("Test run completed.");
+            UpdateTestsPadButtonsEnabled();
+        }
     }
 
     internal void StopTests()
     {
-        _testService?.Stop();
+        _testService?.CancelRunningTests();
+        UpdateTestsPadButtonsEnabled();
     }
 
     internal void RunSelectedTest()

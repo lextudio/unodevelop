@@ -9,27 +9,43 @@
 
   <ItemGroup>
     <Compile Include="Pad/*.cs" />
-    <!-- Mtp/*.cs is plain JSON-RPC client code with zero WPF/UI coupling and is otherwise a
-         byte-for-byte match with OpenDevelop's copy (formatting/namespace aside) - link it
-         instead of maintaining a hand-forked duplicate. -->
-    <Compile Include="$(SharpDevelopSourceRoot)/src/AddIns/Analysis/UnitTesting/Mtp/MtpServerCapabilities.cs" Link="Mtp/MtpServerCapabilities.cs" />
-    <Compile Include="$(SharpDevelopSourceRoot)/src/AddIns/Analysis/UnitTesting/Mtp/MtpServerProcess.cs" Link="Mtp/MtpServerProcess.cs" />
-    <Compile Include="$(SharpDevelopSourceRoot)/src/AddIns/Analysis/UnitTesting/Mtp/MtpTestNode.cs" Link="Mtp/MtpTestNode.cs" />
-    <!-- ITestService/TestService/TestProjectDetector/DotNetTestRunner used to live here as a local
-         fork; they have zero WPF/UI coupling (unlike OpenDevelop's own classic ITestFramework/
-         ITestSolution/ITest tree, a different multi-framework abstraction this flatter, MTP-only
-         contract doesn't fit), so they were moved into OpenDevelop's Simple/ folder as the shared
-         canonical source (namespace ICSharpCode.UnitTesting.Simple) and are linked back here -
-         same reuse pattern as Mtp/*.cs above, so a future WPF port (e.g. LibreWPF) can link the
-         same source instead of forking it again. -->
-    <Compile Include="$(SharpDevelopSourceRoot)/src/AddIns/Analysis/UnitTesting/Simple/ITestService.cs" Link="Simple/ITestService.cs" />
-    <Compile Include="$(SharpDevelopSourceRoot)/src/AddIns/Analysis/UnitTesting/Simple/TestService.cs" Link="Simple/TestService.cs" />
-    <Compile Include="$(SharpDevelopSourceRoot)/src/AddIns/Analysis/UnitTesting/Simple/TestProjectDetector.cs" Link="Simple/TestProjectDetector.cs" />
-    <Compile Include="$(SharpDevelopSourceRoot)/src/AddIns/Analysis/UnitTesting/Simple/DotNetTestRunner.cs" Link="Simple/DotNetTestRunner.cs" />
+    <!-- Everything below is OpenDevelop's classic ICSharpCode.UnitTesting - the single, shared
+         ITestFramework/ITestSolution/ITest tree backend (see doc/technotes/unit-testing.md).
+         Confirmed WPF-free except Model/ITest.cs+TestBase.cs (ITest.GoToDefinition's
+         System.Windows.Input.ICommand - a portable BCL interface, not WPF-specific; already used
+         natively elsewhere in this codebase) and Service/SDTestService.cs
+         (CommandManager.InvalidateRequerySuggested - confirmed to compile fine under Uno.Sdk too).
+         Deliberately NOT linked: Commands/*.cs (WPF menu-command classes for OpenDevelop's own
+         UnitTestsPad UI - UnoDevelop drives everything through DevFlow actions instead),
+         TestRunner/TestProcessRunnerBase.cs/TestRunnerBase.cs/TestResultsReader.cs (the old
+         VsTest-console-output-scraping runners MtpTestRunner replaced - unused by the Mtp path),
+         MtpTestDebugger.cs/TestRunner/TestDebuggerBase.cs ("run under debugger" - UnoDevelop's
+         test panel never exposed that option even under the old flat contract; not a regression). -->
+    <Compile Include="$(SharpDevelopSourceRoot)/src/AddIns/Analysis/UnitTesting/Mtp/*.cs" Link="Mtp/%(Filename)%(Extension)" />
+    <Compile Include="$(SharpDevelopSourceRoot)/src/AddIns/Analysis/UnitTesting/Model/*.cs" Link="Model/%(Filename)%(Extension)" />
+    <Compile Include="$(SharpDevelopSourceRoot)/src/AddIns/Analysis/UnitTesting/Service/*.cs" Link="Service/%(Filename)%(Extension)" />
+    <Compile Include="$(SharpDevelopSourceRoot)/src/AddIns/Analysis/UnitTesting/Interfaces/*.cs" Link="Interfaces/%(Filename)%(Extension)" />
+    <Compile Include="$(SharpDevelopSourceRoot)/src/AddIns/Analysis/UnitTesting/ImmutableStack.cs" Link="ImmutableStack.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)/src/AddIns/Analysis/UnitTesting/MultiDictionary.cs" Link="MultiDictionary.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)/src/AddIns/Analysis/UnitTesting/MtpTestFramework.cs" Link="MtpTestFramework.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)/src/AddIns/Analysis/UnitTesting/MtpTestProject.cs" Link="MtpTestProject.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)/src/AddIns/Analysis/UnitTesting/MtpTestRunner.cs" Link="MtpTestRunner.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)/src/AddIns/Analysis/UnitTesting/TestRunner/ITestRunner.cs" Link="TestRunner/ITestRunner.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)/src/AddIns/Analysis/UnitTesting/TestRunner/TestExecutionManager.cs" Link="TestRunner/TestExecutionManager.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)/src/AddIns/Analysis/UnitTesting/TestRunner/TestExecutionOptions.cs" Link="TestRunner/TestExecutionOptions.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)/src/AddIns/Analysis/UnitTesting/TestRunner/TestFinishedEventArgs.cs" Link="TestRunner/TestFinishedEventArgs.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)/src/AddIns/Analysis/UnitTesting/TestRunner/TestResultTask.cs" Link="TestRunner/TestResultTask.cs" />
+    <!-- RoslynTestScanner.cs: shared fast-path scanner (see doc/technotes/unit-testing.md
+         "Roslyn-assisted discovery"), used by MtpTestProject's tree seeding. -->
+    <Compile Include="$(SharpDevelopSourceRoot)/src/AddIns/Analysis/UnitTesting/Simple/RoslynTestScanner.cs" Link="Simple/RoslynTestScanner.cs" />
   </ItemGroup>
 
   <ItemGroup>
     <InternalsVisibleTo Include="UnoDevelop.Core.Tests" />
+    <!-- ServiceBootstrapper.cs (assembly "UnoDevelop") constructs SDTestService directly - it's
+         internal (default visibility, matching OpenDevelop's own declaration) rather than public
+         since only the bootstrapper should ever construct one. -->
+    <InternalsVisibleTo Include="UnoDevelop" />
   </ItemGroup>
 
   <ItemGroup>

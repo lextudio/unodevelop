@@ -32,6 +32,13 @@ internal sealed class UnoStatusBarService : IStatusBarService
         return progress.ProgressMonitor;
     }
 
+    public IProgressMonitor CreateCancellableProgressMonitor(CancellationTokenSource cancellationTokenSource)
+    {
+        var progress = new ProgressCollector(SD.MainThread.SynchronizingObject, cancellationTokenSource);
+        AddProgress(progress);
+        return progress.ProgressMonitor;
+    }
+
     public void AddProgress(ProgressCollector progress)
     {
         ArgumentNullException.ThrowIfNull(progress);
@@ -51,7 +58,7 @@ internal sealed class UnoStatusBarService : IStatusBarService
         currentProgress = progress;
         if (progress is null)
         {
-            MainPage.Current?.UpdateStatusBarProgress(null, -1, OperationStatus.Normal);
+            MainPage.Current?.UpdateStatusBarProgress(null, -1, OperationStatus.Normal, null);
             return;
         }
         progress.ProgressMonitorDisposed += progress_ProgressMonitorDisposed;
@@ -68,7 +75,13 @@ internal sealed class UnoStatusBarService : IStatusBarService
         Debug.Assert(sender == currentProgress);
         var p = currentProgress;
         if (p is not null)
-            MainPage.Current?.UpdateStatusBarProgress(p.TaskName, p.Progress, p.Status);
+        {
+            // Only hand MainPage a cancel action while the operation is still cancellable, so the
+            // status bar's cancel button disappears the moment cancellation has been requested
+            // rather than inviting the user to click it again with no effect.
+            MainPage.Current?.UpdateStatusBarProgress(p.TaskName, p.Progress, p.Status,
+                p.IsCancellable ? p.Cancel : null);
+        }
     }
 
     private void progress_ProgressMonitorDisposed(object? sender, EventArgs e)

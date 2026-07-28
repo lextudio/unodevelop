@@ -49,6 +49,8 @@
   <ItemGroup>
     <Compile Include="..\Src\AssemblyInfo.uno.cs" />
     <Compile Include="..\Src\SharpDevelopExtensions.uno.cs" />
+    <Compile Include="..\Src\Commands\SaveAllFiles.uno.cs" />
+    <Compile Include="..\Src\Parser\MinimalParserService.uno.cs" />
     <Compile Include="..\Src\Migration\BaseMigrationBatch.cs" />
     <Compile Include="..\Src\Workspace\WorkspaceDescriptor.cs" />
     <Compile Include="..\Src\LanguageServices\LanguageServiceContracts.cs" />
@@ -274,6 +276,23 @@
          Link="Upstream\Util\GenericConverter.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Util\ProgressCollector.cs"
          Link="Upstream\Util\ProgressCollector.cs" />
+    <!-- Needed by the classic ICSharpCode.UnitTesting backend (TestExecutionOptions.ProcessRunner,
+         TestResultTask's compiler-message-view style FileLineReference) - see
+         doc/technotes/unit-testing.md. Zero WPF/UI coupling. -->
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Util\ProcessRunner.cs"
+         Link="Upstream\Util\ProcessRunner.cs" />
+    <!-- Pulled in only because ProcessRunner.cs has an (unused but must-resolve) `using
+         ICSharpCode.SharpDevelop.Util;` - genuine gap, just wasn't linked yet. -->
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Util\EventAdapter.cs"
+         Link="Upstream\Util\EventAdapter.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Util\KeyComparer.cs"
+         Link="Upstream\Util\KeyComparer.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Gui\Pads\CompilerMessageView\FileLineReference.cs"
+         Link="Upstream\Gui\Pads\CompilerMessageView\FileLineReference.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Gui\Pads\CompilerMessageView\MessageViewCategoryTextWriter.cs"
+         Link="Upstream\Gui\Pads\CompilerMessageView\MessageViewCategoryTextWriter.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Util\NativeMethods.cs"
+         Link="Upstream\Util\NativeMethods.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Services\NavigationService\INavigationPoint.cs"
          Link="Upstream\Services\NavigationService\INavigationPoint.cs" />
 
@@ -484,6 +503,14 @@
              Link="Upstream\Project\TargetFrameworks\RedistLists.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Project\TargetFrameworks\TargetFramework.cs"
              Link="Upstream\Project\TargetFrameworks\TargetFramework.cs" />
+    <!-- Needed by the classic ICSharpCode.UnitTesting backend's MtpTestProject.GetTargetFrameworks -->
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Project\ProjectTargetFrameworkService.cs"
+             Link="Upstream\Project\ProjectTargetFrameworkService.cs" />
+    <!-- ITest.GoToDefinition's no-op default (TestBase.cs) - portable ICommand, no WPF coupling. -->
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Util\NotAvailableCommand.cs"
+             Link="Upstream\Util\NotAvailableCommand.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Parser\ISolutionSnapshotWithProjectMapping.cs"
+             Link="Upstream\Parser\ISolutionSnapshotWithProjectMapping.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Project\TargetFrameworks\DotNet2x.cs"
              Link="Upstream\Project\TargetFrameworks\DotNet2x.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Project\TargetFrameworks\DotNet4x.cs"

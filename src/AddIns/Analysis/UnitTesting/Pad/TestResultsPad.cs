@@ -6,7 +6,8 @@ using System.Threading.Tasks;
 using ICSharpCode.Core;
 using ICSharpCode.SharpDevelop;
 using ICSharpCode.SharpDevelop.LanguageServices;
-using ICSharpCode.UnitTesting.Simple;
+using ICSharpCode.UnitTesting;
+using ICSharpCode.UnitTesting.Mtp;
 using Microsoft.UI;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
@@ -21,9 +22,13 @@ using WpfToolBar = System.Windows.Controls.ToolBar;
 namespace UnoDevelop.UnitTesting;
 
 /// <summary>
-/// Test Explorer pad: a hierarchical tree of the discovered unit tests (target framework →
-/// project → namespace → class → method) with a toolbar to run/refresh, live per-test result
-/// icons, and status roll-up onto the parent nodes. Ported to match SharpDevelop's UnitTestsPad UX.
+/// Test Explorer pad: a hierarchical tree of the discovered unit tests (project → target
+/// framework → namespace → class → method) with a toolbar to run/refresh, live per-test result
+/// icons, and status roll-up onto the parent nodes. Consumes the classic
+/// ICSharpCode.UnitTesting.ITestService/ITestSolution/ITest tree directly (see
+/// doc/technotes/unit-testing.md) - no local grouping/rollup logic here, both the tree shape and
+/// the composite-result rollup onto container nodes are provided by the model itself
+/// (TestCollection.CompositeResult, wired via TestBase.BindResultToCompositeResultOfNestedTests).
 /// </summary>
 public sealed class TestResultsPad : UserControl
 {
@@ -34,26 +39,33 @@ public sealed class TestResultsPad : UserControl
     public WpfToolBar Toolbar => _toolbar!;
     public TreeView Tree => _treeView;
 
-    // Test key → leaf node, for O(1) live result updates.
-    private readonly Dictionary<string, TreeViewNode> _leafByKey = new(StringComparer.Ordinal);
+    // ITest -> its TreeViewNode, so a ResultChanged/DisplayNameChanged event (fired by the model,
+    // not by us) can update the right node in O(1), and so CollectionChanged handlers know which
+    // node's children to rebuild.
+    private readonly Dictionary<ITest, TreeViewNode> _nodeByTest = new();
+
+    // Client-side only: the model's TestResultType has no "running" state (None/Success/Failure/
+    // Ignored), so a live "currently executing" indicator has no home in the model - tracked here
+    // instead, cleared as soon as the model reports a real result via ResultChanged.
+    private readonly HashSet<ITest> _running = new();
 
     private static readonly Dictionary<TestResultType, string> Icons = new()
     {
-        [TestResultType.None] = "○",     // ○
-        [TestResultType.Passing] = "✓",  // ✓
-        [TestResultType.Failing] = "✗",  // ✗
-        [TestResultType.Skipped] = "∅",  // ∅
-        [TestResultType.Running] = "◔",  // ◔
+        [TestResultType.None] = "○",
+        [TestResultType.Success] = "✓",
+        [TestResultType.Failure] = "✗",
+        [TestResultType.Ignored] = "∅",
     };
+    private const string RunningIcon = "◔";
 
     private static readonly Dictionary<TestResultType, Color> IconColors = new()
     {
         [TestResultType.None] = Color.FromArgb(255, 180, 180, 180),
-        [TestResultType.Passing] = Color.FromArgb(255, 40, 180, 40),
-        [TestResultType.Failing] = Color.FromArgb(255, 220, 40, 40),
-        [TestResultType.Skipped] = Color.FromArgb(255, 180, 180, 40),
-        [TestResultType.Running] = Color.FromArgb(255, 60, 120, 220),
+        [TestResultType.Success] = Color.FromArgb(255, 40, 180, 40),
+        [TestResultType.Failure] = Color.FromArgb(255, 220, 40, 40),
+        [TestResultType.Ignored] = Color.FromArgb(255, 180, 180, 40),
     };
+    private static readonly Color RunningColor = Color.FromArgb(255, 60, 120, 220);
 
     public TestResultsPad()
     {
@@ -175,172 +187,127 @@ public sealed class TestResultsPad : UserControl
     public void Attach(ITestService testService)
     {
         _testService = testService;
-        testService.TestResultUpdated += OnTestResultUpdated;
-        testService.TestRunStarted += OnTestRunStarted;
-        testService.TestRunCompleted += OnTestRunCompleted;
+        testService.OpenSolutionChanged += OnOpenSolutionChanged;
         RefreshTests();
     }
 
-    private void OnTestRunStarted() { }
-
-    private void OnTestResultUpdated(TestResultInfo result)
-        => _ = DispatcherQueue.TryEnqueue(() => ApplyResult(result));
-
-    private void OnTestRunCompleted() { }
+    private void OnOpenSolutionChanged(object? sender, EventArgs e) => RefreshTests();
 
     public void RefreshTests() => _ = RefreshTestsAsync();
 
     public async Task RefreshTestsAsync()
     {
         if (_testService is null) return;
-        using var monitor = SD.StatusBar.CreateProgressMonitor();
-        monitor.TaskName = "Refreshing tests...";
-        _testService.RefreshTests();
-        var tests = await Task.Run(() => _testService.GetTests(monitor));
-        var lastResults = _testService.GetLastResults();
-        _ = DispatcherQueue.TryEnqueue(() => Rebuild(tests, lastResults));
+        // Discovery starts an MTP host process per target framework and can take tens of seconds,
+        // so the status bar offers a cancel button for as long as this monitor lives rather than
+        // leaving the user to wait it out.
+        using var cancellation = new CancellationTokenSource();
+        using var monitor = SD.StatusBar.CreateCancellableProgressMonitor(cancellation);
+        monitor.TaskName = "Discovering tests...";
+
+        var solution = _testService.OpenSolution;
+        // Force a fresh MTP discovery pass on every already-known project - mirrors the explicit
+        // "Refresh Tests" UX this pad has always had. Discovery also happens automatically on
+        // solution-open and after every build (MtpTestProject.OnBuildFinished), this just lets the
+        // user ask for it on demand too. Accessing .NestedTests here is itself what lazily triggers
+        // OnNestedTestsInitialized() the very first time for a project never touched before.
+        //
+        // Awaiting every pass (rather than firing them off and rebuilding straight away) is what
+        // makes the rebuilt tree actually show the refreshed results: discovery spawns an MTP host
+        // process per target framework, so it completes well after this method's first continuation.
+        var refreshes = solution.NestedTests
+            .OfType<MtpTestProject>()
+            .Select(mtpProject => mtpProject.RefreshAsync(cancellation.Token))
+            .ToList();
+        await Task.WhenAll(refreshes);
+
+        // Rebuild even when cancelled: the tree still holds the approximate (Roslyn) results, and
+        // showing those beats leaving the pad looking like the refresh never happened.
+        _ = DispatcherQueue.TryEnqueue(() => Rebuild(solution));
     }
 
-    private void Rebuild(IReadOnlyList<TestInfo> tests, IReadOnlyDictionary<string, TestResultInfo> lastResults)
+    private void Rebuild(ITestSolution solution)
     {
-        _treeView.RootNodes.Clear();
-        _leafByKey.Clear();
-
-        foreach (var targetGroup in tests
-            .GroupBy(t => t.TargetFramework ?? string.Empty)
-            .OrderBy(g => g.Key, StringComparer.Ordinal))
-        {
-            var targetDisplay = string.IsNullOrWhiteSpace(targetGroup.Key) ? "(default target)" : targetGroup.Key;
-            var targetNode = new TreeViewNode
-            {
-                Content = new TestNodeData(targetDisplay),
-                IsExpanded = true,
-            };
-            _treeView.RootNodes.Add(targetNode);
-
-            foreach (var projectGroup in targetGroup
-                .GroupBy(t => t.ProjectName)
-                .OrderBy(g => g.Key, StringComparer.Ordinal))
-            {
-                var projectNode = GetOrAddChild(targetNode, "project:" + projectGroup.Key, projectGroup.Key);
-
-                foreach (var test in projectGroup.OrderBy(t => t.FullyQualifiedName, StringComparer.Ordinal))
-                {
-                    var (ns, className, method) = SplitFqn(test.FullyQualifiedName, test.DisplayName);
-
-                    var parent = projectNode;
-                    if (ns.Length > 0)
-                        parent = GetOrAddChild(parent, ns, ns);
-                    parent = GetOrAddChild(parent, className, className);
-
-                    var key = test.EffectiveKey;
-                    var initial = lastResults.TryGetValue(key, out var r)
-                        ? r.Result
-                        : TestResultType.None;
-                    var leaf = new TreeViewNode
-                    {
-                        Content = new TestNodeData(method, test.FullyQualifiedName, key, initial, test.TypeFullName, test.MethodName, test.ParameterCount),
-                    };
-                    parent.Children.Add(leaf);
-                    _leafByKey[key] = leaf;
-                }
-            }
-        }
-
         foreach (var root in _treeView.RootNodes)
-            RollUp(root);
-    }
+            if (root.Content is TestNodeData data)
+                UnbindRecursive(data.Test);
+        _treeView.RootNodes.Clear();
+        _nodeByTest.Clear();
 
-    private static TreeViewNode GetOrAddChild(TreeViewNode parent, string key, string display)
-    {
-        foreach (var child in parent.Children)
+        foreach (var project in solution.NestedTests.OrderBy(t => t.DisplayName, StringComparer.Ordinal))
         {
-            if (child.Content is TestNodeData data && !data.IsLeaf && data.Key == key)
-                return child;
+            var node = new TreeViewNode { IsExpanded = true };
+            _treeView.RootNodes.Add(node);
+            BindNode(node, project);
         }
-        var node = new TreeViewNode
-        {
-            Content = new TestNodeData(display) { Key = key },
-            IsExpanded = true,
-        };
-        parent.Children.Add(node);
-        return node;
     }
 
-    // Splits "Ns.Sub.Class.Method(args)" into (namespace, class, methodLabel).
-    private static (string Namespace, string ClassName, string Method) SplitFqn(string fqn, string displayName)
+    // Wires a TreeViewNode to the ITest it represents: subscribes to the model's own
+    // ResultChanged/DisplayNameChanged/NestedTests.CollectionChanged, then (re)builds its children.
+    // Re-entrant: NestedTests.CollectionChanged calls back into this same rebuild path, which is
+    // exactly how a project's approximate (Roslyn-scanned) children get replaced by MTP-confirmed
+    // ones once discovery completes in the background (MtpTestProject.PopulateTree() clears and
+    // repopulates NestedTestCollection - this only has to react, not know why it changed).
+    private void BindNode(TreeViewNode node, ITest test)
     {
-        var parenIndex = fqn.IndexOf('(');
-        var structural = parenIndex >= 0 ? fqn[..parenIndex] : fqn;
-        var parts = structural.Split('.');
-        if (parts.Length < 2)
-            return (string.Empty, string.Empty, displayName);
+        node.Content = new TestNodeData(this, test);
+        _nodeByTest[test] = node;
+        test.ResultChanged += OnTestResultChanged;
+        test.DisplayNameChanged += OnTestDisplayNameChanged;
+        test.NestedTests.CollectionChanged += (_, _) =>
+            _ = DispatcherQueue.TryEnqueue(() => RebuildChildren(node, test));
 
-        var method = parts[^1];
-        var className = parts[^2];
-        var ns = string.Join('.', parts[..^2]);
-
-        // Prefer the display name's method portion (keeps parameterized-test suffixes).
-        var prefix = (ns.Length > 0 ? ns + "." : string.Empty) + className + ".";
-        var methodLabel = displayName.StartsWith(prefix, StringComparison.Ordinal)
-            ? displayName[prefix.Length..]
-            : method;
-
-        return (ns, className, methodLabel);
+        RebuildChildren(node, test);
     }
 
-    private void ApplyResult(TestResultInfo result)
+    private void RebuildChildren(TreeViewNode node, ITest test)
     {
-        if (!_leafByKey.TryGetValue(result.EffectiveKey, out var leaf))
-            return;
-        if (leaf.Content is TestNodeData data)
-            data.SetResult(result.Result);
-        for (var node = leaf.Parent; node is not null; node = node.Parent)
-            RollUpSingle(node);
-    }
-
-    // Recompute a container node's aggregate status from its descendants.
-    private static void RollUp(TreeViewNode node)
-    {
-        if (node.Content is TestNodeData data && data.IsLeaf)
-            return;
         foreach (var child in node.Children)
-            RollUp(child);
-        RollUpSingle(node);
-    }
+            if (child.Content is TestNodeData data)
+                UnbindRecursive(data.Test);
+        node.Children.Clear();
 
-    private static void RollUpSingle(TreeViewNode node)
-    {
-        if (node.Content is not TestNodeData data || data.IsLeaf)
-            return;
-        data.SetResult(Aggregate(node.Children));
-    }
-
-    private static TestResultType Aggregate(IEnumerable<TreeViewNode> children)
-    {
-        var any = false;
-        var anyRunning = false;
-        var anyFailing = false;
-        var allSkipped = true;
-        var allDone = true;
-
-        foreach (var child in children)
+        foreach (var child in test.NestedTests.OrderBy(t => t.DisplayName, StringComparer.Ordinal))
         {
-            if (child.Content is not TestNodeData data)
-                continue;
-            any = true;
-            var r = data.Result;
-            if (r == TestResultType.Running) anyRunning = true;
-            if (r == TestResultType.Failing) anyFailing = true;
-            if (r != TestResultType.Skipped) allSkipped = false;
-            if (r == TestResultType.None || r == TestResultType.Running) allDone = false;
+            var childNode = new TreeViewNode { IsExpanded = true };
+            node.Children.Add(childNode);
+            BindNode(childNode, child);
         }
+    }
 
-        if (!any) return TestResultType.None;
-        if (anyRunning) return TestResultType.Running;
-        if (anyFailing) return TestResultType.Failing;
-        if (allSkipped) return TestResultType.Skipped;
-        return allDone ? TestResultType.Passing : TestResultType.None;
+    private void UnbindRecursive(ITest test)
+    {
+        test.ResultChanged -= OnTestResultChanged;
+        test.DisplayNameChanged -= OnTestDisplayNameChanged;
+        _running.Remove(test);
+        _nodeByTest.Remove(test);
+        // Safe to always enumerate (not gated on whether NestedTests was already initialized):
+        // every ITest reachable here came from a node this pad itself created via BindNode, which
+        // already touched .NestedTests once - this never lazily triggers a fresh discovery pass
+        // for a node the pad never visited.
+        foreach (var child in test.NestedTests)
+            UnbindRecursive(child);
+    }
+
+    private void OnTestResultChanged(object? sender, TestResultTypeChangedEventArgs e)
+    {
+        if (sender is not ITest test) return;
+        _running.Remove(test);
+        _ = DispatcherQueue.TryEnqueue(() =>
+        {
+            if (_nodeByTest.TryGetValue(test, out var node) && node.Content is TestNodeData data)
+                data.Refresh();
+        });
+    }
+
+    private void OnTestDisplayNameChanged(object? sender, EventArgs e)
+    {
+        if (sender is not ITest test) return;
+        _ = DispatcherQueue.TryEnqueue(() =>
+        {
+            if (_nodeByTest.TryGetValue(test, out var node) && node.Content is TestNodeData data)
+                data.Refresh();
+        });
     }
 
     private void SetAllExpanded(bool expanded)
@@ -358,34 +325,24 @@ public sealed class TestResultsPad : UserControl
             SetExpandedRecursive(child, expanded);
     }
 
-    private static IEnumerable<string> CollectLeafKeys(TreeViewNode node)
-    {
-        if (node.Content is TestNodeData data && data.IsLeaf && data.TestKey is not null)
-        {
-            yield return data.TestKey;
-            yield break;
-        }
-        foreach (var child in node.Children)
-            foreach (var key in CollectLeafKeys(child))
-                yield return key;
-    }
-
     private void OnTreeDoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
     {
-        if (TryResolveNode(e.OriginalSource) is not { Content: TestNodeData { IsLeaf: true } data })
+        if (TryResolveNode(e.OriginalSource) is not { Content: TestNodeData { Test: MtpTestMethod method } })
             return;
 
         e.Handled = true;
-        _ = NavigateToTestAsync(data);
+        _ = NavigateToTestAsync(method);
     }
 
     // Double-click-to-source: the MTP test host reports "class X, method Y" (location.type/
     // location.method), not a file/line - it has no reason to read PDBs just to answer
     // --list-tests. Roslyn already knows where every type/method is declared, so resolve the
     // rest here instead of waiting on the protocol to ever report source locations itself.
-    private static async Task NavigateToTestAsync(TestNodeData data)
+    private static async Task NavigateToTestAsync(MtpTestMethod method)
     {
-        if (string.IsNullOrEmpty(data.TypeFullName) || string.IsNullOrEmpty(data.MethodName))
+        var typeFullName = method.Node.LocationType;
+        var methodName = method.Node.LocationMethodName;
+        if (string.IsNullOrEmpty(typeFullName) || string.IsNullOrEmpty(methodName))
             return;
 
         var registry = ServiceSingleton.ServiceProvider.GetService(typeof(LanguageServiceRegistry)) as LanguageServiceRegistry;
@@ -393,7 +350,7 @@ public sealed class TestResultsPad : UserControl
         if (languageService is null)
             return;
 
-        var targets = await languageService.FindMemberAsync(data.TypeFullName, data.MethodName, data.ParameterCount, CancellationToken.None);
+        var targets = await languageService.FindMemberAsync(typeFullName, methodName, method.Node.LocationMethodParameterCount, CancellationToken.None);
         if (targets.Count == 0)
             return;
 
@@ -424,7 +381,7 @@ public sealed class TestResultsPad : UserControl
 
     private MenuFlyout BuildContextMenu(TreeViewNode? node)
     {
-        var running = _testService?.IsRunning ?? false;
+        var running = _testService?.IsRunningTests ?? false;
         var menu = new MenuFlyout();
 
         var run = new MenuFlyoutItem { Text = "Run", IsEnabled = node is not null && !running };
@@ -432,11 +389,11 @@ public sealed class TestResultsPad : UserControl
         menu.Items.Add(run);
 
         var runAll = new MenuFlyoutItem { Text = "Run All Tests", IsEnabled = !running };
-        runAll.Click += (_, _) => { if (_testService is not null) _ = _testService.RunAllTestsAsync(); };
+        runAll.Click += (_, _) => _ = RunAllAsync();
         menu.Items.Add(runAll);
 
         var stop = new MenuFlyoutItem { Text = "Stop", IsEnabled = running };
-        stop.Click += (_, _) => _testService?.Stop();
+        stop.Click += (_, _) => _testService?.CancelRunningTests();
         menu.Items.Add(stop);
 
         menu.Items.Add(new MenuFlyoutSeparator());
@@ -458,86 +415,75 @@ public sealed class TestResultsPad : UserControl
         return menu;
     }
 
+    public async Task RunAllAsync()
+    {
+        if (_testService is null || _testService.IsRunningTests) return;
+        var solution = _testService.OpenSolution;
+        MarkRunning(solution);
+        await _testService.RunTestsAsync([solution], new TestExecutionOptions());
+    }
+
     private async Task RunNodeAsync(TreeViewNode node)
     {
-        if (_testService is null || _testService.IsRunning) return;
-        var keys = CollectLeafKeys(node).Distinct().ToList();
-        if (keys.Count == 0) return;
-        await _testService.RunTestsAsync(keys);
+        if (_testService is null || _testService.IsRunningTests) return;
+        if (node.Content is not TestNodeData data) return;
+        MarkRunning(data.Test);
+        await _testService.RunTestsAsync([data.Test], new TestExecutionOptions());
+    }
+
+    // Client-side-only "running" indicator (see the field's own comment) - marks the selected
+    // test and everything already-known beneath it so the icon shows immediately, rather than
+    // staying on its last (possibly stale) result until the run actually completes.
+    private void MarkRunning(ITest test)
+    {
+        _running.Add(test);
+        if (_nodeByTest.TryGetValue(test, out var node) && node.Content is TestNodeData data)
+            data.Refresh();
+        foreach (var child in test.NestedTests)
+            MarkRunning(child);
     }
 
     public new void Dispose()
     {
         if (_testService is not null)
-        {
-            _testService.TestResultUpdated -= OnTestResultUpdated;
-            _testService.TestRunStarted -= OnTestRunStarted;
-            _testService.TestRunCompleted -= OnTestRunCompleted;
-        }
+            _testService.OpenSolutionChanged -= OnOpenSolutionChanged;
+        foreach (var root in _treeView.RootNodes)
+            if (root.Content is TestNodeData data)
+                UnbindRecursive(data.Test);
     }
 
     private sealed class TestNodeData : System.ComponentModel.INotifyPropertyChanged
     {
-        private TestResultType _result;
+        private readonly TestResultsPad _owner;
 
-        // Container node.
-        public TestNodeData(string displayName)
+        public TestNodeData(TestResultsPad owner, ITest test)
         {
-            DisplayName = displayName;
-            Key = displayName;
-            IsLeaf = false;
+            _owner = owner;
+            Test = test;
         }
 
-        // Leaf (test method) node.
-        public TestNodeData(
-            string displayName,
-            string fullyQualifiedName,
-            string testKey,
-            TestResultType result,
-            string? typeFullName = null,
-            string? methodName = null,
-            int? parameterCount = null)
+        public ITest Test { get; }
+
+        public string DisplayName => Test.DisplayName;
+
+        public string Icon => IsRunning ? RunningIcon : Icons.GetValueOrDefault(Test.Result, "○");
+
+        public Brush IconBrush => new SolidColorBrush(IsRunning ? RunningColor : IconColors.GetValueOrDefault(Test.Result, IconColors[TestResultType.None]));
+
+        public string ResultLabel => IsRunning
+            ? "Run..."
+            : Test.Result switch
+            {
+                TestResultType.Success => "Pass",
+                TestResultType.Failure => "Fail",
+                TestResultType.Ignored => "Skip",
+                _ => "",
+            };
+
+        private bool IsRunning => _owner._running.Contains(Test);
+
+        public void Refresh()
         {
-            DisplayName = displayName;
-            FullyQualifiedName = fullyQualifiedName;
-            TestKey = testKey;
-            Key = testKey;
-            _result = result;
-            IsLeaf = true;
-            TypeFullName = typeFullName;
-            MethodName = methodName;
-            ParameterCount = parameterCount;
-        }
-
-        public string DisplayName { get; }
-        public string? FullyQualifiedName { get; }
-        public string? TypeFullName { get; }
-        public string? MethodName { get; }
-        public int? ParameterCount { get; }
-        public string? TestKey { get; }
-        public string Key { get; set; }
-        public bool IsLeaf { get; }
-
-        public TestResultType Result => _result;
-
-        public string Icon => Icons.GetValueOrDefault(_result, "○");
-
-        public Brush IconBrush => new SolidColorBrush(IconColors.GetValueOrDefault(_result, IconColors[TestResultType.None]));
-
-        public string ResultLabel => _result switch
-        {
-            TestResultType.Passing => "Pass",
-            TestResultType.Failing => "Fail",
-            TestResultType.Skipped => "Skip",
-            TestResultType.Running => "Run...",
-            _ => "",
-        };
-
-        public void SetResult(TestResultType result)
-        {
-            if (_result == result)
-                return;
-            _result = result;
             Raise(nameof(Icon));
             Raise(nameof(IconBrush));
             Raise(nameof(ResultLabel));

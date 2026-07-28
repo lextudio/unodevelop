@@ -9,6 +9,7 @@ using ICSharpCode.SharpDevelop.Editor;
 using ICSharpCode.SharpDevelop.LanguageServices;
 using ICSharpCode.SharpDevelop.LanguageServices.Lsp;
 using ICSharpCode.SharpDevelop.LanguageServices.Roslyn;
+using ICSharpCode.SharpDevelop.Parser;
 using ICSharpCode.SharpDevelop.Project;
 using IBuildService = ICSharpCode.SharpDevelop.Project.IBuildService;
 using ICSharpCode.SharpDevelop.Gui;
@@ -17,7 +18,7 @@ using IOutputPad = ICSharpCode.SharpDevelop.Workbench.IOutputPad;
 using ILanguageService = ICSharpCode.SharpDevelop.ILanguageService;
 using IBookmarkManager = ICSharpCode.SharpDevelop.Editor.Bookmarks.IBookmarkManager;
 using IClipboard = ICSharpCode.SharpDevelop.IClipboard;
-using ICSharpCode.UnitTesting.Simple;
+using ICSharpCode.UnitTesting;
 
 namespace UnoDevelop.Services;
 
@@ -59,14 +60,15 @@ internal static class ServiceBootstrapper
         container.AddService(typeof(IStatusBarService), new UnoStatusBarService());
         container.AddService(typeof(IRecentOpen), new RecentOpen(propertyService.NestedProperties("RecentOpen")));
         container.AddService(typeof(IOutputPad), new UnoOutputPadService());
-        container.AddService(typeof(UnoTaskService), new UnoTaskService());
+        var unoTaskService = new UnoTaskService();
+        container.AddService(typeof(UnoTaskService), unoTaskService);
+        container.AddService(typeof(ITaskListService), new UnoTaskListService(unoTaskService));
         container.AddService(typeof(IBuildService), new UnoBuildService());
         container.AddService(typeof(IBookmarkManager), new UnoBookmarkManager());
         container.AddService(typeof(IClipboard), new UnoClipboardService());
         container.AddService(typeof(IUnoAddInContextMenuBuilder), new UnoAddInContextMenuBuilder());
         container.AddService(typeof(IUnoAddInMenuBarBuilder), new UnoAddInMenuBarBuilder());
         container.AddService(typeof(IUnoAddInToolbarBuilder), new UnoAddInToolbarBuilder());
-        container.AddService(typeof(ITestService), new TestService());
 
         var addInTree = new AddInTreeImpl(container.GetService(typeof(ApplicationStateInfoService)) as ApplicationStateInfoService);
         addInTree.Doozers.TryAdd("Pad", new PadDoozer());
@@ -87,6 +89,14 @@ internal static class ServiceBootstrapper
         (container.GetService(typeof(IProjectService)) as UnoProjectService)
             ?.LoadAddInProjectBindings(addInTree);
         InitializeFSharpAddIn(addInTree);
+
+        // TestSolution's constructor (the classic backend's ITestSolution) needs SD.ParserService.
+        container.AddService(typeof(IParserService), new MinimalParserService());
+
+        // SDTestService's constructor eagerly reads SD.AddInTree.BuildItems<TestFrameworkDescriptor>
+        // ("/SharpDevelop/UnitTesting/TestFrameworks") - must come after LoadBuiltInAddIns has
+        // parsed UnitTesting.addin's <TestFramework> entry, not just after IAddInTree itself exists.
+        container.AddService(typeof(ITestService), new SDTestService());
 
         // Services that require IAddInTree to be registered first
         container.AddService(typeof(IDisplayBindingService), new DisplayBindingService());
