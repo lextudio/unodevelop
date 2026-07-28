@@ -49,7 +49,8 @@
   <ItemGroup>
     <Compile Include="..\Src\AssemblyInfo.uno.cs" />
     <Compile Include="..\Src\SharpDevelopExtensions.uno.cs" />
-    <Compile Include="..\Src\Commands\SaveAllFiles.uno.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Commands\SaveAllFiles.cs"
+             Link="Upstream\Commands\SaveAllFiles.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Parser\MinimalParserService.cs"
              Link="Upstream\Parser\MinimalParserService.cs" />
     <Compile Include="..\Src\Migration\BaseMigrationBatch.cs" />
@@ -127,19 +128,28 @@
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Project\ProjectCustomToolOptions.cs"
              Link="Upstream\Project\ProjectCustomToolOptions.cs" />
     <Compile Include="..\Src\Gui\PadDescriptor.uno.cs" />
-    <Compile Include="..\Src\Gui\PadExtensions.uno.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Gui\PadExtensions.cs"
+             Link="Upstream\Gui\PadExtensions.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Gui\Pads\Stubs\ErrorListPadStub.cs"
              Link="Upstream\Gui\Pads\Stubs\ErrorListPadStub.cs" />
-    <Compile Include="..\Src\Gui\IToolboxProvider.uno.cs" />
-    <Compile Include="..\Src\Gui\IOutlineContentHost.uno.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Gui\IToolboxProvider.cs"
+             Link="Upstream\Gui\IToolboxProvider.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Gui\IOutlineContentHost.cs"
+             Link="Upstream\Gui\IOutlineContentHost.cs" />
     <Compile Include="..\Src\Workbench\WorkbenchPlatformBridge.cs" />
     <Compile Include="..\Src\Workbench\WorkbenchPlatformBridge.uno.cs" />
-    <Compile Include="..\Src\Workbench\AbstractPadContent.uno.cs" />
-    <Compile Include="..\Src\Workbench\IViewContent.uno.cs" />
-    <Compile Include="..\Src\Workbench\AbstractViewContent.uno.cs" />
-    <Compile Include="..\Src\Workbench\IWorkbenchWindow.uno.cs" />
-    <Compile Include="..\Src\Workbench\IWorkbench.uno.cs" />
-    <Compile Include="..\Src\Workbench\ViewContentEventArgs.uno.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Workbench\AbstractPadContent.cs"
+             Link="Upstream\Workbench\AbstractPadContent.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Workbench\IViewContent.cs"
+             Link="Upstream\Workbench\IViewContent.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Workbench\AbstractViewContent.cs"
+             Link="Upstream\Workbench\AbstractViewContent.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Workbench\IWorkbenchWindow.cs"
+             Link="Upstream\Workbench\IWorkbenchWindow.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Workbench\IWorkbench.cs"
+             Link="Upstream\Workbench\IWorkbench.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Workbench\ViewContentEventArgs.cs"
+             Link="Upstream\Workbench\ViewContentEventArgs.cs" />
     <Compile Include="..\Src\Editor\ITextMarker.uno.cs" />
     <Compile Include="..\Src\OptionPanels\IOptionPanel.cs" />
     <Compile Include="..\Src\OptionPanels\IOptionPanelDescriptor.cs" />
@@ -189,7 +199,8 @@
              Link="Upstream\Editor\ITextEditorExtension.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Editor\ITextAreaToolTipProvider.cs"
              Link="Upstream\Editor\ITextAreaToolTipProvider.cs" />
-    <Compile Include="..\Src\Editor\ToolTipRequestEventArgs.uno.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Editor\ToolTipRequestEventArgs.cs"
+             Link="Upstream\Editor\ToolTipRequestEventArgs.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Editor\Search\ISearchResult.cs"
              Link="Upstream\Editor\Search\ISearchResult.cs" />
     <Compile Include="..\Src\Editor\Search\SearchResultMatch.uno.cs" />
@@ -239,7 +250,8 @@
              Link="Upstream\Workbench\DisplayBinding\ExternalProcessDisplayBinding.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Workbench\DisplayBinding\IDisplayBindingService.cs"
              Link="Upstream\Workbench\DisplayBinding\IDisplayBindingService.cs" />
-    <Compile Include="..\Src\Workbench\IImage.uno.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Util\IImage.cs"
+             Link="Upstream\Util\IImage.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Services\StatusBar\StatusBarService.cs"
              Link="Upstream\Services\StatusBar\IStatusBarService.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Workbench\File\OpenedFile.cs"
@@ -252,10 +264,12 @@
              Link="Upstream\Workbench\File\IRecentOpen.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Workbench\File\FileHelpers.cs"
              Link="Upstream\Workbench\File\FileHelpers.cs" />
-    <Compile Include="..\Src\Project\ProjectBindingDescriptor.uno.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Project\ProjectBindingDescriptor.cs"
+             Link="Upstream\Project\ProjectBindingDescriptor.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Project\ProjectBindingDoozer.cs"
              Link="Upstream\Project\ProjectBindingDoozer.cs" />
-    <Compile Include="..\Src\Project\ProjectLoadException.uno.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Project\ProjectLoadException.cs"
+             Link="Upstream\Project\ProjectLoadException.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Project\ErrorProject.cs"
              Link="Upstream\Project\ErrorProject.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Project\Build\MultipleProjectBuildable.cs"
@@ -456,7 +470,8 @@
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Project\IProjectItemBackendStore.cs"
              Link="Upstream\Project\IProjectItemBackendStore.cs" />
 
-    <Compile Include="..\Src\Project\Behaviors\DotNetStartBehavior.uno.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Project\Behaviors\DotNetStartBehavior.cs"
+             Link="Upstream\Project\Behaviors\DotNetStartBehavior.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Project\Behaviors\ProjectBehavior.cs"
              Link="Upstream\Project\Behaviors\ProjectBehavior.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Project\Behaviors\ProjectBehaviorService.cs"
@@ -540,7 +555,8 @@
              Link="Upstream\Project\Behaviors\DefaultProjectBehavior.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Services\AmbienceService\DefaultAmbience.cs"
              Link="Upstream\Services\AmbienceService\DefaultAmbience.cs" />
-    <Compile Include="..\Src\Project\ProjectChangeWatcher.uno.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Project\ProjectChangeWatcher.cs"
+             Link="Upstream\Project\ProjectChangeWatcher.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Util\StringExtensions.cs"
              Link="Upstream\Util\StringExtensions.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Gui\WorkbenchSingletonBridge.cs"
@@ -570,6 +586,7 @@
              Link="Upstream\Project\TargetFrameworks\DotNet2x.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Project\TargetFrameworks\DotNet4x.cs"
              Link="Upstream\Project\TargetFrameworks\DotNet4x.cs" />
-    <Compile Include="..\Src\Project\CompilableProject.uno.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Project\CompilableProject.cs"
+             Link="Upstream\Project\CompilableProject.cs" />
   </ItemGroup>
 </Project>

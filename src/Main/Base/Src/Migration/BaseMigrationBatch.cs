@@ -5,18 +5,9 @@ public static class BaseMigrationBatch
     public static readonly string[] LinkedFiles =
     {
         "Gui/PadDescriptor.uno.cs",
-        "Workbench/IViewContent.uno.cs",
-        "Workbench/IWorkbenchWindow.uno.cs",
-        "Workbench/IWorkbench.uno.cs",
-        "Workbench/ViewContentEventArgs.uno.cs",
-        "Project/IProject.uno.cs",
-        "Project/ProjectItem.uno.cs",
-        "Project/ProjectBindingDescriptor.uno.cs",
         "Project/TargetFramework.uno.cs",
-        "Project/ProjectLoadException.uno.cs",
         "Project/UpstreamNamespaceStubs.uno.cs",
         "Workbench/IShutdownService.cs",
-        "Workbench/IPadContent.cs",
         "Workbench/ICustomizedCommands.cs",
         "Workbench/ViewContentServiceAttribute.cs",
         "Util/ICanBeDirty.cs",
