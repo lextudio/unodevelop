@@ -150,7 +150,10 @@
              Link="Upstream\Workbench\IWorkbench.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Workbench\ViewContentEventArgs.cs"
              Link="Upstream\Workbench\ViewContentEventArgs.cs" />
-    <Compile Include="..\Src\Editor\ITextMarker.uno.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Editor\DocumentServiceAttribute.cs"
+             Link="Upstream\Editor\DocumentServiceAttribute.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Editor\ITextMarker.cs"
+             Link="Upstream\Editor\ITextMarker.cs" />
     <Compile Include="..\Src\OptionPanels\IOptionPanel.cs" />
     <Compile Include="..\Src\OptionPanels\IOptionPanelDescriptor.cs" />
     <Compile Include="..\Src\OptionPanels\OptionPanel.cs" />
@@ -203,7 +206,8 @@
              Link="Upstream\Editor\ToolTipRequestEventArgs.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Editor\Search\ISearchResult.cs"
              Link="Upstream\Editor\Search\ISearchResult.cs" />
-    <Compile Include="..\Src\Editor\Search\SearchResultMatch.uno.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Editor\Search\SearchResultMatch.cs"
+             Link="Upstream\Editor\Search\SearchResultMatch.cs" />
     <Compile Include="..\Src\Editor\Search\UnoSearchResultsService.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Editor\IEditorControlService.cs"
              Link="Upstream\Editor\IEditorControlService.cs" />
@@ -226,7 +230,8 @@
              Link="Upstream\Services\Tasks\TagComment.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Services\Tasks\TaskServiceHostBridge.cs"
              Link="Upstream\Services\Tasks\TaskServiceHostBridge.cs" />
-    <Compile Include="..\Src\Services\FileService.uno.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Workbench\File\FileService.cs"
+             Link="Upstream\Workbench\File\FileService.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Parser\ParseInformation.cs"
              Link="Upstream\Parser\ParseInformation.cs" />
     <!-- LanguageBinding -->
@@ -563,8 +568,10 @@
              Link="Upstream\Gui\WorkbenchSingletonBridge.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Gui\Pads\Stubs\ClassBrowserIconServiceStub.cs"
              Link="Upstream\Services\ClassBrowserIcons\ClassBrowserIconServiceStub.cs" />
-    <Compile Include="..\Src\Services\ProjectService\ProjectService.uno.cs" />
-    <Compile Include="..\Src\Editor\Search\SearchResultsPad.uno.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Services\ProjectService\ProjectServiceCompatibility.cs"
+             Link="Upstream\Services\ProjectService\ProjectServiceCompatibility.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Gui\SearchResultsPad.cs"
+             Link="Upstream\Gui\SearchResultsPad.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Util\DotnetDetection.cs"
              Link="Upstream\Util\DotnetDetection.cs" />
     <!-- TargetFramework infrastructure -->
