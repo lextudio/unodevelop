@@ -12,4 +12,10 @@
     <ProjectReference Include="..\..\..\..\Main\Core\Project\ICSharpCode.Core.csproj" />
     <ProjectReference Include="..\..\..\..\Main\Base\Project\ICSharpCode.SharpDevelop.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="$(SharpDevelopSourceRoot)\src\AddIns\Misc\RegExpTk\Project\Src\RegexToolkitModel.cs"
+             Link="Upstream\RegexToolkitModel.cs" />
+    <None Include="RegExpTk.addin" CopyToOutputDirectory="Always" />
+  </ItemGroup>
 </Project>

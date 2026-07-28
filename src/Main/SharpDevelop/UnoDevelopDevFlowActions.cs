@@ -1343,6 +1343,37 @@ public static class UnoDevelopDevFlowActions
         });
     }
 
+    [DevFlowAction("ide-xml-tree-status",
+        Description = "Check the XML Tree View secondary view for the active workbench window. Returns {found, title, viewType} JSON.")]
+    public static string GetXmlTreeStatus()
+    {
+        return SD.MainThread.InvokeIfRequired(() =>
+        {
+            var window = SD.Workbench.ActiveWorkbenchWindow;
+            var treeView = window?.ViewContents
+                .FirstOrDefault(vc => vc.GetType().FullName == "ICSharpCode.XmlEditor.XmlTreeView");
+
+            if (treeView is null)
+            {
+                return JsonSerializer.Serialize(new
+                {
+                    found = false,
+                    activeFile = window?.ActiveViewContent?.PrimaryFileName?.ToString(),
+                    views = window?.ViewContents.Select(vc => vc.GetType().FullName).ToArray() ?? Array.Empty<string>()
+                });
+            }
+
+            return JsonSerializer.Serialize(new
+            {
+                found = true,
+                title = treeView.TabPageText,
+                viewType = treeView.GetType().FullName,
+                primaryFile = treeView.PrimaryFileName?.ToString(),
+                isDirty = treeView.IsDirty
+            });
+        });
+    }
+
     [DevFlowAction("ide-xaml-preview-status",
         Description = "Check the XAML Designer secondary view's preview status for the active workbench window. Returns {found, statusText, hasRenderedPreview} JSON.")]
     public static string GetXamlPreviewStatus()

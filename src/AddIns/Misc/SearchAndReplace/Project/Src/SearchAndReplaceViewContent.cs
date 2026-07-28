@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.Text.RegularExpressions;
 using ICSharpCode.Core;
+using ICSharpCode.SearchAndReplace.Portable;
 using ICSharpCode.SharpDevelop;
 using ICSharpCode.SharpDevelop.Editor;
 using ICSharpCode.SharpDevelop.Editor.Search;
@@ -25,7 +26,7 @@ public sealed class SearchAndReplaceViewContent : IViewContent
         "artifacts"
     };
 
-    private readonly ObservableCollection<SearchResultItem> _results = new();
+    private readonly ObservableCollection<PortableSearchResult> _results = new();
     private readonly Grid _control;
     private readonly TextBox _findText;
     private readonly TextBox _replaceText;
@@ -213,59 +214,21 @@ public sealed class SearchAndReplaceViewContent : IViewContent
             return;
         }
 
-        var matcher = CreateMatcher(pattern);
-        if (matcher is null)
-        {
-            return;
-        }
-
-        var fileCount = 0;
-        foreach (var file in EnumerateFiles(root))
-        {
-            fileCount++;
-            AddMatches(file, matcher);
-        }
-
-        _status.Text = $"{_results.Count} result(s) in {fileCount} file(s).";
-        PublishSearchResults(pattern);
-    }
-
-    private void AddMatches(string file, Func<string, IEnumerable<MatchRange>> matcher)
-    {
-        string text;
         try
         {
-            var info = new FileInfo(file);
-            if (info.Length > 4 * 1024 * 1024)
+            var options = CreateOptions(pattern, _replaceText.Text ?? string.Empty, root);
+            var results = new PortableSearchEngine().FindAll(options, out var fileCount);
+            foreach (var result in results)
             {
-                return;
+                _results.Add(result);
             }
 
-            text = File.ReadAllText(file);
+            _status.Text = $"{_results.Count} result(s) in {fileCount} file(s).";
+            PublishSearchResults(pattern);
         }
-        catch
+        catch (Exception ex) when (ex is ArgumentException or IOException)
         {
-            return;
-        }
-
-        var lineStarts = GetLineStarts(text);
-        foreach (var match in matcher(text))
-        {
-            var lineIndex = FindLineIndex(lineStarts, match.Index);
-            var lineStart = lineStarts[lineIndex];
-            var lineEnd = text.IndexOfAny(new[] { '\r', '\n' }, lineStart);
-            if (lineEnd < 0)
-            {
-                lineEnd = text.Length;
-            }
-
-            _results.Add(new SearchResultItem(
-                file,
-                lineIndex + 1,
-                match.Index - lineStart + 1,
-                match.Index,
-                match.Length,
-                text[lineStart..lineEnd].Trim()));
+            _status.Text = ex.Message;
         }
     }
 
@@ -284,180 +247,21 @@ public sealed class SearchAndReplaceViewContent : IViewContent
             return;
         }
 
-        var replacement = _replaceText.Text ?? string.Empty;
-        var replace = CreateReplacer(pattern, replacement);
-        if (replace is null)
+        try
         {
-            return;
+            var options = CreateOptions(pattern, _replaceText.Text ?? string.Empty, _lookInText.Text);
+            var changed = new PortableSearchEngine().ReplaceListed(_results, options);
+            _status.Text = $"Updated {changed} file(s).";
+            FindAll();
         }
-
-        var changed = 0;
-        foreach (var file in _results.Select(item => item.FilePath).Distinct(StringComparer.OrdinalIgnoreCase).ToArray())
+        catch (Exception ex) when (ex is ArgumentException or IOException)
         {
-            try
-            {
-                var original = File.ReadAllText(file);
-                var updated = replace(original);
-                if (!string.Equals(original, updated, StringComparison.Ordinal))
-                {
-                    File.WriteAllText(file, updated);
-                    changed++;
-                }
-            }
-            catch
-            {
-                // Keep replacing other listed files when one file is locked or unreadable.
-            }
-        }
-
-        _status.Text = $"Updated {changed} file(s).";
-        FindAll();
-    }
-
-    private Func<string, IEnumerable<MatchRange>>? CreateMatcher(string pattern)
-    {
-        if (_useRegex.IsChecked == true)
-        {
-            try
-            {
-                var regex = new Regex(pattern, GetRegexOptions());
-                return text => regex.Matches(text).Select(match => new MatchRange(match.Index, match.Length));
-            }
-            catch (ArgumentException ex)
-            {
-                _status.Text = ex.Message;
-                return null;
-            }
-        }
-
-        var comparison = _matchCase.IsChecked == true ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
-        return text => FindLiteralMatches(text, pattern, comparison);
-    }
-
-    private Func<string, string>? CreateReplacer(string pattern, string replacement)
-    {
-        if (_useRegex.IsChecked == true)
-        {
-            try
-            {
-                var regex = new Regex(pattern, GetRegexOptions());
-                return text => regex.Replace(text, replacement);
-            }
-            catch (ArgumentException ex)
-            {
-                _status.Text = ex.Message;
-                return null;
-            }
-        }
-
-        var comparison = _matchCase.IsChecked == true ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
-        return text => ReplaceLiteral(text, pattern, replacement, comparison);
-    }
-
-    private RegexOptions GetRegexOptions()
-    {
-        var options = RegexOptions.Multiline;
-        if (_matchCase.IsChecked != true)
-        {
-            options |= RegexOptions.IgnoreCase;
-        }
-
-        return options;
-    }
-
-    private IEnumerable<string> EnumerateFiles(string root)
-    {
-        var patterns = _fileTypesText.Text
-            .Split(new[] { ';', ',', ' ' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .DefaultIfEmpty("*.*")
-            .ToArray();
-
-        var searchOption = _includeSubdirectories.IsChecked == true ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
-        foreach (var pattern in patterns)
-        {
-            IEnumerable<string> files;
-            try
-            {
-                files = Directory.EnumerateFiles(root, pattern, searchOption);
-            }
-            catch
-            {
-                continue;
-            }
-
-            foreach (var file in files)
-            {
-                if (!IsInExcludedDirectory(root, file))
-                {
-                    yield return file;
-                }
-            }
+            _status.Text = ex.Message;
         }
     }
 
-    private static bool IsInExcludedDirectory(string root, string file)
-    {
-        var relative = Path.GetRelativePath(root, file);
-        var parts = relative.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-        return parts.Any(part => ExcludedDirectories.Contains(part));
-    }
-
-    private static IEnumerable<MatchRange> FindLiteralMatches(string text, string pattern, StringComparison comparison)
-    {
-        var index = 0;
-        while (index < text.Length)
-        {
-            index = text.IndexOf(pattern, index, comparison);
-            if (index < 0)
-            {
-                yield break;
-            }
-
-            yield return new MatchRange(index, pattern.Length);
-            index += Math.Max(pattern.Length, 1);
-        }
-    }
-
-    private static string ReplaceLiteral(string text, string pattern, string replacement, StringComparison comparison)
-    {
-        var result = new System.Text.StringBuilder(text.Length);
-        var index = 0;
-        while (index < text.Length)
-        {
-            var match = text.IndexOf(pattern, index, comparison);
-            if (match < 0)
-            {
-                result.Append(text, index, text.Length - index);
-                break;
-            }
-
-            result.Append(text, index, match - index);
-            result.Append(replacement);
-            index = match + pattern.Length;
-        }
-
-        return result.ToString();
-    }
-
-    private static int[] GetLineStarts(string text)
-    {
-        var starts = new List<int> { 0 };
-        for (var i = 0; i < text.Length; i++)
-        {
-            if (text[i] == '\n' && i + 1 < text.Length)
-            {
-                starts.Add(i + 1);
-            }
-        }
-
-        return starts.ToArray();
-    }
-
-    private static int FindLineIndex(int[] lineStarts, int index)
-    {
-        var position = Array.BinarySearch(lineStarts, index);
-        return position >= 0 ? position : Math.Max(0, ~position - 1);
-    }
+    private PortableSearchOptions CreateOptions(string pattern, string replacement, string root) =>
+        new(pattern, replacement, root, _fileTypesText.Text, _matchCase.IsChecked == true, _useRegex.IsChecked == true, _includeSubdirectories.IsChecked == true);
 
     private static DataTemplate CreateResultTemplate()
     {
@@ -465,9 +269,9 @@ public sealed class SearchAndReplaceViewContent : IViewContent
         {
             var panel = new StackPanel { Orientation = Orientation.Vertical, Spacing = 2, Margin = new Thickness(0, 2, 0, 2) };
             var location = new TextBlock { FontWeight = Microsoft.UI.Text.FontWeights.SemiBold };
-            location.SetBinding(TextBlock.TextProperty, new Binding { Path = new PropertyPath(nameof(SearchResultItem.Location)) });
+            location.SetBinding(TextBlock.TextProperty, new Binding { Path = new PropertyPath(nameof(PortableSearchResult.Location)) });
             var preview = new TextBlock { TextWrapping = TextWrapping.Wrap };
-            preview.SetBinding(TextBlock.TextProperty, new Binding { Path = new PropertyPath(nameof(SearchResultItem.Preview)) });
+            preview.SetBinding(TextBlock.TextProperty, new Binding { Path = new PropertyPath(nameof(PortableSearchResult.Preview)) });
             panel.Children.Add(location);
             panel.Children.Add(preview);
             return panel;
@@ -477,7 +281,7 @@ public sealed class SearchAndReplaceViewContent : IViewContent
 
     private static void CopySelectedResult(ListView resultList)
     {
-        if (resultList.SelectedItem is not SearchResultItem item)
+        if (resultList.SelectedItem is not PortableSearchResult item)
         {
             return;
         }
@@ -489,7 +293,7 @@ public sealed class SearchAndReplaceViewContent : IViewContent
 
     private static void JumpToSelectedResult(ListView resultList)
     {
-        if (resultList.SelectedItem is not SearchResultItem item)
+        if (resultList.SelectedItem is not PortableSearchResult item)
         {
             return;
         }
@@ -550,13 +354,6 @@ public sealed class SearchAndReplaceViewContent : IViewContent
         }
 
         return Environment.CurrentDirectory;
-    }
-
-    private sealed record MatchRange(int Index, int Length);
-
-    private sealed record SearchResultItem(string FilePath, int Line, int Column, int Offset, int Length, string Preview)
-    {
-        public string Location => $"{FilePath}:{Line}:{Column}";
     }
 
     private sealed class SearchAndReplaceNavigationPoint : INavigationPoint

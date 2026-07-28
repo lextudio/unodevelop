@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text.RegularExpressions;
 using ICSharpCode.Core;
+using ICSharpCode.RegExpTk.Portable;
 using ICSharpCode.SharpDevelop;
 using ICSharpCode.SharpDevelop.Workbench;
 using Microsoft.UI.Xaml;
@@ -14,8 +15,8 @@ namespace UnoDevelop.AddIns.Misc.RegExpTk;
 
 public sealed class RegularExpressionToolkitViewContent : IViewContent
 {
-    private readonly ObservableCollection<RegexMatchItem> _matches = new();
-    private readonly ObservableCollection<RegexGroupItem> _groups = new();
+    private readonly ObservableCollection<RegexToolkitMatch> _matches = new();
+    private readonly ObservableCollection<RegexToolkitGroup> _groups = new();
     private readonly Grid _control;
     private readonly TextBox _patternBox;
     private readonly TextBox _inputBox;
@@ -59,14 +60,14 @@ public sealed class RegularExpressionToolkitViewContent : IViewContent
         var quickInsert = new ComboBox
         {
             Header = "Insert",
-            ItemsSource = QuickInsert.Items,
-            DisplayMemberPath = nameof(QuickInsert.Name),
+            ItemsSource = RegexQuickInsert.Items,
+            DisplayMemberPath = nameof(RegexQuickInsert.Name),
             Margin = new Thickness(8, 0, 8, 0),
             MinWidth = 150
         };
         quickInsert.SelectionChanged += (_, _) =>
         {
-            if (quickInsert.SelectedItem is QuickInsert item)
+            if (quickInsert.SelectedItem is RegexQuickInsert item)
             {
                 _patternBox.SelectedText = item.Text;
                 quickInsert.SelectedIndex = -1;
@@ -117,7 +118,7 @@ public sealed class RegularExpressionToolkitViewContent : IViewContent
             ItemTemplate = CreateMatchTemplate(),
             Margin = new Thickness(8, 0, 4, 8)
         };
-        matchList.SelectionChanged += (_, _) => ShowGroups(matchList.SelectedItem as RegexMatchItem);
+        matchList.SelectionChanged += (_, _) => ShowGroups(matchList.SelectedItem as RegexToolkitMatch);
 
         var groupList = new ListView
         {
@@ -194,46 +195,28 @@ public sealed class RegularExpressionToolkitViewContent : IViewContent
         _groups.Clear();
         _replacementResultBox.Text = string.Empty;
 
-        try
-        {
-            var regex = new Regex(_patternBox.Text, GetOptions());
-            var matches = regex.Matches(_inputBox.Text);
-            foreach (Match match in matches)
-            {
-                _matches.Add(new RegexMatchItem(match));
-            }
+        var result = RegexToolkitEvaluator.Evaluate(
+            _patternBox.Text,
+            _inputBox.Text,
+            _replacementBox.Text,
+            new RegexToolkitOptions(_ignoreCase.IsChecked == true, _multiline.IsChecked == true, _singleline.IsChecked == true));
 
-            _replacementResultBox.Text = regex.Replace(_inputBox.Text, _replacementBox.Text);
-            _status.Text = $"{matches.Count} match(es).";
-        }
-        catch (Exception ex) when (ex is ArgumentException or RegexMatchTimeoutException)
+        if (result.ErrorMessage is not null)
         {
-            _status.Text = ex.Message;
+            _status.Text = result.ErrorMessage;
+            return;
         }
+
+        foreach (var match in result.Matches)
+        {
+            _matches.Add(match);
+        }
+
+        _replacementResultBox.Text = result.ReplacementResult;
+        _status.Text = $"{result.Matches.Count} match(es).";
     }
 
-    private RegexOptions GetOptions()
-    {
-        var options = RegexOptions.None;
-        if (_ignoreCase.IsChecked == true)
-        {
-            options |= RegexOptions.IgnoreCase;
-        }
-
-        if (_multiline.IsChecked == true)
-        {
-            options |= RegexOptions.Multiline;
-        }
-
-        if (_singleline.IsChecked == true)
-        {
-            options |= RegexOptions.Singleline;
-        }
-
-        return options;
-    }
-
-    private void ShowGroups(RegexMatchItem? item)
+    private void ShowGroups(RegexToolkitMatch? item)
     {
         _groups.Clear();
         if (item is null)
@@ -241,9 +224,9 @@ public sealed class RegularExpressionToolkitViewContent : IViewContent
             return;
         }
 
-        for (var i = 0; i < item.Match.Groups.Count; i++)
+        foreach (var group in item.Groups)
         {
-            _groups.Add(new RegexGroupItem(i, item.Match.Groups[i]));
+            _groups.Add(group);
         }
     }
 
@@ -293,36 +276,6 @@ public sealed class RegularExpressionToolkitViewContent : IViewContent
         text.SetBinding(TextBlock.TextProperty, new Binding { Path = new PropertyPath(path) });
         Grid.SetColumn(text, column);
         return text;
-    }
-
-    private sealed record RegexMatchItem(Match Match)
-    {
-        public string Value => Match.Value;
-        public int Index => Match.Index;
-        public int End => Match.Index + Match.Length;
-        public int Length => Match.Length;
-    }
-
-    private sealed record RegexGroupItem(int GroupIndex, Group Group)
-    {
-        public string Value => Group.Success ? Group.Value : string.Empty;
-        public int Index => Group.Success ? Group.Index : -1;
-        public int Length => Group.Success ? Group.Length : 0;
-    }
-
-    private sealed record QuickInsert(string Name, string Text)
-    {
-        public static IReadOnlyList<QuickInsert> Items { get; } = new[]
-        {
-            new QuickInsert("Ungreedy star", "*?"),
-            new QuickInsert("Word character", "\\w"),
-            new QuickInsert("Non-word character", "\\W"),
-            new QuickInsert("Whitespace", "\\s"),
-            new QuickInsert("Non-whitespace", "\\S"),
-            new QuickInsert("Digit", "\\d"),
-            new QuickInsert("Non-digit", "\\D"),
-            new QuickInsert("Word boundary", "\\b")
-        };
     }
 
     private sealed class RegexToolkitNavigationPoint : INavigationPoint

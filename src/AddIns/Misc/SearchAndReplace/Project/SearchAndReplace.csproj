@@ -13,4 +13,10 @@
 		<ProjectReference Include="..\..\..\..\Main\Base\Project\ICSharpCode.SharpDevelop.csproj" />
 	</ItemGroup>
 
+	<ItemGroup>
+		<Compile Include="$(SharpDevelopSourceRoot)\src\AddIns\Misc\SearchAndReplace\Project\Engine\PortableSearchEngine.cs"
+		         Link="Upstream\PortableSearchEngine.cs" />
+		<None Include="SearchAndReplace.addin" CopyToOutputDirectory="Always" />
+	</ItemGroup>
+
 </Project>

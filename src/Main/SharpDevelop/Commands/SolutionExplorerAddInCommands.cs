@@ -326,7 +326,7 @@ internal sealed class RunT4CustomToolSolutionExplorerCommand : SolutionExplorerC
 
 internal static class TextTemplatingBridge
 {
-    private const string RunnerTypeName = "UnoDevelop.TextTemplating.T4TemplateRunner";
+    private const string RunnerTypeName = "ICSharpCode.TextTemplating.T4TemplateRunner";
 
     public static bool IsT4File(string fileName)
     {

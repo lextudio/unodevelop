@@ -11,7 +11,7 @@
 
   <Path name="/UnoDevelop/MainMenu/Tools">
     <MenuItem id="ProcessT4Templates" label="Process T4 Templates..."
-              class="UnoDevelop.TextTemplating.GenerateT4Command" />
+              class="ICSharpCode.TextTemplating.GenerateT4Command" />
   </Path>
 
   <!-- docs/t4-templating.md: registered as real SharpDevelop CustomTools (auto-run-on-save via
@@ -19,9 +19,9 @@
   <Path name="/SharpDevelop/CustomTools">
     <CustomTool id="TextTemplatingFileGenerator"
                 fileNamePattern="\.tt$"
-                class="UnoDevelop.TextTemplating.TextTemplatingFileGeneratorCustomTool" />
+                class="ICSharpCode.TextTemplating.TextTemplatingFileGeneratorCustomTool" />
     <CustomTool id="TextTemplatingFilePreprocessor"
                 fileNamePattern="\.tt$"
-                class="UnoDevelop.TextTemplating.TextTemplatingFilePreprocessorCustomTool" />
+                class="ICSharpCode.TextTemplating.TextTemplatingFilePreprocessorCustomTool" />
   </Path>
 </AddIn>
