@@ -1,157 +1,235 @@
-Both OpenDevelop and UnoDevelop are open-source integrated development environments (IDEs) that started as SharpDevelop.
+# OpenDevelop Sync Ledger
 
-OpenDevelop is a few steps ahead of UnoDevelop in terms of features. How to modify UnoDevelop to match OpenDevelop's file structure and features?
+This file tracks which UnoDevelop components have been unified with OpenDevelop and which ones still need work.
 
-## Status check (2026-07-26)
+`externals/OpenDevelop/doc/technotes/` remains the shared home for feature-specific technical notes. This file is intentionally UnoDevelop-local because it records the state of this repo's migration.
 
-UnoDevelop's own `README.md` currently says the project is discontinued in favor of OpenDevelop. Decision: **UnoDevelop is being revived** — this document is the plan to bring it to feature/structure parity with OpenDevelop. `README.md` needs updating to drop the "discontinued" framing once work resumes (Phase 0 below).
+## Rules
 
-Git history gap for context: UnoDevelop has 8 commits total (early bootstrap); OpenDevelop has a long, active history. This sync is effectively resuming a paused project, not applying a small diff.
+- Prefer linking OpenDevelop source through `$(SharpDevelopSourceRoot)` over keeping UnoDevelop-local copies.
+- Keep Uno-specific UI in UnoDevelop when the OpenDevelop implementation is WPF-specific.
+- Move UI-free services and contracts into OpenDevelop first, then link them back into UnoDevelop.
+- Do not revive old SharpDevelop/NRefactory/Cecil parser infrastructure when Roslyn or LSP already owns the feature.
+- Use `ilspycmd` when inspecting binaries or NuGet packages for migration decisions.
 
-## Guiding principle
+## Unified
 
-Per `design.md`: contract-first migration — link/reuse upstream SharpDevelop or OpenDevelop source first, fill gaps with minimal placeholders, replace placeholders with real types later. No hand-ported duplicates, no diverging abstractions, keep the build green after every slice. Apply this to every phase below, not just the ones that mention it explicitly.
+### Source Root
 
-## Phase 0 — Unblock the base (prerequisite for everything else)
+- `SharpDevelopSourceRoot` now points at `externals/OpenDevelop`.
+- The old `externals/SharpDevelop` source dependency has been removed.
+- Future OpenDevelop bumps should be handled by build/test triage, not by reintroducing a second SharpDevelop fork.
 
-**Progress log (2026-07-26):**
+### Core / Base Infrastructure
 
-1. ✅ Done. `README.md` no longer says "discontinued"; now points at this doc.
-2. ✅ Mostly already done, verified by re-reading code (session5.md was itself stale — deleted separately). The 5 "unknowns" it listed are resolved in `src/Main/SharpDevelop/MainPage.SolutionExplorer.cs`: hit-test (`TryResolveNodeContext`), cursor-positioned flyout (`menu.ShowAt(SolutionTree, new FlyoutShowOptions { Position = e.GetPosition(SolutionTree) })`), and `SolutionOpenConditionEvaluator` all exist in code now (post the "Restructure to match SharpDevelop" commit, which moved this logic out of `MainPage.xaml.cs`). `BuildSolutionCommand`/`CancelBuildCommand` are implemented in `Commands/SolutionExplorerAddInCommands.cs:410,416` and registered in `Explorer.addin`. Remaining: this is verified by static code reading only — an actual runtime smoke test (right-click a node, confirm flyout + Build Solution appear) hasn't been run and should be the first thing Phase 1's test harness covers.
-3. ✅ Done — but the real bug was different from what `design.md` described. `NU1903` was firing because `Directory.Build.props` had `CentralPackageTransitivePinningEnabled=false`, so the `Directory.Packages.props` pin of `MessagePack 2.5.302` never actually applied to the vulnerable transitive `2.5.187` version pulled in by other packages. Fixed by flipping that flag to `true` — which then surfaced a second real bug: `System.Composition.AttributedModel`/`Runtime` were pinned to `8.0.0` while `Hosting`/`TypedParts` were pinned to `9.0.0`, an internally inconsistent set of central pins that only became an error (`NU1109` downgrade) once transitive pinning started being enforced. Fixed by bumping `AttributedModel`/`Runtime` to `9.0.0` to match. Full `dotnet build src/UnoDevelop.slnx -c Debug` now succeeds with 0 errors and zero `NU1903` warnings.
-   - Side fix needed to get the build green at all (found while investigating, unrelated to NU1903 itself): `src/UnoDevelop.slnx` referenced `Tests/DebugTestApp/DebugTestApp.csproj`, but that project lives at `Tests/fixtures/DebugTestApp/DebugTestApp.csproj` — stale path from a prior restructure. Fixed the `.slnx` reference.
-   - Also found and quarantined: `src/Tests/UnoDevelop.Core.Tests/UnoDevelopDependenciesSnapshotFactoryTests.cs` referenced a class (`UnoDevelopDependenciesSnapshotFactory`) and API (`BuildSnapshotAsync`) that no longer exist — the real implementation moved to `externals/OpenDevelop/externals/cps/.../SharpDevelopDependenciesSnapshotFactory` with a fully different API (`BuildTreeAsync`/`PruneSessionsExceptAsync`/`ClearAllAsync` over `MutableProjectTree`), while `docs/project-system.md` still describes the old API as current. The test was renamed to `.disabled` (excluded from compilation) rather than deleted. **Tracked as a Phase 1 task**: rewrite this test against the current API, and audit `project-system.md` for other stale API claims from the same "slice 43-49" section.
-4. 🔶 Partially done. Added `src/Build/rebuild-all.sh` (`./rebuild-all.sh [--build-only|--release]`) — builds `UnoDevelop.slnx` and optionally launches the app; verified working (`--build-only` succeeds, 0 errors). `MigrationPlan.md` kept as-is (still-relevant Wave 1 policy notes, not a placeholder to replace). **Not done**: the macOS `.app`/`.dmg` packaging step. Deliberately not attempted yet — `SharpDevelop.csproj` has `RuntimeIdentifiers` for `osx-arm64`/`osx-x64` commented out and no self-contained publish has ever been exercised for this project, unlike OpenDevelop (which already runs cross-platform via LibreWPF). Enabling and testing a real macOS publish is its own verification pass, not a safe drive-by edit; scoped as a follow-up: (a) uncomment/enable the RIDs, (b) do a self-contained `dotnet publish` and confirm it actually launches on macOS, (c) only then adapt OpenDevelop's `build/macos/build-application-bundle.sh` (which mirrors `ms-appx:///Resources` next to the executable — same Uno-Skia-macOS asset-resolution behavior noted in [[macos-drag-origin-chrome]]-adjacent memory) for UnoDevelop's `net10.0-desktop` TFM instead of OpenDevelop's `net10.0-windows`.
+- Core services are linked from OpenDevelop where possible: logging, message service, property service, resource service, string parser support, AddIn tree, and file/path utility types.
+- Base project infrastructure is substantially linked from OpenDevelop, including project items, build contracts, MSBuild support, target-framework metadata, project browser contracts, and utility schedulers.
+- `ProjectContentContainer`, `IParser`, `IAssemblyParserService`, parser events, and related compatibility interfaces are now linked from OpenDevelop instead of being Uno-only substitutes.
 
-**Unrelated warning noticed in passing** (not fixed, out of scope for Phase 0): `UnoDevelop.Debugger.csproj` has a dangling `ProjectReference` to `../../../../UnoRichText/src/LeXtudio.RichText/LeXtudio.RichText.csproj`, which doesn't exist (`MSB9008`). Worth a quick look whenever Debugger work is picked up (Phase 2.4).
+### Language Services
 
-## Phase 1 — Integration testing harness (lifted up: de-risks every later phase)
+- `ILanguageService`, `LanguageServiceRegistry`, Roslyn C#/VB service, LSP service, DTO contracts, completion, diagnostics, navigation, formatting, rename, code actions, and Roslyn resource-reference support live in OpenDevelop-linked source.
+- `IParserService` is now a compatibility facade backed by `LanguageServiceParserAdapter`.
+- UnoDevelop registers `LanguageServiceParserAdapter` instead of a local/minimal parser service.
+- The legacy parser direction is now:
 
-Moved ahead of core-services/AddIn work deliberately: once Phase 0 gives a reachable context menu + build command, a working test harness lets every subsequent phase land with regression coverage instead of manual verification, and catches breakage from Phase 1/2 churn early rather than at the end.
+```text
+IParserService
+    -> LanguageServiceRegistry
+        -> ILanguageService
+            -> Roslyn / LSP / NoOp
+```
 
-**Progress log (2026-07-26):**
+### Resource Files / Resource Editor
 
-1. ✅ Done — turned out to already be much more real than assumed. `UnoDevelop.IntegrationTests` was a fully-working 35-test xunit.v3/MTP suite that boots the real app over the DevFlow REST API, it just wasn't wired into `UnoDevelop.slnx` (fixed — added it as a solution project) and its csproj had stale path comments (fixed) referencing a `dotnet test` UnoDevelop/tests/... layout that doesn't match this repo. Verified by actually running it (`dotnet <built .dll>`): **35/35 pass, 0 failures, ~56s**, covering `BuildTests`, `DebuggerIntegrationTests`, `DevFlowAgentTests`, `GitAddInTests`, `ProbeTests`, `ProjectPropertyTests`, `SolutionExplorerTests`, `TestPanelTests`, `UnitTestingTests`, `VBBindingTests`, `XamlBindingTests` — this already covers the Phase 0 surface (solution open/close, `ide-build-solution`/`ide-is-building`) for real, not by static reading. Gap found: no test exercises the context-menu hit-test → flyout path itself (only the build action it would trigger); tracked as follow-up.
-2. ✅ Done. Ported OpenDevelop's `doc/technotes/integration-testing.md` conventions into a new `docs/integration-testing.md` (fixture/collection pattern, how to add a DevFlow-driven test, running/filtering commands, current coverage list). Along the way found and fixed two real bugs blocking `dotnet test` parity with OpenDevelop: (a) the project referenced `Microsoft.NET.Test.Sdk` + `xunit.runner.visualstudio`, which pull in the VSTest bridge that .NET 10's Microsoft.Testing.Platform now refuses to run alongside — removed both, kept `xunit.v3.mtp-v2` alone, matching OpenDevelop's shape; (b) added `OutputType=Exe` + `TestingPlatformDotnetTestSupport=true`. This gets `dotnet run --project ... --no-build` and direct-exe invocation fully working (verified). **Not fully matching OpenDevelop**: plain `dotnet test` still doesn't work — OpenDevelop's version of this also needs a repo-wide `global.json` `"test": {"runner": "Microsoft.Testing.Platform"}` opt-in, which I tried and reverted because it's all-or-nothing per repo and immediately broke `dotnet test src/Tests/UnoDevelop.Core.Tests` (still VSTest/NUnit-based). Tracked as follow-up: migrate `Core.Tests` off NUnit/VSTest before adding that opt-in, or accept `dotnet run`/direct-exe as this project's permanent invocation path.
-3. ⬜ Not started. Multi-targeting fixture work depends on Phase 2.2 landing first (as originally scoped).
-4. ⬜ Deferred as planned — `altcover.md`/CI wiring untouched.
+- `.resx`, `.resources`, `.ico`, and `.cur` parsing/saving use the shared `LeXtudio.OpenDevelop.ResourceFiles` library.
+- UnoDevelop's `LeXtudio.OpenDevelop.ResourceFiles` project now links the OpenDevelop source files directly.
+- UnoDevelop's ResourceEditor is an independent addin with a native Uno/WinUI surface while sharing the underlying resource-file model and reader/writer. OpenDevelop's WPF `ResourceEditor` addin is not linked into UnoDevelop directly.
 
-This absorbed what was previously Phase 4 (Testing & CI) — Phase 4 no longer exists as a separate later phase, its remaining scope (CI pipeline) is now Phase 1.4 above plus a final CI pass once all phases land.
+### Unit Testing
 
-## Phase 2 — Core services parity (blocks most AddIns)
+- The UI-free simple MTP testing pieces were moved into OpenDevelop and linked back:
+  `ITestService`, `TestService`, `TestProjectDetector`, `DotNetTestRunner`, plus shared MTP support.
+- UnoDevelop keeps the native pad/view layer locally.
+- Integration tests use the xUnit v3 in-process/MTP runner via `dotnet run --project ... -- ...`.
 
-These are load-bearing for everything ported afterward, in dependency order:
+### Templates, T4, NuGet, And Custom Tools
 
-1. ✅ **project-system — resolved (2026-07-26), 5 of 6 flagged files are non-issues, 1 genuine small gap remains.** User asked to actually implement the MEF/capabilities shim; investigation showed it was mostly already done and the doc's "not yet shimmed" claims were stale:
-   - `ProjectTreeFlagsExtensions.cs`, `MetadataExtensions.cs`, `DependencyExtensions.cs` (old) — **not real gaps**, as previously found: functionality already exists elsewhere in the shim or the file is intentionally retired.
-   - `IProjectTreeExtensions.cs` — **not a real gap.** Its 4 tree-navigation methods already live in `Tree/ProjectTreeExtensions.cs`; `FindChildForDependency` has its own shim in `ProjectSystemManaged/DependencyProjectTreeExtensions.cs` (confirmed it's actually called by the real, linked `DependenciesTreeBuilder.cs`); the last method, `GetBrowseObjectPropertiesViaSnapshotIfAvailable`, is only called by VS/WinForms-designer code (`WindowsFormsEditorProvider.cs`) that isn't part of UnoDevelop's surface at all.
-   - `ProjectRootImageProjectTreePropertiesProvider.cs` — **turned out to already be linked and building** (`ProjectSystemManaged/Microsoft.VisualStudio.ProjectSystem.Managed.csproj:187`), contradicting its own "MEF + IProjectCapabilitiesService not yet shimmed" comment — that comment was stale. Verified: `[Export]`/`[AppliesTo]`/`[Order]`/`IProjectCapabilitiesService` all genuinely compose via `RealMefHost.cs`'s real attributed MEF discovery (`Microsoft.VisualStudio.Composition`, not a fake), confirmed by building the shim project standalone. Updated the now-stale comment in the csproj.
-   - `AppDesignerFolderProjectTreePropertiesProvider.cs` — **the one real, confirmed gap.** Tried linking it the same way as everything else; it needs `IProjectTreeSettingsProvider`, `IProjectRuleSnapshot`, and `IProjectDesignerService`, none of which exist in this shim — genuine CPS SDK rule-snapshot plumbing, not MEF wiring (there is no broader "MEF/capabilities subsystem" missing after all). Left unlinked; it's low priority (cosmetic "AppDesigner"/Properties-folder tree icon only), tracked in `project-system.md`'s skipped-files table.
-   - Net effect: **Phase 2 item 1 is done.** No new MEF/capabilities subsystem needed to be built — it already existed and was already working; the only remaining loose end is one cosmetic icon provider gated on real CPS rule-snapshot support, which is out of scope until something in Phase 3 actually needs it. Full solution build verified green after these changes (`dotnet build src/UnoDevelop.slnx -c Debug` → 0 errors).
-2. ✅ **Resolved (2026-07-26): this assumption was wrong — UnoDevelop already has substantial, working multi-TFM support**, and OpenDevelop's own `multi-targeting.md` says as much in its own text ("This follows the multi-TFM experiment in UnoDevelop's `TestService` and `DotNetTestRunner`, adapted to OpenDevelop's existing `MtpTestProject`..." — i.e. OpenDevelop borrowed the idea from UnoDevelop, not the other way around). Verified in code: `project-system.md` documents per-TFM `DependenciesSnapshotSlice` dependency-tree nodes (slices 30-36ish) with real test coverage (`UnloadedMultiTargetProjectBuildsTargetFrameworkDependencySlices`), target-framework detection from both live MSBuild evaluation and unloaded-project XML fallback (handling incremental `<TargetFrameworks>$(TargetFrameworks);net8.0</TargetFrameworks>`-style accumulation). `language-services.md` documents per-TFM Roslyn `ProjectId` splitting with an editor UI TFM switcher. `src/Main/UnitTesting/Src/TestService.cs`/`DotNetTestRunner.cs` group and run tests per-TFM, resolving multiple `TargetFrameworks` from both live and unloaded projects — this is architecturally the same shape OpenDevelop's tech note describes (`ProjectTargetFrameworkService`, active-TFM selection, per-TFM test tree), just under different class names. Nothing further needed here to unblock Phase 3's project-type AddIns; if a gap remains it's in a specific AddIn's own TFM-awareness (e.g. WinForms/WPF template projects once those AddIns are ported), not in the core project-system layer.
-3. ✅ **msbuild / roslyn / csharp-roslyn** — resolved, see "Open decisions" item 1: no separate NRefactory-removal pass needed, `language-services.md`'s Roslyn work already covers it.
-4. 🔶 **debugging** — architecture decision resolved, implementation/test parity **not** resolved. See "Open decisions" item 2: UnoDevelop should still stay with the lighter `Main/Debugger` + `DebugService.cs`, not port `Debugger.Core`; however the current debugger integration tests are weaker than OpenDevelop's and should not be treated as proof that interactive debugging is complete. The current test run can pass after receiving a DAP `stopped` event and reading cached stack/locals even though the adapter exits immediately afterward. Follow-up: harden the tests to require a live break-mode session (`IsDebugging`/process-running state, current file/line, step/continue behavior) and then fix `DebugService` until those tests pass.
+- Template engine services are shared through OpenDevelop technotes and linked/shared base code.
+- T4 custom-tool service and observed-save support are aligned with the OpenDevelop direction.
+- NuGet source/search/service pieces used by project package management and AddIn package installation are aligned around shared service contracts.
+- SDK-style package-reference reading/editing and optional `dotnet restore` orchestration are shared through OpenDevelop's NuGet project helpers.
+- UnoDevelop's native project package manager dialog now uses those shared services for installed-package refresh, search, install, uninstall, update checks, update application, dependency preview, license metadata warning, and restore result reporting.
 
-## Phase 3 — AddIns to port, grouped and prioritized
+### Project System / CPS Shim
 
-Ranked by user-facing value and by how much Phase 2 they depend on. For each, prefer linking upstream OpenDevelop source over hand-porting (per `wpf-port-prefer-linking` memory/pattern).
+- CPS/project-tree and dependency-tree work is mostly unified around OpenDevelop's shared shim and technotes.
+- Multi-targeting support is already present in UnoDevelop and overlaps with OpenDevelop's documented target-framework service direction.
 
-**High priority (core IDE completeness):**
+### AddIns Already Unified Or Native-Equivalent
 
-- `AddIns/DisplayBindings/ILSpyAddIn` — you already have a full decompiler port in [[roma-ilspy-port]] (Roma project); check whether that work is reusable/relinkable here instead of a fresh port (`ilspy.md` technote).
-- `AddIns/DisplayBindings/ResourceEditor` — ✅ **Resolved (2026-07-26): already done natively, extended, not a fresh port.** Investigation found UnoDevelop already has a full native `Microsoft.UI.Xaml` equivalent, `src/Main/SharpDevelop/Workbench/ResourceViewerViewContent.cs` (501+ lines), already wired into the real file-open path (`MainPage.xaml.cs:1319`) and reusing the same shared `LeXtudio.OpenDevelop.ResourceFiles` library OpenDevelop's own WPF `ResourceEditor` AddIn uses — add/delete/edit string and boolean `.resx` entries, filter, save. Porting OpenDevelop's actual AddIn would mean reintroducing 5 WPF view types and a WPF-`DependencyObject`/`CommandBinding`/`Clipboard`-based ViewModel, which contradicts the native-UI-only decision already made for XamlDesigner (Phase 3 medium-priority item above). Gap found and closed: non-string/boolean resx entries (Bitmap/Icon/Cursor/Binary) previously had no support at all — extended `ResourceEntry` (shared library `Libraries/ResourceFiles/ResourceFileReader.cs`) with a `DisplaySummary` computed property (e.g. `"Icon (2,238 bytes)"` instead of a raw unreadable base64 blob), and updated both list templates in `ResourceViewerViewContent` to show it for non-editable entries (read-only summary cell swapped in per-row via an `IsEditable`-bound visibility converter, replacing the file-level-only `_canEdit` template choice that previously would have shown an editable-but-unusable raw-base64 TextBox for binary entries even in an editable .resx). Added `ResourceEditorTests.cs` + a new `src/Tests/fixtures/ResourceFixture/Sample.resx` fixture (string/boolean/Icon entries) and a `ide-resource-entries` DevFlow action exposing `Entries` for test inspection — verification in progress (see Phase 1 harness re-run below).
+- XML editor: bulk hand-copied OpenDevelop files have been replaced with linked OpenDevelop source.
+- Hex editor: reusable utility source is linked from OpenDevelop.
+- Resource editor: implemented as an independent native Uno addin over linked OpenDevelop resource-file services.
+- Icon editor: implemented as an independent native Uno addin over linked OpenDevelop icon/cursor parsing services.
+- Settings editor: implemented as a native Uno view over OpenDevelop's shared `.settings` document loader/saver.
+- AddIn manager/scout: uses shared AddIn infrastructure plus native Uno UI.
+- Android SDK/device managers: native Uno UI over portable service/CLI code.
+- XAML designer: stays native Uno/WinUI; do not port OpenDevelop WPF design surface directly.
 
-**Medium priority (depends on Phase 2 debugger/project-system decisions):**
+## Partially Unified
 
-- `AddIns/DisplayBindings/ClassDiagram`, `WorkflowDesigner` — these need the Debugger.Core scope decision from Phase 2.4 first. UnoDevelop already has its own XamlDesigner per `xaml-services.md`.
-- `AddIns/Analysis/CodeQuality`, `SourceAnalysis`, `Profiler` — depend on Roslyn/type-system decision (Phase 2.3).
-**Lower priority / evaluate-before-porting:**
-- `AddIns/Misc/AndroidDeviceManager`, `AndroidSdkManager`, `AddInManager2`, `ResourceToolkit` — ✅ **All four attempted (2026-07-26)**, per explicit instruction to attempt all regardless of size, with the two large ones deliberately scoped to contract-first slices rather than full ports:
-  - **AndroidDeviceManager** — ✅ full functional port. `AvdManagerService`/`AvdInfo` are pure CLI-wrapper/POCO code (zero WPF), ported verbatim. New native `AndroidDeviceManagerViewContent` (`Microsoft.UI.Xaml`, document tab, not OpenDevelop's floating WPF window) covers list/refresh/create/delete/launch AVDs via the real `avdmanager`/`emulator` tools. Wired into `SharpDevelop.csproj` + `UnoDevelop.slnx` + copy-output target, same pattern as XamlDesigner. DevFlow actions (`ide-open-android-device-manager`, `ide-android-device-refresh`, `ide-android-device-list`) + `AndroidToolsTests.cs`. Deliberately not ported: the hw.\*-property `AvdEditorWindow` config.ini editor (cosmetic/secondary).
-  - **AndroidSdkManager** — ✅ full functional port, same shape. `AndroidSdkManagerService`/`SdkPackage`/`SdkManagerOutputParser` ported verbatim (zero WPF). New native `AndroidSdkManagerViewContent`: flat sortable package list (installed/available/has-update) with install/uninstall by selection, via the real `sdkmanager` tool. Deliberately not ported: `SdkPackageTreeBuilder`/`SdkTreeNodes`' hierarchical tree grouping — a flat list carries the same information.
-  - **AddInManager2** — ✅ **fully implemented (2026-07-26)**, per explicit follow-up request to do this completely. `AddIns/Misc/AddinScout` already displayed loaded AddIns + enabled state read-only; first pass added a real enable/disable toggle (`AddInManager.Enable`/`Disable`/`SaveAddInConfiguration`, already linked into `ICSharpCode.Core.csproj` but never wired to any UI — persists to `AddIns.xml` under the user config directory; required setting `AddInManager.ConfigurationFileName` in `ServiceBootstrapper.cs`, which was never set at all). This pass added the NuGet-based install/uninstall pipeline previously deferred:
-    - **`AddInPackageInstaller`** (`src/Main/Base/Src/NuGet/AddInPackageInstaller.cs`) — downloads a package via `NuGet.Protocol`'s `DownloadResource`, extracts its payload (skipping NuGet's own OPC metadata: `_rels/`, `package/`, `[Content_Types].xml`, `*.nuspec`/`*.psmdcp`) into a folder under `AddInManager.UserAddInPath`, and fails if the package contains no `.addin` manifest — this is deliberately AddIn-specific, distinct from `UnoNuGetProject`'s project-reference install (still unimplemented/out of scope, `docs/nuget-manager.md` slice 4).
-    - **`AddInPackageManagerService`** (`src/Main/Base/Src/NuGet/AddInPackageManagerService.cs`) — ties `NuGetPackageSearchService`/`NuGetPackageSourceCatalog` (search/source-resolution, reused verbatim from the existing project-reference NuGet manager) to `AddInPackageInstaller` (download/extract) and the real upstream `AddInManager.AddExternalAddIns`/`RemoveExternalAddIns` (registration). Newly installed AddIns are enabled immediately for in-session visibility (upstream `AddExternalAddIns` alone only marks them for the next restart); uninstall likewise disables live before removing, so both are visible without restarting, mirroring the enable/disable toggle's immediate-feedback pattern. Found and fixed along the way: `AddInManager.UserAddInPath` was never set anywhere in this bootstrap (upstream's `CoreStartup.ConfigureUserAddIns` isn't called) — added to `ServiceBootstrapper.cs`.
-    - **Test seam, not a mock**: `AddInPackageManagerService` honors `UNODEVELOP_ADDIN_NUGET_SOURCE` (set by `UnoDevelopAppFixture`) to point NuGet source resolution at a local folder-based feed fixture (`Tests/fixtures/NuGetAddInFeed/LocalFeed/UnoDevelop.Tests.SampleAddIn.1.0.0.nupkg`, a real `.nupkg` built via `dotnet pack` with a minimal `.addin` manifest and no assembly payload) instead of the machine's real configured feeds — keeps tests deterministic and network-independent while still exercising the real `NuGet.Protocol` search/download code against a real (just local) source.
-    - **UI**: `AddInScoutViewContent` gained a "NuGet" tab (search box + results list + Install/Uninstall buttons), reusing the same view instance and `_addIns` list as the Tree/AddIns tabs.
-    - **DevFlow actions**: `ide-addin-nuget-search`, `ide-addin-nuget-install`, `ide-addin-nuget-uninstall` (added alongside existing `ide-open-addin-scout`/`ide-addin-scout-list`/`ide-addin-toggle-enabled`) + extended `AddInScoutTests.cs` (`SearchNuGet_FindsFixturePackageOnLocalFeed`, `InstallThenUninstall_RegistersAndRemovesAddIn`).
-    - **Deliberately still not ported**: package repositories UI (multiple configurable feeds beyond the standard NuGet source-resolution chain), update-checking, and license acceptance — OpenDevelop's WPF-coupled ViewModel pieces (`PackageRepositoriesViewModel`, `OfflineAddInViewModel`) with no native equivalent needed yet; the Model layer they'd sit on (3215 lines, confirmed entirely WPF-free) has no functional gap blocking them if requested later.
-  - **ResourceToolkit** — ✅ **fully upgraded (2026-07-26)** from directory-scoped lookup to real editor-caret AST resolution, code completion, unused-key detection, and rename refactoring, per explicit follow-up requests to do this "completely." Investigation found OpenDevelop's `Resolver/` folder is *entirely WPF-free* and already has a Roslyn-based resolver chain (`RoslynResourceResolver`/`BclRoslynResourceResolver`/`ICSharpCodeCoreRoslynResourceResolver`, ~540 lines) living alongside the dead NRefactory path — the original "~50-file dual-resolver" size estimate was dominated by NRefactory files that don't need porting at all (confirmed dead in this codebase per Phase 2's earlier finding).
-    - **Shared C#/VB resolver, moved to the Base layer.** Per explicit steer mid-session ("move roslyn service upper level, and shared by CS and VB addin"): `ResourceReferenceResolver` (facade) + `CSharpResourceReferenceResolver` + `VBResourceReferenceResolver` live in `src/Main/Base/Src/LanguageServices/Roslyn/` (compiled into `ICSharpCode.SharpDevelop.csproj`, which gained a new `ProjectReference` to `Libraries/ResourceFiles`), not the app-layer `SharpDevelop.csproj` — the initial placement violated layering (Base can't depend on App) and only served C#. The facade dispatches by `document.Project.Language`/file extension so both `CSharpVBLanguageService`'s C# and VB documents share one code path; `VBResourceReferenceResolver` mirrors the C# matcher using `Microsoft.CodeAnalysis.VisualBasic.Syntax` types, with one real language difference handled explicitly: VB has no distinct element-access syntax node (`X("key")` parses as an `InvocationExpressionSyntax` with a bare `IdentifierNameSyntax` target, since arrays/indexers/calls are syntactically identical in VB).
-    - Faithful adaptation of `BclRoslynResourceResolver` + `ICSharpCodeCoreRoslynResourceResolver`'s syntax-node pattern matching (string-literal argument to `GetString`/`GetObject`/`GetStream`/`ApplyResources`/indexer calls). Deliberately does **not** port OpenDevelop's `RoslynAstCacheService` (a separate ad-hoc `SyntaxTree` cache outside the app's real Roslyn workspace) — neither ported resolver actually uses the `SemanticModel` parameter (verified against the source), so a plain per-call `CSharpSyntaxTree.ParseText`/`VisualBasicSyntaxTree.ParseText` is sufficient.
-    - **Editor-caret resolution**: `ide-resolve-resource-at-cursor` (args: `filePath`, `offset`) recognizes `ResourceService.GetString("key")` (resolved **live** via the real running `SD.ResourceService`) and BCL-style `GetString`/`GetObject`/`GetStream`/`ApplyResources`/indexer calls (resolved via `.resx` lookup scoped to the containing project directory). Works for both `.cs` and `.vb` files.
-    - **Code completion — real editor wiring, not just a DevFlow test hook.** `CSharpVBLanguageService.GetCompletionsAsync` (the actual completion path both the C# and VB `ILanguageService` instances share) now appends `.resx`-key completion items whenever the cursor sits inside a BCL-pattern key-string-literal argument, alongside whatever Roslyn's own `CompletionService` returns — real end-to-end integration, not a side channel. `ICSharpCode.Core.ResourceService.GetString("key")` is intentionally not offered here (`IResourceService` has no "list all registered keys" API). Along the way, found and fixed a real, pre-existing limitation in `ide-complete` itself: it only checked `LspServiceManager` (external-LSP languages like XAML/TypeScript), never `LanguageServiceRegistry` (the direct-Roslyn path `.cs`/`.vb` actually use) — `.cs`/`.vb` completion was silently a no-op before this fix.
-    - **Unused-key detection**: `ide-find-unused-resource-keys` (arg: `directory`) scans every `.resx` under the directory and every `.cs`/`.vb` file for BCL-pattern references, reporting string-type keys with zero references — the directory-scoped equivalent of OpenDevelop's `ResourceRefactoringService.FindUnusedKeys`/`UnusedResourceKeysViewContent` (which used the fuller `IResourceFileContent`/whole-solution-scope machinery this pass doesn't replicate).
-    - **Rename refactoring**: `ide-rename-resource-key` (args: `directory`, `oldKey`, `newKey`) renames the `.resx` entry and rewrites every matching BCL-pattern string-literal reference in `.cs`/`.vb` files under the directory, mirroring `ResourceRefactoringService.Rename`.
-    - **Two real bugs found and fixed while verifying this end-to-end** (not test flakiness):
-      1. `ide-resolve-resource-at-cursor`'s error-reporting field was named `"error"`, colliding with `UnoDevelopAppFixture.InvokeAsync`'s convention of treating any `"error"` JSON property as a fatal probe failure — renamed to `"resolveError"`/added a `resolved` flag (a not-found resource is legitimate action *output*, not an action *failure*).
-      2. **Serious, pre-existing data-loss bug**, not introduced by this work: `ResourceFileReader.SaveResX(fileName, entries, stream)` re-reads `fileName` from disk (`XDocument.Load`) to preserve `.resx` headers/whitespace, but both call sites that used it (`ResourceViewerViewContent.SaveToFile` — the *actual Save button* users would click — and my new rename action) opened their write stream via `File.Create(fileName)` *before* calling it, which truncates the file to zero bytes immediately on open. `SaveResX` then reloaded the now-empty file, silently producing a corrupted zero-byte `.resx` on every save. Fixed by adding a safe `SaveResX(fileName, entries)` overload that owns its own read-then-write ordering, and switching both call sites to it. Caught only because the rename test's fixture file ended up on disk as 0 bytes after a run — this had been live and unexercised by any prior test.
-    - Verified end-to-end (`ResourceToolkitTests.cs`, 9 tests; `ResourceEditorTests.cs` updated for the extra fixture key): BCL pattern (C# and VB) resolves `"Greeting"` → `"Hello from resx"` via the real `.resx`; Core pattern detects `ResourceService.GetString(...)` and calls the real live service; non-resource cursor position reports not-found; unused-key detection finds a deliberately-unreferenced fixture key while correctly excluding referenced ones; rename renames in the `.resx` and rewrites the referencing `.cs` file, verified via round-trip resolve, then restored so the fixture is repeatable; completion returns the real `.resx` key as a candidate at a live cursor position (required a directory fallback for ad-hoc single-file "projects" created by `UpsertDocumentAsync` when a file was never added to a real project). Broader regression sweep after all fixes: 30/30 tests pass across every AddIn touched this session (AddInScout, AndroidTools, XamlDesigner, ResourceEditor, ResourceToolkit, XamlBinding, ProjectProperty) — no regressions.
-    - **Still explicitly deferred, not attempted**: a real mouse-hover tooltip popup wired into the editor UI itself (the data is fully available via `ide-resolve-resource-at-cursor`, but there is zero existing precedent anywhere in this codebase for a pointer-hover-triggered popup in the Uno-ported editor — building that blind, with no way to verify it through the current DevFlow-driven test harness, was judged out of scope for this pass rather than shipped unverified).
-  - Common thread across all four: `winforms-migrate.md`'s premise (WinForms→WPF migration) doesn't apply here at all — none of OpenDevelop's WPF UI was ported; every new view is native `Microsoft.UI.Xaml`, consistent with the no-WPF decision already made for XamlDesigner/ResourceEditor.
-  - **Verified end-to-end, not just built.** Initial verification runs surfaced 4 real bugs, all now fixed and re-verified (isolated run: **15/15 tests pass, 0 failures**):
-    1. `ide-open-addin-scout`/`ide-open-android-device-manager`/`ide-open-android-sdk-manager` used `AppDomain.CurrentDomain.GetAssemblies()` to find their AddIn's type — fails when nothing else has forced that assembly to load yet (unlike XamlDesigner, which loads naturally via the real `AttachSubWindows` file-open flow). Fixed by adding a shared `FindAddInType` helper using the already-established `addIn.Runtimes → runtime.LoadedAssembly` pattern (see `ServiceBootstrapper.InitializeTextTemplatingAddIn`), which forces the load.
-    2. `ide-resource-entries` used C#'s `new { entry.Name, ... }` member-access shorthand, which infers PascalCase JSON property names (`"Name"`) — inconsistent with every other action's explicit lowercase (`name = entry.Name`). Fixed to match convention.
-    3. `AddInScoutTests`' own `.Contains("Xml")` check was case-sensitive against the real AddIn name `"XML Editor"` — fixed to `StringComparison.OrdinalIgnoreCase`.
-    4. **Real product bug**, not a test bug: `AddInManager.Enable`/`Disable` deliberately only set `addIn.Action` and persist to config for the *next restart* (per their own XML doc comments) — they never flip the live `addIn.Enabled` bool. My `ToggleEnabledByName` read `addIn.Enabled` to decide direction, so a second toggle recomputed the same direction instead of flipping back. Fixed by also setting `addIn.Enabled` directly for immediate in-session feedback (its setter already keeps `Action` in sync), alongside the existing persistence call.
-  - **Unrelated bug found and fixed in passing** (surfaced by a rebuild after the above, from the same untracked concurrent work referenced elsewhere in this doc): `UnoAddInCommandBarBuilder.cs` tried to set `.IsEnabled` on a `UIElement` (WinUI's `UIElement` has no such member; that's on `Control`) — fixed by checking `is Control control` first.
-  - **Also confirmed separately, not fixed** (real, pre-existing, unrelated to these four AddIns): `TestPanelTests.StopTests_CancelsRunInFlight` and `RunAllTests_ProducesExpectedResults` hang/timeout against the `TestService`/MTP run-all/stop-run path — a genuine defect in that pre-existing (concurrently-added) code, only now reachable because this session's Phase 0 fix made `UnitTesting.addin` load correctly for the first time. Blocks the *full* integration suite from completing; does not affect any of this session's own AddIn ports. Tracked as follow-up — needs its own investigation into `TestService.cs`/`MtpServerProcess.cs`.
+### Debugging
 
-- `AddIns/Analysis/MachineSpecifications` — niche test framework; confirm actual usage before investing.
-- `AddIns/BackendBindings/Scripting`, `AspNet.Mvc`, `TypeScript`, `WixBinding` — check current OpenDevelop usage/activity before committing; TypeScript may already be partially covered by UnoDevelop's LSP-based language services (`language-services.md`).
-- `AddIns/Misc/Reporting` — mostly legacy/niche
+- Decision: keep UnoDevelop's DAP-based `DebugService` and `Main/Debugger` surface.
+- Do not port OpenDevelop's Windows/COM-oriented `Debugger.Core` wholesale.
+- Still needed: stronger debugger parity tests for live break mode, stepping, continue, current file/line, locals, expression evaluation, and failure handling.
 
-**Explicitly mapping to Uno equivalent** (Uno-native equivalents already exist — don't duplicate them): `AvalonEdit.AddIn` (→ UnoEdit), anything requiring `AvalonDock` (→ UnoDock), `SharpTreeView`-based UI (→ UnoDevelop's own tree views). Libraries `AvalonEdit`, `AvalonDock`, `SharpTreeView`, `WPFToolkit`, `GraphSharp`, `IQToolkit`, `Noesis.Javascript`, `SharpSvn` (superseded by SubversionAddIn's actual VCS lib choice), `RhinoMocks` (prefer current test framework) fall in the same "don't port, already superseded" bucket.
+### Parser Compatibility
 
-## Phase 4 — Documentation parity
+- `LanguageServiceParserAdapter` now covers legacy `Parse*`, owner-project tracking, parse events, snapshots, and safe unknown resolve fallbacks.
+- Still needed: richer Roslyn-backed symbol/context mapping for old `Resolve*` callers if any real feature still depends on NRefactory-style `ResolveResult`.
 
-Add UnoDevelop-side technotes (in `UnoDevelop/docs/`, following the existing style) for topics that currently have no equivalent, sourced from `OpenDevelop/doc/technotes/`:
+### Documentation
 
-- `debugging.md`, `multi-targeting.md`, `winforms-migrate.md`, `csharp-roslyn.md`/`roslyn.md`, `ilspy.md`, `altcover.md` (test coverage tooling), `codelens.md` (OpenDevelop itself hasn't started this — track it but don't prioritize implementation).
-- Skip porting `main-menu.md` as a doc — it's an OpenDevelop-specific bug investigation, not a feature spec.
-- `librewpf.md` has no equivalent need in UnoDevelop (it's a WPF-on-macOS runtime concern specific to OpenDevelop's stack; UnoDevelop runs on Uno Platform directly) — explicitly out of scope, don't create a parallel doc.
+- Feature technotes should live in `externals/OpenDevelop/doc/technotes/`.
+- This ledger remains local because it tracks UnoDevelop's migration state.
+- Avoid recreating parallel copies of every technote under `UnoDevelop/docs`.
 
-Testing & CI note: the former standalone "Phase 4 — Testing & CI" is now folded into Phase 1 (harness lifted up) plus ongoing per-AddIn fixture work during Phase 3 — `UnoDevelop.Core.Tests`/`fixtures/*` should gain a fixture alongside each Phase 3 AddIn port rather than as a separate later pass. A CI pipeline is still deferred until Phase 0's build script and Phase 1's harness are both stable.
+## Not Yet Unified
 
-## Open decisions needed before Phase 2 starts
+This section is intentionally split by OpenDevelop readiness. "Not unified" does not always mean
+"port it from OpenDevelop next": OpenDevelop itself still carries many historical SharpDevelop
+AddIns that are not part of the LibreWPF MVP path, or that still depend on WPF, WinForms,
+NRefactory, old debugger APIs, or Windows-only assumptions.
 
-1. ✅ **Resolved (2026-07-26): no separate NRefactory-removal pass needed.** `language-services.md` itself documents that NRefactory was referenced by only 3 UnoDevelop files, none of which did real work (`ShowCompletionWindow` etc. were typed against NRefactory but never called) — confirmed independently: no source file outside `bin`/`obj` build artifacts references `NRefactory` at all. There is no working NRefactory system to retire; `language-services.md`'s Roslyn `CSharpVBLanguageService`/`UnoDevelopRoslynWorkspace` work already fully satisfies what OpenDevelop's `csharp-roslyn.md`/`roslyn.md` describe as the target end-state (Roslyn-backed C#/VB, no NRefactory dependency). Phase 3's Analysis/BackendBindings AddIns can depend on Roslyn without additional groundwork.
-2. 🔶 **Partially resolved (2026-07-26): stay with the lighter `Main/Debugger`, do not port `Debugger.Core`; real debugger parity is still open.** Checked both implementations directly: OpenDevelop's `AddIns/Debugger` is 179 `.cs` files built on Windows-only COM interop (`Debugger.Core/Interop`, `ICorDebug`) — architecturally tied to the Windows-native CLR debugging API. UnoDevelop's `Main/Debugger` (8 files: pads + `IDebuggerService`) plus the real engine in `Main/SharpDevelop/Services/DebugService.cs` (DAP adapter process) is a smaller and architecturally better fit for a cross-platform Uno app; porting `Debugger.Core` wholesale would mean porting Windows-only code UnoDevelop cannot use.
+### OpenDevelop MVP / Shared Direction Exists
 
-   Important correction: the earlier "confirmed working" claim based on `DebuggerIntegrationTests` was too weak. Current logs show the DAP adapter can emit `stopped` for the breakpoint and then exit immediately (`Adapter exited. ExitCode=0`). The UnoDevelop tests still pass because they accept cached call-stack/locals data after the adapter is gone, and some paths silently return when JSON parsing or debugger data is unavailable. This is not equivalent to OpenDevelop's debugger integration coverage.
+These are the best candidates for further UnoDevelop convergence because OpenDevelop already has
+a modern technote, MVP implementation, or reusable UI-free service layer.
 
-   OpenDevelop's tests assert a stronger contract:
-   - clear/set breakpoint returns success and the exact line;
-   - `debug.start` reports `stopped=true`, current file, current line, `isDebugging`, and process-running state;
-   - locals contain specific values (`greeting`, `answer`);
-   - expression evaluation returns the expected value;
-   - debugger pads expose real item snapshots;
-   - step into/out/over updates the current frame and locals;
-   - continue hits a second breakpoint;
-   - missing target failures return promptly instead of hanging or leaving phantom state.
+- `AddIns/DisplayBindings/ILSpyAddIn`
+  - OpenDevelop direction: embed ILSpy through a hostable ILSpy engine/facade, not the legacy external-process launcher.
+  - UnoDevelop direction: use `ilspycmd` for investigation, share the ILSpy/decompiler engine, and build a native Uno view.
+  - Status: not unified.
+- `AddIns/Analysis/CodeCoverage`
+  - OpenDevelop direction: AltCover/MTP integration is documented and partly shared through the unit-testing layer.
+  - UnoDevelop direction: keep native UI, share test/coverage service logic where possible.
+  - Status: backend execution and tool deployment are unified for AltCover and Coverlet. UnoDevelop links OpenDevelop's coverage result model/parser, AltCover application wrapper, OpenCover settings files, project result-path helper, shared `AltCoverCoverageRunner`, shared `CoverletCoverageRunner`, shared run-result model, shared backend enum, and shared process/output helpers. AltCover and Coverlet are both resolved from the shared `bin/Tools/<ToolName>` layout populated from NuGet packages, and UnoDevelop's main app build copies that layout into the host output/publish directories. Uno's native coverage service keeps the native pad/commands but dispatches through the shared backend layer; AltCover is the default backend, Coverlet remains available as the second shared backend, the native pad exposes backend selection, and the DEBUG DevFlow probe can run a selected backend through `uno.probe.coverage.run(tool)`. Core fixture coverage now exercises both AltCover and Coverlet; remaining work is broader project-type/runtime matrix coverage and cleaning up OpenDevelop's unrelated missing addin reference build blockers.
+- `AddIns/Misc/PackageManagement`
+  - OpenDevelop direction: NuGet manager/package console work is documented.
+  - UnoDevelop direction: keep the native Uno package UI, but drive it through OpenDevelop shared NuGet services.
+  - Status: partially unified; SDK-style `PackageReference` read/add/update/remove is shared through `SdkStylePackageReferenceEditor` and used by `UnoNuGetProject` and the package manager UI. Higher-level project package operations use `NuGetProjectPackageOperationService` for edit + optional restore result reporting. Update discovery is shared through `NuGetPackageUpdateService`; direct dependency preview is shared through `NuGetPackageDependencyPreviewService`; package license metadata is shared through `NuGetPackageSearchService` and surfaced in the native Uno package manager. Full transitive/conflict resolution, explicit license-acceptance confirmation, and package-console workflows still need parity work.
+- `AddIns/Misc/SearchAndReplace`
+  - OpenDevelop source has portable search pieces already linkable.
+  - UnoDevelop should continue linking UI-free engine code and keep host UI local.
+  - Status: unified for the current MVP scope; portable file search/replace engine, default filters, auto-open limit, scope model, run result models, replace plan models, result grouping models, cancellation/progress hooks, and workflow service are shared through OpenDevelop and linked into UnoDevelop. Uno maps current document, open files, current project, solution, and directory scopes into the shared model while keeping native view/commands local. Replace plans changes before writing, asks for native Uno confirmation, applies the shared plan, and opens changed files for review only when the changed-file count is below the shared limit. Uno's native result list can display shared flat/file/project/project-file groupings. Detailed diff preview is intentionally deferred because git-backed review/revert is the simpler workflow.
+- `AddIns/BackendBindings/XamlBinding`
+  - OpenDevelop and UnoDevelop both have XAML language-service/design notes.
+  - UnoDevelop direction is native Uno/WinUI plus LSP/shared language-service contracts.
+  - Status: partially unified.
 
-   UnoDevelop should port that shape of coverage to its DevFlow actions before calling debugger work complete. Phase 3's Debugger-dependent AddIns (WorkflowDesigner, Profiler) should target the existing `IDebuggerService`/`DebugService` contract, but this contract needs stronger state reporting and real live-session tests first.
-3. ✅ **Resolved (2026-07-26): keep UnoDevelop's own native `Microsoft.UI.Xaml`-based XamlDesigner; do not port OpenDevelop's `WpfDesign`.** Found this is further along than `xaml-services.md`'s own status table claims ("not started") — `src/AddIns/DisplayBindings/XamlDesigner/Project/Src/XamlDesignerViewContent.cs` already exists (currently uncommitted/untracked) with a working read-only preview surface using `Microsoft.UI.Xaml.Markup.XamlReader.Load`, matching exactly the design `xaml-services.md` itself calls for ("必须用 Microsoft.UI.Xaml 重新实现" — must reimplement with Microsoft.UI.Xaml, can't link WPF XAML Studio source directly). Porting OpenDevelop's `WpfDesign` would mean importing WPF-specific design-surface code into a codebase that has already correctly concluded WPF source can't be linked here. **Follow-up needed** (not done in this pass, scope creep beyond a decision record): this `XamlDesigner` project isn't referenced by `UnoDevelop.slnx` or `SharpDevelop.csproj` yet, so it's currently dead code from the app's perspective — wiring it in and updating `xaml-services.md`'s stale "not started" status is real Phase 3 work.
-4. ✅ **Resolved (2026-07-26): partial reuse, not a direct relink.** Checked `Roma/src/Roma.Host` (the actual Uno-hosted port) vs `Roma/ext/ilspy` (a vendored upstream ILSpy checkout, same role as OpenDevelop's `externals/ilspy`). `Roma.Host` is a full standalone Uno application shell (its own `App.xaml`/`MainPage.xaml`, `ILSpy/AssemblyTree`, `ContextMenu`, `Search`, etc.) — not built as an embeddable pad/view, so it can't be relinked wholesale into UnoDevelop's `IViewContent`/AddIn model any more than OpenDevelop's WPF UI could. What *is* directly reusable: `ICSharpCode.Decompiler` itself — the cross-platform, UI-free decompiler engine both Roma and OpenDevelop vendor via their own `externals/ilspy` checkout. Plan: add the same `externals/ilspy` submodule to UnoDevelop (matching OpenDevelop's setup) for the engine, then build a new lightweight `ILSpyAddIn` `DisplayBinding`/`IViewContent` in UnoDevelop using `Microsoft.UI.Xaml` — following the same "new native UI, shared engine" pattern just confirmed for XamlDesigner (decision 3) rather than porting or relinking either WPF or Roma's standalone-app UI code. Roma's `ILSpy/AssemblyTree` and `ContextMenu` source is still a useful *reference* for UI structure even though it can't be relinked directly.
+### OpenDevelop Has Source, But Not A Clean MVP Migration Target
 
-5. ✅ **Resolved (2026-07-27): switched `SharpDevelopSourceRoot` from `externals/SharpDevelop` to `externals/OpenDevelop`, and removed the `externals/SharpDevelop` submodule entirely.** The 2026-07-26 attempt (see prior revision of this entry) reverted after hitting a wall of errors and concluding the two forks were too diverged to unify. That conclusion was wrong — the wall was real, but tractable once triaged file-by-file against a real build instead of by inspection. Every failure fell into one of four buckets, none of which required a redesign:
+These exist under `externals/OpenDevelop/src/AddIns`, but should not be treated as ready-to-link
+LibreWPF/OpenDevelop MVP components. Each needs a fresh decision: extract UI-free services into
+OpenDevelop first, then build native Uno UI if the feature still matters.
 
-   - **Dead/unused code with no HAS_UNO relevance** (e.g. `EmptyList.cs`'s Core-layer duplicate — the real `EmptyList<T>` already lives in `Libraries/ICSharpCode.TypeSystem.Abstractions`; `ParserBackend.cs` — OpenDevelop's `IParserService` already dropped the NRefactory-era backend-switch concept entirely). **Fix: delete the stale `<Compile Include>` line**, don't recreate the file.
-   - **Already-solved elsewhere in the old `SharpDevelop` fork, just never carried over to OpenDevelop's copy.** The old fork had `#if HAS_UNO`/`#if !HAS_UNO` guards, proven working, sitting in ~10 files (`BookmarkBase.cs`, `SDBookmark.cs`, `IEditorControlService.cs`, `DocumentUtilities.cs`, `SD.cs`, `CustomTool.cs`, `DefaultProjectBehavior.cs`, `MessageViewCategory.cs`, `MSBuildInternals.cs`, `SimpleViewContent.cs`). **Fix: port the exact same guard into OpenDevelop's current copy** (which had otherwise moved on independently — new features, refactors, bugfixes — so this was a surgical merge, not a revert to the old copy).
-   - **Genuine gaps: real, non-WPF-coupled files that simply weren't linked yet** (`NamespaceNameGenerator.cs`, `TextLocationConversionExtensions.cs`, `ProjectReferenceProjectItem.cs`, `ProjectBrowserPadStub.cs` — note: the *stub*, not the WPF `ProjectBrowserPad.cs` — `ProfileList.cs`/`Profile.cs`/`SupportedFramework.cs`, `DotNetSdkService.cs`/`DotNetSdkInfo.cs`). **Fix: add the missing `<Compile Include>` line.** Checked each for `System.Windows.*` usage first; all clean.
-   - **UnoDevelop trimmed enum members OpenDevelop kept from history** (`ItemType.PackageReference`, `TargetFramework.Net46`–`Net481`, `CompilerVersion.MSBuild80`–`MSBuild180`, plus the `Versions.cs` version constants and `RedistLists` entries they depend on). **Fix: add the members to OpenDevelop's copy** (additive, matches `DotnetDetection.uno.cs`'s local shim, which already had every `Is*Installed()` stub ready and waiting) rather than trim UnoDevelop's call sites down to the smaller set — per explicit steer to prefer extending upstream over narrowing local code.
+- `AddIns/DisplayBindings/ClassDiagram`
+  - Historical WPF/design-surface code; likely not a direct Uno link.
+  - Needs decision on whether Roslyn/type-system data is sufficient for a new native diagram surface.
+- `AddIns/DisplayBindings/WorkflowDesigner`
+  - Depends on old designer/debugger assumptions.
+  - Needs debugger-service parity and a native-host feasibility pass first.
+- `AddIns/DisplayBindings/Data`
+  - OpenDevelop has SDK-style migrated projects, but this is not clearly part of the LibreWPF MVP surface.
+  - Needs a product decision before porting.
+- `AddIns/DisplayBindings/FormsDesigner`
+  - Windows Forms designer stack is not a native Uno target.
+  - Treat as out of scope unless a separate designer-host strategy is approved.
+- `AddIns/Analysis/CodeQuality`
+  - Historical analysis UI and engine.
+  - Needs Roslyn-era relevance check before migration.
+- `AddIns/Analysis/SourceAnalysis`
+  - Likely StyleCop-era integration.
+  - Needs Roslyn analyzer/code-action alignment before migration.
+- `AddIns/Analysis/Profiler`
+  - Depends on debugger/test-service contracts.
+  - Needs live debugger parity before it is a sensible Uno target.
+- `AddIns/Analysis/MachineSpecifications`
+  - Niche test-framework support.
+  - Needs real usage signal before investing.
+- `AddIns/BackendBindings/Scripting`
+  - Check whether OpenDevelop's NuGet/package-console scripting work supersedes it.
+- `AddIns/BackendBindings/AspNet.Mvc`
+  - Historical project-type support; likely not MVP.
+  - Needs SDK-style ASP.NET Core relevance check.
+- `AddIns/BackendBindings/TypeScript`
+  - UnoDevelop may already cover the useful path through LSP.
+  - Only migrate OpenDevelop code if it adds project-system or tooling capability not covered by LSP.
+- `AddIns/BackendBindings/WixBinding`
+  - Historical project-type support; needs current WiX SDK relevance check.
+- `AddIns/Misc/Reporting`
+  - Legacy reporting designer/runtime; not clearly MVP.
+  - Needs product decision before porting.
 
-   **One real regression caught only by running tests, not by compiling**: the `MSBuildInternals.cs` guard-port initially skipped the `IgnoreMissingImports` branch inside `LoadProject` (assumed non-essential without checking) — this broke opening *any* real `.csproj` at runtime with `SDK 'Microsoft.NET.SDK.WorkloadAutoImportPropsLocator' specified could not be found`, silently returning `false` from `OpenSolutionOrProject` instead of throwing. Caught by `UnitTestingCodeCoveragePadIntegrationTests` failing 3/3 in `UnoDevelop.Core.Tests`. Lesson: a dropped guard that compiles clean is not proof it's safe — verify behaviorally, not just at compile time. Also found and fixed one genuinely stale test assertion (`FileNameTests.ImplicitConversion_ToString_ReturnsPath` expected a doubled leading slash that was itself the trace of an old bug OpenDevelop had already fixed).
+### UnoDevelop Already Has A Native Replacement
 
-   **Verified via**: `dotnet build src/UnoDevelop.slnx` (0 errors), `UnoDevelop.Core.Tests` (221/221 pass), `UnoDevelop.IntegrationTests` (69/70 pass — the 1 failure, `DebuggerIntegrationTests.StepIntoAndStepOver_UpdateCurrentFrameAndLocals`, is pre-existing and unrelated: no file this pass touched is anywhere in `Main/Debugger`/DAP code, and it's the exact gap already flagged in decision 2 above ("current debugger integration tests are weaker... harden tests... fix DebugService")).
+These should not be "unified" by linking OpenDevelop UI code. The correct work is to share service
+contracts or models only when useful.
 
-   **`externals/SharpDevelop` submodule fully removed** (`.gitmodules`, `git submodule deinit`, `.git/modules` cleanup) — it is no longer part of this repo. `Directory.Build.props`'s `SharpDevelopSourceRoot` property name is unchanged (renaming it would touch ~260 `<Compile Include>` lines across every csproj for no behavioral benefit) but now points at `externals/OpenDevelop`.
+- `AddIns/DisplayBindings/AvalonEdit.AddIn`: replaced by UnoEdit/editor integration.
+- `AddIns/DisplayBindings/WpfDesign`: replaced by UnoDevelop's native XAML designer direction.
+- `AddIns/DisplayBindings/ResourceEditor`: implemented as a native Uno addin over shared resource-file services.
+- `AddIns/DisplayBindings/IconEditor`: implemented as a native Uno addin using the shared `LeXtudio.OpenDevelop.ResourceFiles` icon/cursor parser. The old OpenDevelop WPF editor surface is not linked directly.
+- `AddIns/Misc/AddInManager2`: OpenDevelop's WPF-free `Model` layer (gallery search/paging,
+  install/update, license acceptance - `PackageRepositories`/`NuGetPackageManager`/`AddInSetup`/
+  `AddInManagerServices`) was moved into OpenDevelop's Base
+  (`externals/OpenDevelop/src/Main/Base/Project/Src/AddInManager/`) and is linked into UnoDevelop's
+  own Base assembly via `$(SharpDevelopSourceRoot)`, same pattern as `NuGetPackageSearchEngine.cs`.
+  `AddInManagerDialog.xaml.cs`'s "Online Gallery" tab consumes that engine directly (plain event
+  handlers, no MVVM) for paged search, install, update-available indicator, and a ContentDialog
+  license-acceptance prompt. See `externals/OpenDevelop/doc/technotes/addin-manager2.md` for the
+  full writeup, including the one known gap (license-acceptance timing is a close but not
+  byte-identical equivalent of OpenDevelop's synchronous WPF dialog).
+- `AddIns/Misc/AndroidDeviceManager` and `AddIns/Misc/AndroidSdkManager`: represented by native Uno views over portable CLI service code.
 
-   **Sustainable pattern for future OpenDevelop bumps** (this is now a repeatable maintenance loop, not a one-time migration): after `git submodule update` bumps `externals/OpenDevelop`, run a full build and triage each new compiler error into one of the four buckets above. Behavioral regressions won't show up as compiler errors — the `IgnoreMissingImports` miss above is the cautionary example — so a full test run (`UnoDevelop.Core.Tests` + `UnoDevelop.IntegrationTests`) is part of the loop, not optional.
+### OpenDevelop Historical Source To Leave Alone For Now
 
-6. ✅ **Resolved (2026-07-27): both previously-failing integration tests fixed; `UnitTesting` AddIn's non-UI code moved into OpenDevelop as shared source.**
+These are present in OpenDevelop because the repository still contains much of SharpDevelop, not
+because LibreWPF MVP has fully modernized them. Do not use their presence as a migration mandate.
 
-   - `DebuggerIntegrationTests.StepIntoAndStepOver_UpdateCurrentFrameAndLocals` — was never a UnoDevelop/`DebugService.cs` bug. Root-caused by manually driving the real DAP adapter (`sharpdbg`, `externals/OpenDevelop/externals/sharpdbg`) directly over the wire: a stray uncommitted local edit to `ManagedDebugger.cs`'s `SetupStepper` had step-in calling bare `stepper.Step(true)` instead of `stepper.StepRange(stepIn: true, [currentLineRange], 1)` — the bare form completes as soon as it leaves the *current instruction*, not the current line, so it never reaches the `call` it's supposed to enter and reports `STEP_NORMAL` at the same sequence point (looks like a no-op). Confirmed via sharpdbg's own `StepTests.SharpDbgCli_StepRequests_Returns_StoppedEventsAtCorrectLocation`, which asserts the exact same `MyClass.cs:20` → `AnotherClass.cs:7` step-in and was failing the same way before the fix. After a submodule reset discarded that uncommitted edit, `git show HEAD:.../ManagedDebugger.cs` turned out to already contain the correct `StepRange` form — the "regression" was local drift, not upstream, so nothing needed re-fixing after the reset; re-verified via the same integration test.
-   - `LayoutConfigurationTests.SaveAndRestoreLayout_RoundTripsPadsAndKeepsPanesLive` — genuine UnoDevelop bug: `MainPage.GetDockPaneDiagForTesting()` (`MainPage.xaml.cs`) assumed `LeftPane`/`RightPane`/`BottomPane`/`DocumentPane` are always non-null, but AvalonDock legitimately garbage-collects an empty anchorable pane (documented in the test's own `RightPane` comment) even without a layout restore — so the very first diagnostic call threw `NullReferenceException` on `RightPane.Children`. Fixed with a null-safe `DescribePaneChildren` helper.
-   - **`UnitTesting` AddIn's `ITestService`/`TestService`/`TestProjectDetector`/`DotNetTestRunner` moved into OpenDevelop** (`externals/OpenDevelop/src/AddIns/Analysis/UnitTesting/Simple/`, namespace `ICSharpCode.UnitTesting.Simple`), linked back into `UnitTesting.csproj` via `$(SharpDevelopSourceRoot)` — same pattern as `Mtp/*.cs` below it. These 4 files have zero WPF/UI coupling, so per the guiding principle they don't belong forked locally; `Pad/TestResultsPad.cs` (the actual native `Microsoft.UI.Xaml` UI) stays in UnoDevelop. Investigated first whether to instead migrate *to* OpenDevelop's own classic `ITestService`/`SDTestService`/`ITestFramework`/`ITestSolution`/`ITest` — concluded that's a different, intentional abstraction (multi-framework AddInTree discovery + tree-shaped `ITest` hierarchy for a `TreeView` pad), not a duplicate of UnoDevelop's deliberately flatter MTP-only/list-pad contract; forcing the fit would replace a simpler, already-correct design with a mismatched heavier one. Went the other direction instead — moved the leaner design to the shared repo so a future WPF port (e.g. LibreWPF) can link the same source instead of forking it again, same as OpenDevelop's `Mtp/*.cs` already does. `Mtp/MtpServerCapabilities.cs`/`MtpServerProcess.cs`/`MtpTestNode.cs` were confirmed byte-for-byte identical to UnoDevelop's local fork (formatting/namespace aside) and linked the same way; `MtpServerProcess`'s hardcoded `clientInfo.name = "OpenDevelop"` literal was made dynamic (`SD.MessageService.ProductName`) so linking doesn't misreport UnoDevelop's identity to the MTP test host.
-   - **Verified via**: `dotnet build src/UnoDevelop.slnx` (0 errors), `UnoDevelop.Core.Tests` (221/221 pass), `UnoDevelop.IntegrationTests` (**70/70 pass** — both prior failures now fixed).
+- `AddIns/Debugger/Debugger.Core`: Windows/COM/CorDebug-oriented; UnoDevelop should stay DAP-based.
+- Old NRefactory-backed pieces inside debugger, CSharpBinding, ResourceToolkit, or analysis AddIns.
+- WinForms-era dialogs, wait dialogs, settings panels, and designer surfaces.
+- WPF-only pane/view implementations when no UI-free model layer has been extracted.
+
+### Packaging / CI
+
+- macOS `.app`/`.dmg` packaging is not unified with OpenDevelop's packaging flow yet.
+- CI should wait until build scripts, integration tests, and package layout are stable.
+
+### Open Test Debt
+
+- Rewrite `UnoDevelopDependenciesSnapshotFactoryTests.cs.disabled` against the current OpenDevelop CPS API.
+- Add regression coverage for solution-explorer context-menu hit testing and flyout command routing.
+- Keep full integration verification on the MTP runner path documented in `AGENTS.md`.
+
+## Deliberately Not Unified
+
+- OpenDevelop WPF UI implementations should not be linked directly into UnoDevelop's Uno/WinUI host.
+- `AvalonEdit.AddIn`, `AvalonDock`, `SharpTreeView`, WPF Toolkit surfaces, and WPF-specific design surfaces map to Uno-native equivalents.
+- `librewpf.md` is OpenDevelop-specific and does not apply to UnoDevelop's Uno Platform host.
+- Old NRefactory/Cecil parser services should remain retired; new language-service capability belongs in Roslyn/LSP-facing contracts.
+
+## Verification Baseline
+
+Recent verification after the language-service/parser and docs cleanup:
+
+- `dotnet build src/Main/Base/Project/ICSharpCode.SharpDevelop.csproj -c Debug --no-restore`
+- `dotnet build src/Main/SharpDevelop/SharpDevelop.csproj -c Debug --no-restore`
+- `dotnet build src/Tests/UnoDevelop.Core.Tests/UnoDevelop.Core.Tests.csproj -c Debug --no-restore`
+- `dotnet build src/AddIns/Analysis/CodeCoverage/Project/CodeCoverage.csproj -c Debug --no-restore`
+- `dotnet test src/Tests/UnoDevelop.Core.Tests/UnoDevelop.Core.Tests.csproj -c Debug --no-build --filter FullyQualifiedName~UnitTestingCodeCoveragePadIntegrationTests`
+
+These UnoDevelop checks completed with `0 Error(s)`; remaining warnings are existing analyzer/platform warnings.

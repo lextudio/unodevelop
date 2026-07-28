@@ -2022,7 +2022,7 @@ internal sealed class UnoProjectService : IProjectService, IProjectServiceRaiseE
     {
         // Watches this project's .csproj for edits made outside the IDE (e.g. `dotnet add package`
         // in a terminal, or hand-editing the file) and reloads the in-memory project model + posts
-        // a targeted Solution Explorer refresh in response. See docs/project-system.md (Slice 50).
+        // a targeted Solution Explorer refresh in response. See externals/OpenDevelop/doc/technotes/project-system.md (Slice 50).
         private readonly ProjectFileChangeWatcher _changeWatcher;
 
         public UnoProjectModel(ProjectLoadInformation info)

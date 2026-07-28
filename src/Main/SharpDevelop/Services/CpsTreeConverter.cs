@@ -1,5 +1,5 @@
 // Slice 7: bridge CPS IProjectTree → TreeViewNode / ProjectBrowserNodeContext.
-// See docs/project-system.md.
+// See externals/OpenDevelop/doc/technotes/project-system.md.
 
 using System;
 using System.IO;

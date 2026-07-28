@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
-using System.Linq;
 using ICSharpCode.Core;
 using ICSharpCode.SharpDevelop;
 using ICSharpCode.SharpDevelop.Workbench;
@@ -14,7 +13,7 @@ using Microsoft.UI.Xaml.Media.Imaging;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Storage.Streams;
 
-namespace UnoDevelop.Workbench;
+namespace ICSharpCode.IconEditor;
 
 internal sealed class IconCursorViewerViewContent : IViewContent
 {
@@ -52,11 +51,9 @@ internal sealed class IconCursorViewerViewContent : IViewContent
         list.SelectionChanged += (_, _) => ShowFrame(list.SelectedItem as IconCursorFrame);
         list.DoubleTapped += (_, _) => CopySelectedFrame(list.SelectedItem as IconCursorFrame);
 
-        var menu = new MenuFlyout();
         var copy = new MenuFlyoutItem { Text = "Copy metadata" };
         copy.Click += (_, _) => CopySelectedFrame(list.SelectedItem as IconCursorFrame);
-        menu.Items.Add(copy);
-        list.ContextFlyout = menu;
+        list.ContextFlyout = new MenuFlyout { Items = { copy } };
 
         _previewStatus = new TextBlock
         {
@@ -104,69 +101,33 @@ internal sealed class IconCursorViewerViewContent : IViewContent
     }
 
     public string FilePath { get; }
-
     public object? Control => _control;
-
     public object? InitiallyFocusedControl => _control;
-
     public IWorkbenchWindow? WorkbenchWindow { get; set; }
-
     public event EventHandler? TabPageTextChanged;
-
     public string TabPageText { get; }
-
     public string TitleName { get; }
-
     public event EventHandler? TitleNameChanged;
-
     public string InfoTip { get; }
-
     public event EventHandler? InfoTipChanged;
-
-    public void Save(OpenedFile file, Stream stream)
-    {
-    }
-
-    public void Load(OpenedFile file, Stream stream)
-    {
-    }
-
+    public void Save(OpenedFile file, Stream stream) { }
+    public void Load(OpenedFile file, Stream stream) { }
     public IList<OpenedFile> Files => _files;
-
     public OpenedFile? PrimaryFile => _files[0];
-
     public FileName? PrimaryFileName => PrimaryFile?.FileName;
-
     public INavigationPoint BuildNavPoint() => new IconCursorNavigationPoint(FilePath);
-
     public bool IsDisposed { get; private set; }
-
     public event EventHandler? Disposed;
-
     public bool IsReadOnly => true;
-
     public bool IsViewOnly => true;
-
     public bool CloseWithSolution => true;
-
     public ICollection<IViewContent> SecondaryViewContents => Array.Empty<IViewContent>();
-
     public bool IsDirty => false;
-
     public event EventHandler? IsDirtyChanged;
-
     public bool SupportsSwitchFromThisWithoutSaveLoad(OpenedFile file, IViewContent newView) => false;
-
     public bool SupportsSwitchToThisWithoutSaveLoad(OpenedFile file, IViewContent oldView) => false;
-
-    public void SwitchFromThisWithoutSaveLoad(OpenedFile file, IViewContent newView)
-    {
-    }
-
-    public void SwitchToThisWithoutSaveLoad(OpenedFile file, IViewContent oldView)
-    {
-    }
-
+    public void SwitchFromThisWithoutSaveLoad(OpenedFile file, IViewContent newView) { }
+    public void SwitchToThisWithoutSaveLoad(OpenedFile file, IViewContent oldView) { }
     public object? GetService(Type serviceType) => null;
 
     public void Dispose()
@@ -297,29 +258,14 @@ internal sealed class IconCursorViewerViewContent : IViewContent
         }
 
         public string FileName { get; private set; }
-
         public string Description => FileName;
-
         public string FullDescription => FileName;
-
         public string ToolTip => FileName;
-
         public object NavigationData => FileName;
-
         public int Index => 0;
-
-        public void JumpTo()
-        {
-        }
-
-        public void FileNameChanged(string newName)
-        {
-            FileName = newName;
-        }
-
-        public void ContentChanging(object sender, EventArgs e)
-        {
-        }
+        public void JumpTo() { }
+        public void FileNameChanged(string newName) => FileName = newName;
+        public void ContentChanging(object sender, EventArgs e) { }
 
         public int CompareTo(object? obj)
         {

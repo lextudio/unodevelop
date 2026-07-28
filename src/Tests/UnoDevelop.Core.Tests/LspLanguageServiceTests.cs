@@ -38,7 +38,7 @@ namespace UnoDevelop.Core.Tests
         {
             // No process named this ever exists on PATH; the service must fall back to empty
             // results rather than throwing, matching the "no regression" fallback design
-            // (docs/language-services.md §3.2).
+            // (externals/OpenDevelop/doc/technotes/language-services.md §3.2).
             var spec = new LspServerLaunchSpec("nonexistent", "unodevelop-lsp-server-that-does-not-exist");
             var service = new LspLanguageService(spec, "file:///tmp");
 
@@ -114,7 +114,7 @@ namespace UnoDevelop.Core.Tests
         {
             // No preceding GetCodeActionsAsync call ever populated this id - must not throw,
             // same "quietly do nothing" posture as an unknown/stale id after the server *did*
-            // respond (docs/language-services.md §8.1).
+            // respond (externals/OpenDevelop/doc/technotes/language-services.md §8.1).
             var spec = new LspServerLaunchSpec("nonexistent", "unodevelop-lsp-server-that-does-not-exist");
             var service = new LspLanguageService(spec, "file:///tmp");
 

@@ -91,7 +91,7 @@ internal static class ServiceBootstrapper
         InitializeFSharpAddIn(addInTree);
 
         // TestSolution's constructor (the classic backend's ITestSolution) needs SD.ParserService.
-        container.AddService(typeof(IParserService), new MinimalParserService());
+        container.AddService(typeof(IParserService), new LanguageServiceParserAdapter());
 
         // SDTestService's constructor eagerly reads SD.AddInTree.BuildItems<TestFrameworkDescriptor>
         // ("/SharpDevelop/UnitTesting/TestFrameworks") - must come after LoadBuiltInAddIns has
@@ -105,7 +105,7 @@ internal static class ServiceBootstrapper
         var csharpVbLanguageService = new CSharpVBLanguageService();
         languageServiceRegistry.RegisterExtension(".cs", csharpVbLanguageService);
         languageServiceRegistry.RegisterExtension(".vb", csharpVbLanguageService);
-        // Pilot LSP backends (docs/language-services.md slices 5-6). Each process is started
+        // Pilot LSP backends (externals/OpenDevelop/doc/technotes/language-services.md slices 5-6). Each process is started
         // lazily on first document of its language; silently falls back to lexical-only
         // highlighting if the configured command isn't on PATH.
         var lspServerRegistry = LspServerRegistry.CreateDefault();
@@ -137,7 +137,7 @@ internal static class ServiceBootstrapper
         // for .tt / .t4 / .ttinclude files.
         InitializeTextTemplatingAddIn(addInTree);
 
-        // Custom tools (docs/t4-templating.md): builds the /SharpDevelop/CustomTools registry
+        // Custom tools (externals/OpenDevelop/doc/technotes/t4-templating.md): builds the /SharpDevelop/CustomTools registry
         // and wires auto-run-on-save (FileUtility.FileSaved) + auto-run-before-build.
         ICSharpCode.SharpDevelop.Project.CustomToolsService.Initialize();
     }

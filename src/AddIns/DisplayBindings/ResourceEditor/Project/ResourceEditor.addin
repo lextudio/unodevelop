@@ -1,0 +1,27 @@
+<AddIn name="Resource Editor"
+       author="UnoDevelop"
+       description="Views and edits resource files"
+       addInManagerHidden="preinstalled">
+  <Manifest>
+    <Identity name="UnoDevelop.ResourceEditor" version="1.0"/>
+  </Manifest>
+
+  <Runtime>
+    <Import assembly="UnoDevelop.ResourceEditor.dll"/>
+  </Runtime>
+
+  <Path name="/SharpDevelop/Workbench/FileFilter">
+    <FileFilter id="ResourceFiles"
+                insertbefore="AllFiles"
+                name="Resource files (*.resx;*.resources)"
+                extensions="*.resx;*.resources"
+                mimeType="text/xml"/>
+  </Path>
+
+  <Path name="/SharpDevelop/Workbench/DisplayBindings">
+    <DisplayBinding id="ResourceEditor"
+                    class="UnoDevelop.AddIns.DisplayBindings.ResourceEditor.ResourceEditorDisplayBinding"
+                    fileNamePattern="\.(resx|resources)$"
+                    title="Resource editor"/>
+  </Path>
+</AddIn>

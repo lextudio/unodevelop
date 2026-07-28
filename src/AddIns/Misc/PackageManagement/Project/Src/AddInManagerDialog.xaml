@@ -122,6 +122,76 @@
                   SelectionMode="Single"
                   ItemTemplate="{StaticResource ExtensionItemTemplate}" />
       </TabViewItem>
+
+      <TabViewItem Header="Online Gallery">
+        <Grid>
+          <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+          </Grid.RowDefinitions>
+
+          <StackPanel Grid.Row="0"
+                      Orientation="Horizontal"
+                      Spacing="8"
+                      Margin="0,4,0,4">
+            <TextBox x:Name="_gallerySearchBox"
+                     Width="220"
+                     PlaceholderText="Search gallery..." />
+            <Button Content="Search" Click="OnGallerySearch" />
+            <CheckBox x:Name="_galleryUpdatesOnlyCheckBox"
+                      Content="Updates only"
+                      Click="OnGallerySearch" />
+          </StackPanel>
+
+          <ListView x:Name="_galleryList"
+                    Grid.Row="1"
+                    SelectionMode="Single">
+            <ListView.ItemTemplate>
+              <DataTemplate>
+                <Grid Padding="4">
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                  </Grid.ColumnDefinitions>
+                  <StackPanel Grid.Column="0" Spacing="2">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                      <TextBlock Text="{Binding Id}" FontWeight="Bold" />
+                      <TextBlock Text="{Binding VersionLabel}"
+                                 Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                 FontSize="12" />
+                      <TextBlock Text="{Binding StatusLabel}"
+                                 FontSize="12"
+                                 Foreground="{ThemeResource SystemFillColorSuccessBrush}" />
+                    </StackPanel>
+                    <TextBlock Text="{Binding Summary}"
+                               FontSize="12"
+                               TextWrapping="Wrap"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                  </StackPanel>
+                  <Button Grid.Column="1"
+                          Content="{Binding ActionLabel}"
+                          Tag="{Binding}"
+                          IsEnabled="{Binding CanInstallOrUpdate}"
+                          Click="OnGalleryInstall"
+                          VerticalAlignment="Top"
+                          Margin="8,0,0,0" />
+                </Grid>
+              </DataTemplate>
+            </ListView.ItemTemplate>
+          </ListView>
+
+          <StackPanel Grid.Row="2"
+                      Orientation="Horizontal"
+                      Spacing="8"
+                      Margin="0,4,0,0">
+            <Button Content="◀ Previous" Click="OnGalleryPreviousPage" />
+            <TextBlock x:Name="_galleryPageLabel"
+                       VerticalAlignment="Center" />
+            <Button Content="Next ▶" Click="OnGalleryNextPage" />
+          </StackPanel>
+        </Grid>
+      </TabViewItem>
     </TabView>
 
     <TextBlock x:Name="_statusText"

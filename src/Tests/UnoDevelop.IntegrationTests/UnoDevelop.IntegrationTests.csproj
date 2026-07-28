@@ -4,7 +4,7 @@
        (port 9227 by default, overridable via DEVFLOW_AGENT_PORT). They depend on the #if DEBUG
        "uno.probe.tests.*" DevFlow actions in UnoDevelopDevFlowActions.cs.
        Full usage (prerequisites, running, filtering, coverage) is documented in
-       docs/integration-testing.md rather than here, since the exact commands involve a
+       externals/OpenDevelop/doc/technotes/integration-testing.md rather than here, since the exact commands involve a
        double-hyphen flag syntax that MSBuild's XML comment grammar rejects. -->
 
   <PropertyGroup>
@@ -27,7 +27,7 @@
          it's repo-wide and UnoDevelop.Core.Tests is still VSTest/NUnit-based, so it would break
          that project's own "dotnet test". Until Core.Tests migrates to MTP too (or this project's
          suite moves elsewhere), use "dotnet run" or invoke the built exe directly - see
-         docs/integration-testing.md for exact commands. -->
+         externals/OpenDevelop/doc/technotes/integration-testing.md for exact commands. -->
     <PackageReference Include="xunit.v3.mtp-v2" />
   </ItemGroup>
 

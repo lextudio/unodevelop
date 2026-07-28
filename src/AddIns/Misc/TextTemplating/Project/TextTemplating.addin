@@ -14,7 +14,7 @@
               class="ICSharpCode.TextTemplating.GenerateT4Command" />
   </Path>
 
-  <!-- docs/t4-templating.md: registered as real SharpDevelop CustomTools (auto-run-on-save via
+  <!-- externals/OpenDevelop/doc/technotes/t4-templating.md: registered as real SharpDevelop CustomTools (auto-run-on-save via
        CustomToolsService, not just the manual "Process T4 Templates..." command above). -->
   <Path name="/SharpDevelop/CustomTools">
     <CustomTool id="TextTemplatingFileGenerator"

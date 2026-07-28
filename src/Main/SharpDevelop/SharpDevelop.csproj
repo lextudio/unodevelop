@@ -41,6 +41,12 @@
 		<ProjectReference Include="..\..\AddIns\DisplayBindings\HexEditor\Project\HexEditor.csproj"
 		                  ReferenceOutputAssembly="false"
 		                  PrivateAssets="all" />
+		<ProjectReference Include="..\..\AddIns\DisplayBindings\IconEditor\Project\IconEditor.csproj"
+		                  ReferenceOutputAssembly="false"
+		                  PrivateAssets="all" />
+		<ProjectReference Include="..\..\AddIns\DisplayBindings\ResourceEditor\Project\ResourceEditor.csproj"
+		                  ReferenceOutputAssembly="false"
+		                  PrivateAssets="all" />
 		<ProjectReference Include="..\..\AddIns\DisplayBindings\XamlDesigner\Project\ICSharpCode.XamlDesigner.csproj"
 		                  ReferenceOutputAssembly="false"
 		                  PrivateAssets="all" />
@@ -200,8 +206,10 @@
 			<RegExpTkOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\Misc\RegExpTk\Project\bin\$(Configuration)\net10.0-desktop\UnoDevelop.RegExpTk.*" Exclude="**\*.addin" />
 			<SettingsEditorOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\DisplayBindings\SettingsEditor\Project\bin\$(Configuration)\net10.0-desktop\UnoDevelop.SettingsEditor.*" Exclude="**\*.addin" />
 			<HexEditorOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\DisplayBindings\HexEditor\Project\bin\$(Configuration)\net10.0-desktop\UnoDevelop.HexEditor.*" Exclude="**\*.addin" />
+			<ResourceEditorOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\DisplayBindings\ResourceEditor\Project\bin\$(Configuration)\net10.0-desktop\UnoDevelop.ResourceEditor.*" Exclude="**\*.addin" />
 			<CodeCoverageOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\Analysis\CodeCoverage\Project\bin\$(Configuration)\net10.0-desktop\UnoDevelop.CodeCoverage.*" Exclude="**\*.addin" />
 			<CodeCoverageAltCoverOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\Analysis\CodeCoverage\Project\bin\$(Configuration)\net10.0-desktop\AltCover\**\*.*" />
+			<CodeCoverageToolOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\Analysis\CodeCoverage\Project\bin\$(Configuration)\net10.0-desktop\bin\Tools\**\*.*" />
 			<TextTemplatingOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\Misc\TextTemplating\Project\bin\$(Configuration)\net10.0-desktop\UnoDevelop.TextTemplating.*" Exclude="**\*.addin" />
 			<PackageManagementOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\Misc\PackageManagement\Project\bin\$(Configuration)\net10.0-desktop\UnoDevelop.PackageManagement.*" Exclude="**\*.addin" />
 			<SearchAndReplaceOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\Misc\SearchAndReplace\Project\bin\$(Configuration)\net10.0-desktop\UnoDevelop.SearchAndReplace.*" Exclude="**\*.addin" />
@@ -219,8 +227,10 @@
 		<MakeDir Directories="$(OutputPath)AddIns\Misc\RegExpTk\Project\" />
 		<MakeDir Directories="$(OutputPath)AddIns\DisplayBindings\SettingsEditor\Project\" />
 		<MakeDir Directories="$(OutputPath)AddIns\DisplayBindings\HexEditor\Project\" />
+		<MakeDir Directories="$(OutputPath)AddIns\DisplayBindings\ResourceEditor\Project\" />
 		<MakeDir Directories="$(OutputPath)AddIns\Analysis\CodeCoverage\Project\" />
 		<MakeDir Directories="$(OutputPath)AddIns\Analysis\CodeCoverage\Project\AltCover\" />
+		<MakeDir Directories="$(OutputPath)bin\Tools\" />
 		<MakeDir Directories="$(OutputPath)AddIns\Misc\TextTemplating\Project\" />
 		<MakeDir Directories="$(OutputPath)AddIns\Misc\PackageManagement\Project\" />
 		<MakeDir Directories="$(OutputPath)AddIns\Misc\SearchAndReplace\Project\" />
@@ -245,11 +255,17 @@
 		<Copy SourceFiles="@(HexEditorOutput)"
 		      DestinationFolder="$(OutputPath)AddIns\DisplayBindings\HexEditor\Project\"
 		      SkipUnchangedFiles="true" />
+		<Copy SourceFiles="@(ResourceEditorOutput)"
+		      DestinationFolder="$(OutputPath)AddIns\DisplayBindings\ResourceEditor\Project\"
+		      SkipUnchangedFiles="true" />
 		<Copy SourceFiles="@(CodeCoverageOutput)"
 		      DestinationFolder="$(OutputPath)AddIns\Analysis\CodeCoverage\Project\"
 		      SkipUnchangedFiles="true" />
 		<Copy SourceFiles="@(CodeCoverageAltCoverOutput)"
 		      DestinationFolder="$(OutputPath)AddIns\Analysis\CodeCoverage\Project\AltCover\%(RecursiveDir)"
+		      SkipUnchangedFiles="true" />
+		<Copy SourceFiles="@(CodeCoverageToolOutput)"
+		      DestinationFolder="$(OutputPath)bin\Tools\%(RecursiveDir)"
 		      SkipUnchangedFiles="true" />
 		<Copy SourceFiles="@(TextTemplatingOutput)"
 		      DestinationFolder="$(OutputPath)AddIns\Misc\TextTemplating\Project\"
@@ -310,8 +326,10 @@
 			<RegExpTkPublishOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\Misc\RegExpTk\Project\bin\$(Configuration)\net10.0-desktop\UnoDevelop.RegExpTk.*" Exclude="**\*.addin" />
 			<SettingsEditorPublishOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\DisplayBindings\SettingsEditor\Project\bin\$(Configuration)\net10.0-desktop\UnoDevelop.SettingsEditor.*" Exclude="**\*.addin" />
 			<HexEditorPublishOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\DisplayBindings\HexEditor\Project\bin\$(Configuration)\net10.0-desktop\UnoDevelop.HexEditor.*" Exclude="**\*.addin" />
+			<ResourceEditorPublishOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\DisplayBindings\ResourceEditor\Project\bin\$(Configuration)\net10.0-desktop\UnoDevelop.ResourceEditor.*" Exclude="**\*.addin" />
 			<CodeCoveragePublishOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\Analysis\CodeCoverage\Project\bin\$(Configuration)\net10.0-desktop\UnoDevelop.CodeCoverage.*" Exclude="**\*.addin" />
 			<CodeCoverageAltCoverPublishOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\Analysis\CodeCoverage\Project\bin\$(Configuration)\net10.0-desktop\AltCover\**\*.*" />
+			<CodeCoverageToolPublishOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\Analysis\CodeCoverage\Project\bin\$(Configuration)\net10.0-desktop\bin\Tools\**\*.*" />
 			<TextTemplatingPublishOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\Misc\TextTemplating\Project\bin\$(Configuration)\net10.0-desktop\UnoDevelop.TextTemplating.*" Exclude="**\*.addin" />
 			<PackageManagementPublishOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\Misc\PackageManagement\Project\bin\$(Configuration)\net10.0-desktop\UnoDevelop.PackageManagement.*" Exclude="**\*.addin" />
 			<SearchAndReplacePublishOutput Include="$(MSBuildThisFileDirectory)..\..\AddIns\Misc\SearchAndReplace\Project\bin\$(Configuration)\net10.0-desktop\UnoDevelop.SearchAndReplace.*" Exclude="**\*.addin" />
@@ -329,8 +347,10 @@
 		<MakeDir Directories="$(PublishDir)AddIns\Misc\RegExpTk\Project\" />
 		<MakeDir Directories="$(PublishDir)AddIns\DisplayBindings\SettingsEditor\Project\" />
 		<MakeDir Directories="$(PublishDir)AddIns\DisplayBindings\HexEditor\Project\" />
+		<MakeDir Directories="$(PublishDir)AddIns\DisplayBindings\ResourceEditor\Project\" />
 		<MakeDir Directories="$(PublishDir)AddIns\Analysis\CodeCoverage\Project\" />
 		<MakeDir Directories="$(PublishDir)AddIns\Analysis\CodeCoverage\Project\AltCover\" />
+		<MakeDir Directories="$(PublishDir)bin\Tools\" />
 		<MakeDir Directories="$(PublishDir)AddIns\Misc\TextTemplating\Project\" />
 		<MakeDir Directories="$(PublishDir)AddIns\Misc\PackageManagement\Project\" />
 		<MakeDir Directories="$(PublishDir)AddIns\Misc\SearchAndReplace\Project\" />
@@ -355,11 +375,17 @@
 		<Copy SourceFiles="@(HexEditorPublishOutput)"
 		      DestinationFolder="$(PublishDir)AddIns\DisplayBindings\HexEditor\Project\"
 		      SkipUnchangedFiles="true" />
+		<Copy SourceFiles="@(ResourceEditorPublishOutput)"
+		      DestinationFolder="$(PublishDir)AddIns\DisplayBindings\ResourceEditor\Project\"
+		      SkipUnchangedFiles="true" />
 		<Copy SourceFiles="@(CodeCoveragePublishOutput)"
 		      DestinationFolder="$(PublishDir)AddIns\Analysis\CodeCoverage\Project\"
 		      SkipUnchangedFiles="true" />
 		<Copy SourceFiles="@(CodeCoverageAltCoverPublishOutput)"
 		      DestinationFolder="$(PublishDir)AddIns\Analysis\CodeCoverage\Project\AltCover\%(RecursiveDir)"
+		      SkipUnchangedFiles="true" />
+		<Copy SourceFiles="@(CodeCoverageToolPublishOutput)"
+		      DestinationFolder="$(PublishDir)bin\Tools\%(RecursiveDir)"
 		      SkipUnchangedFiles="true" />
 		<Copy SourceFiles="@(TextTemplatingPublishOutput)"
 		      DestinationFolder="$(PublishDir)AddIns\Misc\TextTemplating\Project\"

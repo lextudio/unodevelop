@@ -10,7 +10,7 @@ namespace UnoDevelop.Core.Tests;
 /// <summary>
 /// Exercises the real linked CPS dependency dataflow pipeline end-to-end (MSBuildDependencySubscriber
 /// + DependenciesSnapshotProvider + the manual composition/active-configuration wiring added in
-/// slice 43 — see docs/project-system.md), rather than the imperative DependencyTreeBridgeBuilder path.
+/// slice 43 — see externals/OpenDevelop/doc/technotes/project-system.md), rather than the imperative DependencyTreeBridgeBuilder path.
 /// </summary>
 [TestFixture]
 [Ignore("Targets a retired BuildSnapshotAsync API; SharpDevelopDependenciesSnapshotFactory now exposes BuildTreeAsync/PruneSessionsExceptAsync/ClearAllAsync over MutableProjectTree. Needs a full rewrite against the current API - see opendevelop-sync.md Phase 1.")]

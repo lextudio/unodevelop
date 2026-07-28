@@ -23,5 +23,6 @@
     <ProjectReference Include="..\..\Main\SharpDevelop\SharpDevelop.csproj" />
     <ProjectReference Include="..\..\AddIns\Analysis\UnitTesting\UnitTesting.csproj" />
     <ProjectReference Include="..\..\AddIns\Analysis\CodeCoverage\Project\CodeCoverage.csproj" />
+    <ProjectReference Include="..\..\AddIns\Misc\SearchAndReplace\Project\SearchAndReplace.csproj" />
   </ItemGroup>
 </Project>

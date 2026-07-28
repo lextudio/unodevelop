@@ -19,6 +19,18 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Legacy NuGet.Core + SharpZipLib, needed by the linked AddInManager engine files above (see
+         doc/technotes/addin-manager2.md) - same pre-built binaries OpenDevelop's own
+         AddInManager2.csproj / Base csproj reference via HintPath. -->
+    <Reference Include="NuGet.Core">
+      <HintPath>$(SharpDevelopSourceRoot)\src\AddIns\Misc\PackageManagement\RequiredLibraries\NuGet.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="ICSharpCode.SharpZipLib">
+      <HintPath>$(SharpDevelopSourceRoot)\src\AddIns\Misc\AddInManager2\RequiredLibraries\ICSharpCode.SharpZipLib.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
     <!-- Runtime assets excluded: MSBuildEnvironmentInitializer registers Microsoft.Build.Locator
          at app startup, which redirects Microsoft.Build.* assembly resolution to the real
          installed .NET SDK's own copies - shipping this package's own copies in our bin dir would
@@ -51,8 +63,10 @@
     <Compile Include="..\Src\SharpDevelopExtensions.uno.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Commands\SaveAllFiles.cs"
              Link="Upstream\Commands\SaveAllFiles.cs" />
-    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Parser\MinimalParserService.cs"
-             Link="Upstream\Parser\MinimalParserService.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Parser\LanguageServiceParserAdapter.cs"
+             Link="Upstream\Parser\LanguageServiceParserAdapter.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\SharpDevelop\Parser\UnknownCodeContext.cs"
+             Link="Upstream\Parser\UnknownCodeContext.cs" />
     <Compile Include="..\Src\Migration\BaseMigrationBatch.cs" />
     <Compile Include="..\Src\Workspace\WorkspaceDescriptor.cs" />
     <!-- Language services shared with OpenDevelop: contracts/DTOs, LSP bridge, and the Roslyn backend
@@ -100,9 +114,90 @@
              Link="Upstream\NuGet\NuGetSearchResult.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\NuGet\NuGetPackageSearchService.cs"
              Link="Upstream\NuGet\NuGetPackageSearchService.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\NuGet\SdkStylePackageReferenceEditor.cs"
+             Link="Upstream\NuGet\SdkStylePackageReferenceEditor.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\NuGet\SdkStylePackageReference.cs"
+             Link="Upstream\NuGet\SdkStylePackageReference.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\NuGet\NuGetProjectPackageOperationResult.cs"
+             Link="Upstream\NuGet\NuGetProjectPackageOperationResult.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\NuGet\NuGetProjectPackageOperationService.cs"
+             Link="Upstream\NuGet\NuGetProjectPackageOperationService.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\NuGet\NuGetPackageUpdateResult.cs"
+             Link="Upstream\NuGet\NuGetPackageUpdateResult.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\NuGet\NuGetPackageUpdateService.cs"
+             Link="Upstream\NuGet\NuGetPackageUpdateService.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\NuGet\NuGetPackageDependencyItem.cs"
+             Link="Upstream\NuGet\NuGetPackageDependencyItem.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\NuGet\NuGetPackageDependencyGroup.cs"
+             Link="Upstream\NuGet\NuGetPackageDependencyGroup.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\NuGet\NuGetPackageDependencyPreview.cs"
+             Link="Upstream\NuGet\NuGetPackageDependencyPreview.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\NuGet\NuGetPackageDependencyPreviewService.cs"
+             Link="Upstream\NuGet\NuGetPackageDependencyPreviewService.cs" />
     <Compile Include="..\Src\NuGet\AddInPackageInstaller.cs" />
     <Compile Include="..\Src\NuGet\AddInPackageManagerService.cs" />
-    <!-- Template system (docs/template-system.md) - shared with OpenDevelop (see
+    <!-- AddIn Manager gallery engine (doc/technotes/addin-manager2.md): the WPF-free Model layer of
+         OpenDevelop's AddInManager2 AddIn (browse/install/update from an online NuGet-style
+         gallery, paging, license acceptance) was moved into OpenDevelop's Base and is linked in
+         here, same pattern as NuGetPackageSearchEngine.cs above. Consumed directly (no MVVM) by
+         UnoDevelop's AddInManagerDialog.xaml.cs "Online Gallery" tab. -->
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\AddInManager\AcceptLicensesEventArgs.cs"
+             Link="Upstream\AddInManager\AcceptLicensesEventArgs.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\AddInManager\AddInDependency.cs"
+             Link="Upstream\AddInManager\AddInDependency.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\AddInManager\AddInInstallationEventArgs.cs"
+             Link="Upstream\AddInManager\AddInInstallationEventArgs.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\AddInManager\AddInManagerEvents.cs"
+             Link="Upstream\AddInManager\AddInManagerEvents.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\AddInManager\AddInManagerServices.cs"
+             Link="Upstream\AddInManager\AddInManagerServices.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\AddInManager\AddInManagerSettings.cs"
+             Link="Upstream\AddInManager\AddInManagerSettings.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\AddInManager\AddInOperationErrorEventArgs.cs"
+             Link="Upstream\AddInManager\AddInOperationErrorEventArgs.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\AddInManager\AddInSetup.cs"
+             Link="Upstream\AddInManager\AddInSetup.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\AddInManager\ManagedAddIn.cs"
+             Link="Upstream\AddInManager\ManagedAddIn.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\AddInManager\Model.cs"
+             Link="Upstream\AddInManager\Model.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\AddInManager\NuGetPackageManager.cs"
+             Link="Upstream\AddInManager\NuGetPackageManager.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\AddInManager\NuGetPackageOperationEventArgs.cs"
+             Link="Upstream\AddInManager\NuGetPackageOperationEventArgs.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\AddInManager\PackageListDownloadEndedEventArgs.cs"
+             Link="Upstream\AddInManager\PackageListDownloadEndedEventArgs.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\AddInManager\PackageMessageLoggedEventArgs.cs"
+             Link="Upstream\AddInManager\PackageMessageLoggedEventArgs.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\AddInManager\PackageRepositories.cs"
+             Link="Upstream\AddInManager\PackageRepositories.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\AddInManager\PackageRepository.cs"
+             Link="Upstream\AddInManager\PackageRepository.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\AddInManager\Page.cs"
+             Link="Upstream\AddInManager\Page.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\AddInManager\Pages.cs"
+             Link="Upstream\AddInManager\Pages.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\AddInManager\ReadPackagesResult.cs"
+             Link="Upstream\AddInManager\ReadPackagesResult.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\AddInManager\SDAddInManagement.cs"
+             Link="Upstream\AddInManager\SDAddInManagement.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\AddInManager\Interfaces\IAddInManagerEvents.cs"
+             Link="Upstream\AddInManager\Interfaces\IAddInManagerEvents.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\AddInManager\Interfaces\IAddInManagerServices.cs"
+             Link="Upstream\AddInManager\Interfaces\IAddInManagerServices.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\AddInManager\Interfaces\IAddInManagerSettings.cs"
+             Link="Upstream\AddInManager\Interfaces\IAddInManagerSettings.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\AddInManager\Interfaces\IAddInPackage.cs"
+             Link="Upstream\AddInManager\Interfaces\IAddInPackage.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\AddInManager\Interfaces\IAddInSetup.cs"
+             Link="Upstream\AddInManager\Interfaces\IAddInSetup.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\AddInManager\Interfaces\INuGetPackageManager.cs"
+             Link="Upstream\AddInManager\Interfaces\INuGetPackageManager.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\AddInManager\Interfaces\IPackageRepositories.cs"
+             Link="Upstream\AddInManager\Interfaces\IPackageRepositories.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\AddInManager\Interfaces\ISDAddInManagement.cs"
+             Link="Upstream\AddInManager\Interfaces\ISDAddInManagement.cs" />
+    <!-- Template system (externals/OpenDevelop/doc/technotes/template-system.md) - shared with OpenDevelop (see
          doc/technotes/template-system.md); the two hosts' near-identical *TemplateEngineHost
          classes were folded into TemplateDiscoveryService's own #if HAS_UNO branch. -->
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Templates\TemplateEngineHost.cs"
@@ -113,7 +208,7 @@
              Link="Upstream\Templates\TemplateDiscoveryService.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Templates\TemplateInstantiationResult.cs"
              Link="Upstream\Templates\TemplateInstantiationResult.cs" />
-    <!-- CustomTool / auto-run-on-save + before-build (docs/t4-templating.md) — linked from
+    <!-- CustomTool / auto-run-on-save + before-build (externals/OpenDevelop/doc/technotes/t4-templating.md) — linked from
          upstream, guarded with #if !HAS_UNO where WPF-only (ProjectBrowserPad, ExecuteCustomToolCommand). -->
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Project\CustomTool.cs"
              Link="Upstream\Project\CustomTool.cs" />
@@ -361,8 +456,14 @@
              Link="Upstream\Parser\ParseInformationEventArgs.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Parser\ISolutionSnapshotWithProjectMapping.cs"
              Link="Upstream\Parser\ISolutionSnapshotWithProjectMapping.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Parser\IParser.cs"
+             Link="Upstream\Parser\IParser.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Parser\IParserService.cs"
              Link="Upstream\Parser\IParserService.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Parser\IAssemblyParserService.cs"
+             Link="Upstream\Parser\IAssemblyParserService.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Parser\ProjectContentContainer.cs"
+             Link="Upstream\Parser\ProjectContentContainer.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Project\Converter\IUpgradableProject.cs"
              Link="Upstream\Project\Converter\IUpgradableProject.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Project\Build\BuildTarget.cs"
@@ -440,6 +541,14 @@
          Link="Upstream\Util\PropertyChangedEventArgs.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Util\IProgressMonitor.cs"
          Link="Upstream\Util\IProgressMonitor.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Util\AtomicBoolean.cs"
+         Link="Upstream\Util\AtomicBoolean.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Util\SimpleTaskScheduler.cs"
+         Link="Upstream\Util\SimpleTaskScheduler.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Util\CustomThreadPoolTaskScheduler.cs"
+         Link="Upstream\Util\CustomThreadPoolTaskScheduler.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Util\IOTaskScheduler.cs"
+         Link="Upstream\Util\IOTaskScheduler.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Project\IProjectService.cs"
          Link="Upstream\Project\IProjectService.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Services\ProjectService\ProjectEventHandler.cs"
@@ -548,6 +657,8 @@
              Link="Upstream\Project\Items\ProjectReferenceProjectItem.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Gui\Pads\Stubs\ProjectBrowserPadStub.cs"
              Link="Upstream\Gui\Pads\Stubs\ProjectBrowserPadStub.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Gui\Pads\Stubs\SymbolSearchStub.cs"
+             Link="Upstream\Gui\Pads\Stubs\SymbolSearchStub.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Project\PortableLibrary\ProfileList.cs"
              Link="Upstream\Project\PortableLibrary\ProfileList.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Project\PortableLibrary\Profile.cs"
@@ -587,8 +698,6 @@
     <!-- ITest.GoToDefinition's no-op default (TestBase.cs) - portable ICommand, no WPF coupling. -->
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Util\NotAvailableCommand.cs"
              Link="Upstream\Util\NotAvailableCommand.cs" />
-    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Parser\ISolutionSnapshotWithProjectMapping.cs"
-             Link="Upstream\Parser\ISolutionSnapshotWithProjectMapping.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Project\TargetFrameworks\DotNet2x.cs"
              Link="Upstream\Project\TargetFrameworks\DotNet2x.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Project\TargetFrameworks\DotNet4x.cs"

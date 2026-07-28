@@ -48,6 +48,12 @@
   <Folder Name="/AddIns/DisplayBindings/HexEditor/">
     <Project Path="AddIns/DisplayBindings/HexEditor/Project/HexEditor.csproj" />
   </Folder>
+  <Folder Name="/AddIns/DisplayBindings/IconEditor/">
+    <Project Path="AddIns/DisplayBindings/IconEditor/Project/IconEditor.csproj" />
+  </Folder>
+  <Folder Name="/AddIns/DisplayBindings/ResourceEditor/">
+    <Project Path="AddIns/DisplayBindings/ResourceEditor/Project/ResourceEditor.csproj" />
+  </Folder>
   <Folder Name="/AddIns/DisplayBindings/SettingsEditor/">
     <Project Path="AddIns/DisplayBindings/SettingsEditor/Project/SettingsEditor.csproj" />
   </Folder>

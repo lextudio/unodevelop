@@ -18,7 +18,7 @@ namespace ICSharpCode.SharpDevelop.NuGet;
 /// Downloads and extracts a NuGet package as an AddIn - the install/uninstall mechanics
 /// OpenDevelop's AddInManager2 provides via its own ~90-file NuGet-based manager
 /// (Project/Src/Model/NuGetPackageManager.cs et al). Reuses NuGetPackageSearchService (search)
-/// and NuGetPackageSourceCatalog (feed resolution) already built for docs/nuget-manager.md's
+/// and NuGetPackageSourceCatalog (feed resolution) already built for externals/OpenDevelop/doc/technotes/nuget-manager.md's
 /// project-reference NuGet manager; this is the AddIn-specific counterpart - "install" here means
 /// extract the package's .addin manifest(s) + assemblies into a folder and register via the real
 /// upstream AddInManager (AddExternalAddIns/RemoveExternalAddIns), not add a project reference.

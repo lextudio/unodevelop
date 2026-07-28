@@ -4,6 +4,14 @@
     <AssemblyName>LeXtudio.OpenDevelop.ResourceFiles</AssemblyName>
     <RootNamespace>LeXtudio.OpenDevelop.ResourceFiles</RootNamespace>
     <Nullable>enable</Nullable>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <Description>Resource file parsers and models for OpenDevelop.</Description>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\..\externals\OpenDevelop\src\Libraries\ResourceFiles\IconCursorFileReader.cs"
+             Link="OpenDevelop\IconCursorFileReader.cs" />
+    <Compile Include="..\..\..\externals\OpenDevelop\src\Libraries\ResourceFiles\ResourceFileReader.cs"
+             Link="OpenDevelop\ResourceFileReader.cs" />
+  </ItemGroup>
 </Project>

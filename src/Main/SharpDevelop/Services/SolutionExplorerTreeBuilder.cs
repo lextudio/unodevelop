@@ -20,7 +20,7 @@ internal static class SolutionExplorerTreeBuilder
     // Project paths visited during the current CreateSolutionNodeAsync call, used to prune
     // DependenciesSnapshotSession instances (Microsoft.VisualStudio.ProjectSystem.Managed,
     // slice 47) for projects no longer in the solution. There's no reliable "project removed"
-    // event to hook per-project cleanup off of (see docs/project-system.md, Slice 48), so instead
+    // event to hook per-project cleanup off of (see externals/OpenDevelop/doc/technotes/project-system.md, Slice 48), so instead
     // every full rebuild reconciles sessions against whichever projects were actually visited.
     // Single-threaded like the rest of Solution Explorer's rebuild path (see MainPage.xaml.cs's
     // _isRefreshingSolutionTree guard), so a plain static list is safe.
@@ -247,7 +247,7 @@ internal static class SolutionExplorerTreeBuilder
     /// (MainPage.xaml.cs) so a single project's item add/remove doesn't trigger a full Solution
     /// Explorer refresh. Returns false (caller should fall back to a full refresh) if the project's
     /// node can't be found in the current tree — e.g. before the tree has been built once.
-    /// See docs/project-system.md (Slice 49).
+    /// See externals/OpenDevelop/doc/technotes/project-system.md (Slice 49).
     /// </summary>
     public static async Task<bool> RefreshProjectNodeAsync(TreeView tree, string projectPath, IProject? project, string? displayName = null)
     {

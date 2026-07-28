@@ -16,7 +16,7 @@ namespace ICSharpCode.SharpDevelop.NuGet
 {
     /// <summary>
     /// A real <see cref="NuGetProject"/> backed by this codebase's own project model
-    /// (<see cref="IProject"/>) rather than MonoDevelop's — see docs/nuget-manager.md slice 1.
+    /// (<see cref="IProject"/>) rather than MonoDevelop's — see externals/OpenDevelop/doc/technotes/nuget-manager.md slice 1.
     /// Constructed from an already-extracted, testable snapshot of installed packages (same
     /// pattern as <c>LanguageServiceProjectSnapshot</c>) rather than taking a live
     /// <see cref="IProject"/> directly, so it can be unit tested without a full MSBuild-evaluated
@@ -24,6 +24,7 @@ namespace ICSharpCode.SharpDevelop.NuGet
     /// </summary>
     public sealed class UnoNuGetProject : NuGetProject
     {
+        readonly string _projectFileName;
         readonly List<PackageReference> _installedPackages;
 
         public UnoNuGetProject(string projectFileName, NuGetFramework targetFramework, IReadOnlyList<PackageReference> installedPackages)
@@ -34,6 +35,7 @@ namespace ICSharpCode.SharpDevelop.NuGet
                 throw new ArgumentNullException(nameof(installedPackages));
 
             var uniqueName = Path.GetFileNameWithoutExtension(projectFileName);
+            _projectFileName = projectFileName;
             InternalMetadata[NuGetProjectMetadataKeys.Name] = uniqueName;
             InternalMetadata[NuGetProjectMetadataKeys.UniqueName] = uniqueName;
             InternalMetadata[NuGetProjectMetadataKeys.FullPath] = Path.GetDirectoryName(projectFileName) ?? string.Empty;
@@ -50,14 +52,38 @@ namespace ICSharpCode.SharpDevelop.NuGet
         public override Task<bool> InstallPackageAsync(
             PackageIdentity packageIdentity, DownloadResourceResult downloadResourceResult, INuGetProjectContext nuGetProjectContext, CancellationToken token)
         {
-            // Slice 1 scope is read-only (docs/nuget-manager.md) — install lands in slice 4.
-            throw new NotSupportedException("UnoNuGetProject.InstallPackageAsync is not implemented yet (docs/nuget-manager.md slice 4).");
+            if (packageIdentity is null)
+                throw new ArgumentNullException(nameof(packageIdentity));
+
+            token.ThrowIfCancellationRequested();
+
+            var editor = new SdkStylePackageReferenceEditor(_projectFileName);
+            var changed = editor.AddOrUpdate(packageIdentity.Id, packageIdentity.Version);
+            if (changed) {
+                _installedPackages.RemoveAll(package =>
+                    string.Equals(package.PackageIdentity.Id, packageIdentity.Id, StringComparison.OrdinalIgnoreCase));
+                _installedPackages.Add(new PackageReference(packageIdentity, GetMetadata<NuGetFramework>(NuGetProjectMetadataKeys.TargetFramework)));
+            }
+
+            return Task.FromResult(changed);
         }
 
         public override Task<bool> UninstallPackageAsync(
             PackageIdentity packageIdentity, INuGetProjectContext nuGetProjectContext, CancellationToken token)
         {
-            throw new NotSupportedException("UnoNuGetProject.UninstallPackageAsync is not implemented yet (docs/nuget-manager.md slice 4).");
+            if (packageIdentity is null)
+                throw new ArgumentNullException(nameof(packageIdentity));
+
+            token.ThrowIfCancellationRequested();
+
+            var editor = new SdkStylePackageReferenceEditor(_projectFileName);
+            var changed = editor.Remove(packageIdentity.Id);
+            if (changed) {
+                _installedPackages.RemoveAll(package =>
+                    string.Equals(package.PackageIdentity.Id, packageIdentity.Id, StringComparison.OrdinalIgnoreCase));
+            }
+
+            return Task.FromResult(changed);
         }
 
         /// <summary>

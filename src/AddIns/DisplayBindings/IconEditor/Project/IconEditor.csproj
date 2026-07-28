@@ -6,19 +6,23 @@
     <UnoSingleProject>true</UnoSingleProject>
     <UnoFeatures>SkiaRenderer</UnoFeatures>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Nullable>enable</Nullable>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <NoWarn>$(NoWarn);CA1416;CS0067</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\..\..\Libraries\ResourceFiles\LeXtudio.OpenDevelop.ResourceFiles.csproj" />
     <ProjectReference Include="..\..\..\..\Main\Core\Project\ICSharpCode.Core.csproj" />
     <ProjectReference Include="..\..\..\..\Main\Base\Project\ICSharpCode.SharpDevelop.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition=" '$(UseNuGetPackages)' != 'true' ">
-    <ProjectReference Include="..\..\..\..\..\WindowsShims\src\LeXtudio.Windows\LeXtudio.Windows.csproj" />
+  <ItemGroup>
+    <None Include="IconEditor.addin" CopyToOutputDirectory="Always" />
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="IconEditor.addin" CopyToOutputDirectory="Always" />
+    <Compile Include="Src\IconDisplayBinding.cs" />
+    <Compile Include="Src\IconCursorViewerViewContent.cs" />
   </ItemGroup>
 </Project>

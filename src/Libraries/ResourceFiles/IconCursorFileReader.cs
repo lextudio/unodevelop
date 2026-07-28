@@ -104,7 +104,17 @@ public static class IconCursorFileReader
     public static IconCursorFile Read(string fileName)
     {
         using var stream = File.OpenRead(fileName);
-        using var reader = new BinaryReader(stream);
+        return Read(stream, fileName);
+    }
+
+    /// <summary>
+    /// Parses an ICO/CUR container from an in-memory stream (e.g. bytes embedded in a .resx
+    /// entry) rather than a standalone file. <paramref name="displayName"/> only populates
+    /// <see cref="IconCursorFile.FileName"/> and does not need to exist on disk.
+    /// </summary>
+    public static IconCursorFile Read(Stream stream, string displayName)
+    {
+        using var reader = new BinaryReader(stream, System.Text.Encoding.UTF8, leaveOpen: true);
 
         var reserved = reader.ReadUInt16();
         var type = reader.ReadUInt16();
@@ -166,7 +176,7 @@ public static class IconCursorFileReader
                 kind));
         }
 
-        return new IconCursorFile(fileName, kind, frames.OrderBy(frame => frame.Width).ThenBy(frame => frame.Height).ToArray());
+        return new IconCursorFile(displayName, kind, frames.OrderBy(frame => frame.Width).ThenBy(frame => frame.Height).ToArray());
     }
 
     public static bool IsPng(byte[] data)

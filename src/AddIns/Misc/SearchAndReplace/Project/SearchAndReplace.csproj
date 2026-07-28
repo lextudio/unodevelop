@@ -14,8 +14,30 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<Compile Include="$(SharpDevelopSourceRoot)\src\AddIns\Misc\SearchAndReplace\Project\Engine\PortableReplaceFilePlan.cs"
+		         Link="Upstream\PortableReplaceFilePlan.cs" />
+		<Compile Include="$(SharpDevelopSourceRoot)\src\AddIns\Misc\SearchAndReplace\Project\Engine\PortableReplacePlan.cs"
+		         Link="Upstream\PortableReplacePlan.cs" />
+		<Compile Include="$(SharpDevelopSourceRoot)\src\AddIns\Misc\SearchAndReplace\Project\Engine\PortableSearchDefaults.cs"
+		         Link="Upstream\PortableSearchDefaults.cs" />
+		<Compile Include="$(SharpDevelopSourceRoot)\src\AddIns\Misc\SearchAndReplace\Project\Engine\PortableReplaceRunResult.cs"
+		         Link="Upstream\PortableReplaceRunResult.cs" />
 		<Compile Include="$(SharpDevelopSourceRoot)\src\AddIns\Misc\SearchAndReplace\Project\Engine\PortableSearchEngine.cs"
 		         Link="Upstream\PortableSearchEngine.cs" />
+		<Compile Include="$(SharpDevelopSourceRoot)\src\AddIns\Misc\SearchAndReplace\Project\Engine\PortableSearchRunResult.cs"
+		         Link="Upstream\PortableSearchRunResult.cs" />
+		<Compile Include="$(SharpDevelopSourceRoot)\src\AddIns\Misc\SearchAndReplace\Project\Engine\PortableSearchResultGroup.cs"
+		         Link="Upstream\PortableSearchResultGroup.cs" />
+		<Compile Include="$(SharpDevelopSourceRoot)\src\AddIns\Misc\SearchAndReplace\Project\Engine\PortableSearchResultGrouper.cs"
+		         Link="Upstream\PortableSearchResultGrouper.cs" />
+		<Compile Include="$(SharpDevelopSourceRoot)\src\AddIns\Misc\SearchAndReplace\Project\Engine\PortableSearchResultGroupingKind.cs"
+		         Link="Upstream\PortableSearchResultGroupingKind.cs" />
+		<Compile Include="$(SharpDevelopSourceRoot)\src\AddIns\Misc\SearchAndReplace\Project\Engine\PortableSearchScope.cs"
+		         Link="Upstream\PortableSearchScope.cs" />
+		<Compile Include="$(SharpDevelopSourceRoot)\src\AddIns\Misc\SearchAndReplace\Project\Engine\PortableSearchScopeKind.cs"
+		         Link="Upstream\PortableSearchScopeKind.cs" />
+		<Compile Include="$(SharpDevelopSourceRoot)\src\AddIns\Misc\SearchAndReplace\Project\Engine\PortableSearchService.cs"
+		         Link="Upstream\PortableSearchService.cs" />
 		<None Include="SearchAndReplace.addin" CopyToOutputDirectory="Always" />
 	</ItemGroup>
 

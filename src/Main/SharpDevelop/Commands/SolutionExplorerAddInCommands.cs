@@ -255,7 +255,7 @@ internal sealed class SetStartupProjectSolutionExplorerCommand : SolutionExplore
     public override void Run() => Controller.SetStartupProject(OwnerNode);
 }
 
-// docs/nuget-manager.md slice 2: read-only installed-packages view.
+// externals/OpenDevelop/doc/technotes/nuget-manager.md slice 2: read-only installed-packages view.
 internal sealed class ManageNuGetPackagesSolutionExplorerCommand : SolutionExplorerCommandBase
 {
     public override void Run()
@@ -306,7 +306,7 @@ internal static class PackageManagementBridge
     }
 }
 
-// docs/t4-templating.md: per-file "Run Custom Tool" on a single .tt/.t4 file, without the full
+// externals/OpenDevelop/doc/technotes/t4-templating.md: per-file "Run Custom Tool" on a single .tt/.t4 file, without the full
 // CustomToolsService port (auto-run-on-save, arbitrary ICustomTool registrations).
 internal sealed class RunT4CustomToolSolutionExplorerCommand : SolutionExplorerCommandBase
 {

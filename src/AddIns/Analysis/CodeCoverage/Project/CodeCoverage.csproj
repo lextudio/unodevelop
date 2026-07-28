@@ -13,6 +13,7 @@
     <!-- coverlet.console is a DotnetTool-type package and cannot be a PackageReference;
          PackageDownload fetches it into the NuGet cache without that restriction. -->
     <PackageDownload Include="coverlet.console" Version="[6.0.4]" />
+    <PackageDownload Include="AltCover" Version="[9.0.102]" />
   </ItemGroup>
 
   <ItemGroup>
@@ -38,10 +39,35 @@
              Link="Upstream\CodeCoverageStringTextSource.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\AddIns\Analysis\CodeCoverage\Project\Src\ICodeCoverageWithVisits.cs"
              Link="Upstream\ICodeCoverageWithVisits.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\AddIns\Analysis\CodeCoverage\Project\Src\AltCoverApplication.cs"
+             Link="Upstream\AltCoverApplication.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\AddIns\Analysis\CodeCoverage\Project\Src\AltCoverCoverageRunner.cs"
+             Link="Upstream\AltCoverCoverageRunner.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\AddIns\Analysis\CodeCoverage\Project\Src\CoverletCoverageRunner.cs"
+             Link="Upstream\CoverletCoverageRunner.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\AddIns\Analysis\CodeCoverage\Project\Src\CodeCoverageRunResult.cs"
+             Link="Upstream\CodeCoverageRunResult.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\AddIns\Analysis\CodeCoverage\Project\Src\CodeCoverageToolKind.cs"
+             Link="Upstream\CodeCoverageToolKind.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\AddIns\Analysis\CodeCoverage\Project\Src\CodeCoverageDotNetHost.cs"
+             Link="Upstream\CodeCoverageDotNetHost.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\AddIns\Analysis\CodeCoverage\Project\Src\CodeCoverageProcessResult.cs"
+             Link="Upstream\CodeCoverageProcessResult.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\AddIns\Analysis\CodeCoverage\Project\Src\CodeCoverageProcessRunner.cs"
+             Link="Upstream\CodeCoverageProcessRunner.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\AddIns\Analysis\CodeCoverage\Project\Src\CodeCoverageProjectOutput.cs"
+             Link="Upstream\CodeCoverageProjectOutput.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\AddIns\Analysis\CodeCoverage\Project\Src\OpenCoverSettings.cs"
+             Link="Upstream\OpenCoverSettings.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\AddIns\Analysis\CodeCoverage\Project\Src\OpenCoverSettingsFactory.cs"
+             Link="Upstream\OpenCoverSettingsFactory.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\AddIns\Analysis\CodeCoverage\Project\Src\ProjectCodeCoverageResultsFileName.cs"
+             Link="Upstream\ProjectCodeCoverageResultsFileName.cs" />
   </ItemGroup>
 
   <PropertyGroup>
     <CoverletConsolePackageRoot>$(NuGetPackageRoot)coverlet.console\6.0.4\</CoverletConsolePackageRoot>
+    <AltCoverPackageRoot>$(NuGetPackageRoot)altcover\9.0.102\</AltCoverPackageRoot>
   </PropertyGroup>
 
   <!-- Declared as None/CopyToOutputDirectory (rather than a Copy task dropping files straight
@@ -50,7 +76,12 @@
        (e.g. UnoDevelop.Core.Tests), not just this project's own bin folder. -->
   <ItemGroup Condition="Exists('$(CoverletConsolePackageRoot)')">
     <None Include="$(CoverletConsolePackageRoot)tools\**\*.*"
-          Link="Coverlet\%(RecursiveDir)%(Filename)%(Extension)"
+          Link="bin\Tools\Coverlet\%(RecursiveDir)%(Filename)%(Extension)"
+          CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+  <ItemGroup Condition="Exists('$(AltCoverPackageRoot)')">
+    <None Include="$(AltCoverPackageRoot)tools\net8.0\**\*.*"
+          Link="bin\Tools\AltCover\%(RecursiveDir)%(Filename)%(Extension)"
           CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

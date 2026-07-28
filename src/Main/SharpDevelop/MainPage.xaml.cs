@@ -36,7 +36,6 @@ using ICSharpCode.AvalonEdit.CodeCompletion;
 using ICSharpCode.AvalonEdit.Document;
 using ICSharpCode.AvalonEdit.Editing;
 using ICSharpCode.AvalonEdit.Highlighting;
-using LeXtudio.OpenDevelop.ResourceFiles;
 using UnoEdit.Skia.Desktop.Controls;
 using UnoDevelop.Controls;
 using UnoDevelop.Debugger;
@@ -506,7 +505,7 @@ public partial class MainPage : Page, IProjectBrowserHost
     }
 
     /// <summary>
-    /// Slice 3 incremental update (docs/language-services.md §2.1): a single new <c>Compile</c>
+    /// Slice 3 incremental update (externals/OpenDevelop/doc/technotes/language-services.md §2.1): a single new <c>Compile</c>
     /// item only needs a targeted document add, not a whole-project re-snapshot. Any other item
     /// type (References, ProjectReferences, ...) can change project-level compilation inputs, so
     /// those still fall back to a full project reload.
@@ -1473,38 +1472,6 @@ public partial class MainPage : Page, IProjectBrowserHost
             return existingView;
         }
 
-        if (IconCursorFileReader.CanRead(filePath))
-        {
-            try
-            {
-                var iconView = new IconCursorViewerViewContent(filePath);
-                _openFileViews[filePath] = iconView;
-                _workbench.ShowView(iconView, switchToOpenedView);
-                _fileService?.NotifyFileOpened(filePath);
-                return iconView;
-            }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or BadImageFormatException)
-            {
-                SetExplorerStatus("Could not open icon/cursor file: " + ex.Message);
-            }
-        }
-
-        if (ResourceFileReader.CanRead(filePath))
-        {
-            try
-            {
-                var resourceView = new ResourceViewerViewContent(filePath);
-                _openFileViews[filePath] = resourceView;
-                _workbench.ShowView(resourceView, switchToOpenedView);
-                _fileService?.NotifyFileOpened(filePath);
-                return resourceView;
-            }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or BadImageFormatException or System.Xml.XmlException)
-            {
-                SetExplorerStatus("Could not open resource file: " + ex.Message);
-            }
-        }
-
         var displayBindingFileName = FileName.Create(filePath);
         var displayBinding = displayBindingFileName is null
             ? null
@@ -1925,7 +1892,7 @@ public partial class MainPage : Page, IProjectBrowserHost
 
     /// <summary>
     /// Repopulates the navigation bar for this editor: the target-framework selector (only
-    /// shown for multi-targeted projects) and the type/member outline (docs/language-services.md
+    /// shown for multi-targeted projects) and the type/member outline (externals/OpenDevelop/doc/technotes/language-services.md
     /// §4 slices 1-3/5-6, <see cref="ILanguageService.GetDocumentOutlineAsync"/>).
     /// </summary>
     private async Task RefreshNavigationBarAsync(EditorViewContent editorContent)
@@ -2485,7 +2452,7 @@ public partial class MainPage : Page, IProjectBrowserHost
     }
 
     /// <summary>
-    /// F2 rename (docs/language-services.md §2.3/§3.3 "deliberately out of scope" note,
+    /// F2 rename (externals/OpenDevelop/doc/technotes/language-services.md §2.3/§3.3 "deliberately out of scope" note,
     /// implemented here): prompts for a new name, asks the language service to compute edits
     /// across every file that references the symbol, then applies them — to open editors via
     /// their live <see cref="TextDocument"/>, and directly to disk for files that aren't open.
@@ -2543,7 +2510,7 @@ public partial class MainPage : Page, IProjectBrowserHost
 
     /// <summary>
     /// Applies a per-file edit map (as returned by <see cref="ILanguageService.RenameSymbolAsync"/>
-    /// or <see cref="ILanguageService.ApplyCodeActionAsync"/>, docs/language-services.md §8.4) —
+    /// or <see cref="ILanguageService.ApplyCodeActionAsync"/>, externals/OpenDevelop/doc/technotes/language-services.md §8.4) —
     /// to open editors via their live <see cref="TextDocument"/>, and directly to disk for files
     /// that aren't open. Returns the number of files actually changed.
     /// </summary>
@@ -2596,7 +2563,7 @@ public partial class MainPage : Page, IProjectBrowserHost
     }
 
     /// <summary>
-    /// Ctrl+. code actions menu (docs/language-services.md §8.4): lists the actions applicable
+    /// Ctrl+. code actions menu (externals/OpenDevelop/doc/technotes/language-services.md §8.4): lists the actions applicable
     /// at the caret (or over the current selection, if any) and applies whichever one is picked
     /// through the same multi-file edit path F2 rename uses.
     /// </summary>
@@ -3078,7 +3045,7 @@ public partial class MainPage : Page, IProjectBrowserHost
 
         /// <summary>
         /// Right-aligned "active target framework" selector, shown only when the owning project
-        /// is multi-targeted (docs/language-services.md §4 slice 4).
+        /// is multi-targeted (externals/OpenDevelop/doc/technotes/language-services.md §4 slice 4).
         /// </summary>
         public ComboBox TargetFrameworkComboBox { get; }
 

@@ -15,12 +15,14 @@ namespace UnoDevelop.AddIns.Analysis.CodeCoverage;
 public sealed class CodeCoverageService
 {
     private const string OutputCategoryName = "Code Coverage";
-    private readonly CoverletCoverageRunner _runner = new();
+    private readonly AltCoverCoverageRunner _altCoverRunner = new();
+    private readonly CoverletCoverageRunner _coverletRunner = new();
     private CancellationTokenSource? _runCancellation;
 
     public static CodeCoverageService Instance { get; } = new();
 
     public CodeCoverageSession CurrentSession { get; private set; } = CodeCoverageSession.Empty;
+    public CodeCoverageToolKind CoverageTool { get; set; } = CodeCoverageToolKind.AltCover;
     public bool IsRunning { get; private set; }
     public event EventHandler? SessionChanged;
 
@@ -46,7 +48,15 @@ public sealed class CodeCoverageService
 
         try
         {
-            var session = await _runner.RunAsync(projects, _runCancellation.Token);
+            var run = await RunCoverageAsync(projects, _runCancellation.Token);
+            var reader = new CodeCoverageResultsReader();
+            foreach (var file in run.ResultFiles)
+                reader.AddResultsFile(file);
+
+            var results = reader.GetResults().ToList();
+            var log = new List<string>(run.LogLines);
+            log.AddRange(reader.GetMissingResultsFiles().Select(item => "Missing coverage report: " + item));
+            var session = new CodeCoverageSession(CoverageTool + " MTP coverage", results, log);
             SetSession(session);
             AppendOutputLines(session.LogLines, clear: false, activateCategory: true);
         }
@@ -146,6 +156,23 @@ public sealed class CodeCoverageService
 
     private static bool IsTrue(string? value)
         => bool.TryParse(value, out var result) && result;
+
+    private Task<CodeCoverageRunResult> RunCoverageAsync(IReadOnlyList<IProject> projects, CancellationToken cancellationToken)
+    {
+        return CoverageTool switch
+        {
+            CodeCoverageToolKind.Coverlet => _coverletRunner.RunAsync(projects, BuildProjectAsync, cancellationToken),
+            _ => _altCoverRunner.RunAsync(projects, BuildProjectAsync, cancellationToken)
+        };
+    }
+
+    private static async Task<bool> BuildProjectAsync(IProject project, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var results = await SD.BuildService.BuildAsync(project, new BuildOptions(BuildTarget.Build));
+        cancellationToken.ThrowIfCancellationRequested();
+        return results.Result == BuildResultCode.Success;
+    }
 
     private void SetSession(CodeCoverageSession session)
     {

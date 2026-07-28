@@ -28,7 +28,7 @@
     <PackageVersion Include="Microsoft.VisualStudio.Validation" Version="17.8.8" />
     <PackageVersion Include="System.CodeDom" Version="10.0.9" />
     <!-- Real MIT VS MEF: engine (Microsoft.VisualStudio.Composition) + standard MEF2 attributes
-         (System.Composition.AttributedModel). See docs/project-system.md (Slice 44).
+         (System.Composition.AttributedModel). See externals/OpenDevelop/doc/technotes/project-system.md (Slice 44).
          All four System.Composition.* siblings pinned to 9.0.0 (not the original 8.0.0 for
          AttributedModel/Runtime) so CentralPackageTransitivePinningEnabled can stay on: Hosting
          9.0.0 requires Runtime >= 9.0.0 and TypedParts 9.0.0 requires AttributedModel >= 9.0.0,
@@ -36,7 +36,7 @@
     <PackageVersion Include="Microsoft.VisualStudio.Composition" Version="17.13.41" />
     <PackageVersion Include="System.Composition.AttributedModel" Version="9.0.0" />
     <PackageVersion Include="System.Composition.Runtime" Version="9.0.0" />
-    <!-- MEF2 hosting/typed-part discovery for docs/language-services.md §8.3
+    <!-- MEF2 hosting/typed-part discovery for externals/OpenDevelop/doc/technotes/language-services.md §8.3
          (CSharpVBLanguageService.CodeActions.cs) - composes CodeFixProvider exports from the
          same assembly set Roslyn's own Workspace uses (MefHostServices.DefaultAssemblies). -->
     <PackageVersion Include="System.Composition.Hosting" Version="9.0.0" />
@@ -45,9 +45,9 @@
          2.5.192) to avoid several known advisories, e.g. GHSA-vh6j-jc39-fggf. Same 2.x line as
          upstream's pin, so no VS MEF compatibility risk. -->
     <PackageVersion Include="MessagePack" Version="2.5.302" />
-    <!-- LSP client transport for docs/language-services.md slice 5 (LspLanguageService). -->
+    <!-- LSP client transport for externals/OpenDevelop/doc/technotes/language-services.md slice 5 (LspLanguageService). -->
     <PackageVersion Include="StreamJsonRpc" Version="2.21.10" />
-    <!-- NuGet.Client engine for docs/nuget-manager.md slice 1 (real NuGet.Client, not the
+    <!-- NuGet.Client engine for externals/OpenDevelop/doc/technotes/nuget-manager.md slice 1 (real NuGet.Client, not the
          MonoDevelop-vendored copy). Pulls in NuGet.Commands/Resolver/Protocol/Configuration/
          Frameworks/Packaging/ProjectManagement transitively. -->
     <PackageVersion Include="NuGet.PackageManagement" Version="7.6.0" />
@@ -57,7 +57,7 @@
     <PackageVersion Include="Mono.TextTemplating" Version="3.0.0" />
     <!-- Code coverage instrumentation/runner used by the Analysis/CodeCoverage addin. -->
     <PackageVersion Include="coverlet.console" Version="6.0.4" />
-    <!-- File/project template engine for docs/template-system.md slice 1 — the same engine
+    <!-- File/project template engine for externals/OpenDevelop/doc/technotes/template-system.md slice 1 — the same engine
          `dotnet new` and modern Visual Studio use, not SharpDevelop's/MonoDevelop's own
          proprietary template formats. -->
     <PackageVersion Include="Microsoft.TemplateEngine.Abstractions" Version="10.0.301" />

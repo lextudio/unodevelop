@@ -1174,6 +1174,76 @@ public static class UnoDevelopDevFlowActions
         return JsonSerializer.Serialize(new { stopped = true });
     }
 
+    [DevFlowAction("uno.probe.coverage.run",
+        Description = "Run coverage for all detected test projects. Optional args: [tool], where tool is altcover or coverlet. Returns {tool,title,resultCount,coveragePercent,log}.")]
+    public static async Task<string> RunCoverage(string tool = "altcover")
+    {
+        var serviceType = AppDomain.CurrentDomain.GetAssemblies()
+            .Select(assembly => assembly.GetType("UnoDevelop.AddIns.Analysis.CodeCoverage.CodeCoverageService"))
+            .FirstOrDefault(type => type is not null);
+        var toolType = AppDomain.CurrentDomain.GetAssemblies()
+            .Select(assembly => assembly.GetType("ICSharpCode.CodeCoverage.CodeCoverageToolKind"))
+            .FirstOrDefault(type => type is not null);
+
+        if (serviceType is null || toolType is null)
+            return JsonSerializer.Serialize(new { success = false, error = "CodeCoverage addin is not loaded." });
+        if (!TryParseCoverageTool(toolType, tool, out var coverageTool))
+            return JsonSerializer.Serialize(new { success = false, error = "Unknown coverage tool: " + tool });
+
+        var service = serviceType.GetProperty("Instance", BindingFlags.Public | BindingFlags.Static)?.GetValue(null);
+        if (service is null)
+            return JsonSerializer.Serialize(new { success = false, error = "CodeCoverage service is not available." });
+
+        serviceType.GetProperty("CoverageTool")?.SetValue(service, coverageTool);
+        var runTask = serviceType.GetMethod("RunAllTestsWithCoverageAsync")?.Invoke(service, null) as Task;
+        if (runTask is null)
+            return JsonSerializer.Serialize(new { success = false, error = "CodeCoverage run method is not available." });
+
+        await runTask;
+
+        var session = serviceType.GetProperty("CurrentSession")?.GetValue(service);
+        if (session is null)
+            return JsonSerializer.Serialize(new { success = false, error = "CodeCoverage session is not available." });
+
+        var sessionType = session.GetType();
+        var results = sessionType.GetProperty("Results")?.GetValue(session) as System.Collections.ICollection;
+        var logLines = sessionType.GetProperty("LogLines")?.GetValue(session) as System.Collections.IEnumerable;
+        var log = logLines?.Cast<object>().Select(item => item?.ToString() ?? string.Empty).TakeLast(20).ToArray()
+            ?? Array.Empty<string>();
+        return JsonSerializer.Serialize(new
+        {
+            success = (results?.Count ?? 0) > 0,
+            tool = coverageTool.ToString(),
+            title = sessionType.GetProperty("Title")?.GetValue(session),
+            resultCount = results?.Count ?? 0,
+            moduleCount = sessionType.GetProperty("Modules")?.GetValue(session),
+            methodCount = sessionType.GetProperty("Methods")?.GetValue(session),
+            coveragePercent = sessionType.GetProperty("CoveragePercent")?.GetValue(session),
+            log
+        });
+    }
+
+    private static bool TryParseCoverageTool(Type toolType, string value, out object tool)
+    {
+        if (string.Equals(value, "coverlet", StringComparison.OrdinalIgnoreCase)) {
+            tool = Enum.Parse(toolType, "Coverlet", ignoreCase: false);
+            return true;
+        }
+
+        if (string.Equals(value, "altcover", StringComparison.OrdinalIgnoreCase) || string.IsNullOrWhiteSpace(value)) {
+            tool = Enum.Parse(toolType, "AltCover", ignoreCase: false);
+            return true;
+        }
+
+        try {
+            tool = Enum.Parse(toolType, value, ignoreCase: true);
+            return true;
+        } catch {
+            tool = Enum.Parse(toolType, "AltCover", ignoreCase: false);
+            return false;
+        }
+    }
+
     [DevFlowAction("uno.probe.tests.results",
         Description = "Snapshot results from the last test run. Returns array of {fqn, displayName, targetFramework, key, result, resultLabel}.")]
     public static string TestsResults()
@@ -2038,15 +2108,19 @@ public static class UnoDevelopDevFlowActions
     {
         return SD.MainThread.InvokeIfRequired(() =>
         {
-            var view = SD.Workbench.ActiveViewContent as UnoDevelop.Workbench.ResourceViewerViewContent;
-            if (view is null)
+            var view = SD.Workbench.ActiveViewContent;
+            if (view?.GetType().FullName != "UnoDevelop.AddIns.DisplayBindings.ResourceEditor.ResourceViewerViewContent")
+                return """{"found":false}""";
+
+            var entries = view.GetType().GetProperty("Entries")?.GetValue(view) as System.Collections.IEnumerable;
+            if (entries is null)
                 return """{"found":false}""";
 
             return JsonSerializer.Serialize(new
             {
                 found = true,
                 canEdit = !view.IsReadOnly,
-                entries = view.Entries.Select(entry => new
+                entries = entries.Cast<LeXtudio.OpenDevelop.ResourceFiles.ResourceEntry>().Select(entry => new
                 {
                     name = entry.Name,
                     type = entry.Type,

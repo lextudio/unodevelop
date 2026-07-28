@@ -45,7 +45,7 @@ public sealed class GenerateT4Command : AbstractMenuCommand
 /// Shared per-file dispatch, used by both the project-wide "Process T4 Templates..." command
 /// above and the per-file Solution Explorer "Run Custom Tool" command
 /// (<see cref="UnoDevelop.Commands.RunT4CustomToolSolutionExplorerCommand"/>). Goes through the
-/// real <see cref="CustomToolsService"/> (docs/t4-templating.md) — <c>FileProjectItem.CustomTool</c>
+/// real <see cref="CustomToolsService"/> (externals/OpenDevelop/doc/technotes/t4-templating.md) — <c>FileProjectItem.CustomTool</c>
 /// reads/writes the same <c>Generator</c> MSBuild metadata this used to check by hand.
 /// </summary>
 public static class T4TemplateRunner

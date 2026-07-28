@@ -1020,7 +1020,7 @@ namespace UnoDevelop.Core.Tests
             }
         }
 
-        // Proves docs/language-services.md §8.3 (Roslyn code fixes) end to end against a real
+        // Proves externals/OpenDevelop/doc/technotes/language-services.md §8.3 (Roslyn code fixes) end to end against a real
         // built-in fixer, per the doc's own "prove it against one well-known built-in fixer
         // before broadening" plan: a missing `using System.Collections.Generic;` produces CS0246
         // on `List<int>`, which Roslyn's built-in add-import CodeFixProvider (MEF-discovered via
@@ -1208,6 +1208,9 @@ namespace UnoDevelop.Core.Tests
 
         sealed class StubLanguageService : ILanguageService
         {
+            public Task UpsertDocumentAsync(DocumentId documentId, string text, CancellationToken cancellationToken) =>
+                NoOpLanguageService.Instance.UpsertDocumentAsync(documentId, text, cancellationToken);
+
             public Task<CompletionResult> GetCompletionsAsync(DocumentId documentId, int offset, CancellationToken cancellationToken) =>
                 NoOpLanguageService.Instance.GetCompletionsAsync(documentId, offset, cancellationToken);
 

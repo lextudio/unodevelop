@@ -1,3 +1,5 @@
+#nullable enable
+
 using ICSharpCode.Core;
 using ICSharpCode.AvalonEdit;
 using ICSharpCode.SharpDevelop;

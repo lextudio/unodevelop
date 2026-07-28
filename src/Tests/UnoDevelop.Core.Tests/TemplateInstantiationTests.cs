@@ -15,7 +15,7 @@ namespace UnoDevelop.Core.Tests
     {
         /// <summary>
         /// Instantiates a fixture template and verifies the generated file exists with
-        /// correct name-substitution applied (docs/template-system.md slice 2).
+        /// correct name-substitution applied (externals/OpenDevelop/doc/technotes/template-system.md slice 2).
         /// </summary>
         [Test]
         public async Task InstantiateAsync_WithFixtureTemplate_GeneratesOutputFile()

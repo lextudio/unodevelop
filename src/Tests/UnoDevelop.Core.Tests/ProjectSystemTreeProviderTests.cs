@@ -90,7 +90,7 @@ public sealed class ProjectSystemTreeProviderTests
         // BuildTreeAsync() — the real MSBuildDependencySubscriber/DependenciesSnapshotProvider
         // dataflow pipeline (slices 41-45) wired into the live Solution Explorer path (slice 46) —
         // instead of the imperative DependencyTreeBridgeBuilder. Proves the async wiring produces
-        // an equivalent tree shape, not just that it compiles. See docs/project-system.md (Slice 46).
+        // an equivalent tree shape, not just that it compiles. See externals/OpenDevelop/doc/technotes/project-system.md (Slice 46).
         var root = Path.Combine(Path.GetTempPath(), "UnoDevelopProjectTreeTests-" + Guid.NewGuid().ToString("N"));
         try
         {

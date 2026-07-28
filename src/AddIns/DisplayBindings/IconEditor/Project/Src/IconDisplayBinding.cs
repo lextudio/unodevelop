@@ -18,9 +18,8 @@
 
 using System;
 using ICSharpCode.Core;
-using ICSharpCode.SharpDevelop;
-using ICSharpCode.SharpDevelop.Gui;
 using ICSharpCode.SharpDevelop.Workbench;
+using LeXtudio.OpenDevelop.ResourceFiles;
 
 namespace ICSharpCode.IconEditor
 {
@@ -28,12 +27,12 @@ namespace ICSharpCode.IconEditor
 	{
 		public bool CanCreateContentForFile(FileName fileName)
 		{
-			return true; // definition in .addin does extension-based filtering
+			return IconCursorFileReader.CanRead(fileName);
 		}
 		
 		public IViewContent CreateContentForFile(OpenedFile file)
 		{
-			return new IconViewContent(file);
+			return new IconCursorViewerViewContent(file.FileName);
 		}
 		
 		public bool IsPreferredBindingForFile(FileName fileName)

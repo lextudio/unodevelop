@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using ICSharpCode.Core;
 using ICSharpCode.SharpDevelop;
 using ICSharpCode.SharpDevelop.Project;
+using ICSharpCode.CodeCoverage;
 using ICSharpCode.UnitTesting;
 using ICSharpCode.UnitTesting.Mtp;
 using NUnit.Framework;
@@ -21,7 +22,7 @@ namespace UnoDevelop.Core.Tests;
 // coverage run must reflect the same tests the classic ICSharpCode.UnitTesting
 // backend discovers (see doc/technotes/unit-testing.md).
 //
-// This spawns real `dotnet` subprocesses (build/run/coverlet) against the
+// This spawns real `dotnet` subprocesses (build/run/coverage tool) against the
 // fixture project, so it is slower than the rest of the suite.
 [TestFixture]
 public sealed class UnitTestingCodeCoveragePadIntegrationTests
@@ -69,8 +70,9 @@ public sealed class UnitTestingCodeCoveragePadIntegrationTests
             Is.EquivalentTo(new[] { "Add_ReturnsSum", "Divide_ReturnsQuotient" }));
     }
 
-    [Test]
-    public void CodeCoverageService_RunsAgainstSameFixtureProject_AsTestService()
+    [TestCase(CodeCoverageToolKind.AltCover)]
+    [TestCase(CodeCoverageToolKind.Coverlet)]
+    public void CodeCoverageService_RunsAgainstSameFixtureProject_AsTestService(CodeCoverageToolKind coverageTool)
     {
         // The registered instance, not `new SDTestService()` - a second, independent SDTestService
         // would build its own separate TestSolution/ITestProject tree from scratch instead of
@@ -81,10 +83,12 @@ public sealed class UnitTestingCodeCoveragePadIntegrationTests
         var discoveredTests = GetConfirmedLeafTests(solution);
         Assert.That(discoveredTests, Is.Not.Empty, "No tests discovered; coverage run would have nothing to measure.");
 
+        CodeCoverageService.Instance.CoverageTool = coverageTool;
         CodeCoverageService.Instance.RunAllTestsWithCoverageAsync().GetAwaiter().GetResult();
 
         var session = CodeCoverageService.Instance.CurrentSession;
         Assert.That(CodeCoverageService.Instance.IsRunning, Is.False, "Service should report not-running once the awaited run has completed.");
+        Assert.That(session.Title, Does.StartWith(coverageTool.ToString()));
         Assert.That(session.Results, Is.Not.Empty, () => "No coverage results produced. Log:\n" + string.Join('\n', session.LogLines));
 
         // Calculator.Divide's b==0 branch is intentionally left untested by the fixture,

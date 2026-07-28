@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Threading.Tasks;
 using ICSharpCode.SharpDevelop.Parser;
 using ICSharpCode.SharpDevelop.Project;
 using ICSharpCode.TypeSystem;
@@ -17,6 +18,22 @@ namespace ICSharpCode.SharpDevelop
         public static ReadOnlyCollection<T> AsReadOnly<T>(this IList<T> arr)
         {
             return new ReadOnlyCollection<T>(arr);
+        }
+
+        public static void FireAndForget(this Task task)
+        {
+            task.ContinueWith(
+                t =>
+                {
+                    if (t.Exception != null)
+                    {
+                        if (t.Exception.InnerExceptions.Count == 1)
+                            Core.MessageService.ShowException(t.Exception.InnerExceptions[0]);
+                        else
+                            Core.MessageService.ShowException(t.Exception);
+                    }
+                },
+                TaskContinuationOptions.OnlyOnFaulted);
         }
 
         // Needed by the classic ICSharpCode.UnitTesting backend's TestSolution.cs. Ported from
@@ -43,4 +60,3 @@ namespace ICSharpCode.SharpDevelop
         }
     }
 }
-

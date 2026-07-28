@@ -6,7 +6,7 @@ using Xunit;
 namespace UnoDevelop.IntegrationTests;
 
 /// <summary>
-/// Covers ResourceViewerViewContent (src/Main/SharpDevelop/Workbench/ResourceViewerViewContent.cs)
+/// Covers ResourceViewerViewContent (src/AddIns/DisplayBindings/ResourceEditor/Project/Src/ResourceViewerViewContent.cs)
 /// end to end: opening a .resx file lists its string/boolean/binary entries, with binary-ish
 /// entries (Icon/Bitmap/Cursor/other) shown as a byte-count DisplaySummary rather than a raw
 /// base64 blob (opendevelop-sync.md Phase 3, AddIns/DisplayBindings/ResourceEditor).

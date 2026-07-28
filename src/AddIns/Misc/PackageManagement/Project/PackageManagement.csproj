@@ -12,4 +12,13 @@
     <ProjectReference Include="..\..\..\..\Main\Core\Project\ICSharpCode.Core.csproj" />
     <ProjectReference Include="..\..\..\..\Main\Base\Project\ICSharpCode.SharpDevelop.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <!-- Legacy NuGet.Core, for the shared AddInManager2 gallery engine's IPackage/IPackageRepository
+         surface consumed directly by AddInManagerDialog's "Online Gallery" tab (see
+         doc/technotes/addin-manager2.md). Same binary Base itself references. -->
+    <Reference Include="NuGet.Core">
+      <HintPath>$(SharpDevelopSourceRoot)\src\AddIns\Misc\PackageManagement\RequiredLibraries\NuGet.Core.dll</HintPath>
+    </Reference>
+  </ItemGroup>
 </Project>

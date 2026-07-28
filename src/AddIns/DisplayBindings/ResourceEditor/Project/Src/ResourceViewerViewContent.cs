@@ -14,7 +14,7 @@ using Microsoft.UI.Xaml.Input;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.System;
 
-namespace UnoDevelop.Workbench;
+namespace UnoDevelop.AddIns.DisplayBindings.ResourceEditor;
 
 internal sealed class ResourceViewerViewContent : IViewContent
 {

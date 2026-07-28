@@ -24,6 +24,7 @@ public sealed class CodeCoveragePad : UserControl
     private readonly Button _run;
     private readonly Button _stop;
     private readonly Button _open;
+    private readonly ComboBox _toolSelector;
 
     public CodeCoveragePad()
     {
@@ -38,6 +39,8 @@ public sealed class CodeCoveragePad : UserControl
         _run = CreateToolbarButton("RunTest_16x", "Run all tests with coverage", () => _ = CodeCoverageService.Instance.RunAllTestsWithCoverageAsync());
         _stop = CreateToolbarButton("Stop_16x", "Stop coverage run", () => CodeCoverageService.Instance.Stop());
         _open = CreateToolbarButton("OpenfileDialog_16x", "Open coverage file", () => new OpenCoverageFileCommand().Run());
+        _toolSelector = CreateToolSelector();
+        toolbar.Items.Add(_toolSelector);
         toolbar.Items.Add(_run);
         toolbar.Items.Add(_stop);
         toolbar.Items.Add(_open);
@@ -88,6 +91,25 @@ public sealed class CodeCoveragePad : UserControl
         return button;
     }
 
+    private static ComboBox CreateToolSelector()
+    {
+        var selector = new ComboBox
+        {
+            Width = 116,
+            Margin = new Thickness(0, 2, 8, 2),
+            ItemsSource = Enum.GetValues<CodeCoverageToolKind>(),
+            SelectedItem = CodeCoverageService.Instance.CoverageTool
+        };
+        ToolTipService.SetToolTip(selector, "Coverage backend");
+        AutomationProperties.SetName(selector, "Coverage backend");
+        selector.SelectionChanged += (_, _) =>
+        {
+            if (selector.SelectedItem is CodeCoverageToolKind tool && !CodeCoverageService.Instance.IsRunning)
+                CodeCoverageService.Instance.CoverageTool = tool;
+        };
+        return selector;
+    }
+
     private static void ApplyFlatToolbarChrome(ButtonBase button)
     {
         var transparent = new SolidColorBrush(Microsoft.UI.Colors.Transparent);
@@ -101,6 +123,8 @@ public sealed class CodeCoveragePad : UserControl
         _run.IsEnabled = !isRunning;
         _open.IsEnabled = !isRunning;
         _stop.IsEnabled = isRunning;
+        _toolSelector.IsEnabled = !isRunning;
+        _toolSelector.SelectedItem = CodeCoverageService.Instance.CoverageTool;
 
         var session = CodeCoverageService.Instance.CurrentSession;
         _summary.Text = $"{session.Title}: {session.CoveragePercent}% ({session.VisitedSequencePoints}/{session.SequencePoints})";

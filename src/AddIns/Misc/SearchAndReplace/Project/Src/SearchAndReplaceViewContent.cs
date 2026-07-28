@@ -1,10 +1,15 @@
+#nullable enable
+
 using System.Collections.ObjectModel;
 using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
 using ICSharpCode.Core;
 using ICSharpCode.SearchAndReplace.Portable;
 using ICSharpCode.SharpDevelop;
 using ICSharpCode.SharpDevelop.Editor;
 using ICSharpCode.SharpDevelop.Editor.Search;
+using ICSharpCode.SharpDevelop.Project;
 using ICSharpCode.SharpDevelop.Workbench;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -15,27 +20,24 @@ namespace UnoDevelop.AddIns.Misc.SearchAndReplace;
 
 public sealed class SearchAndReplaceViewContent : IViewContent
 {
-    private static readonly HashSet<string> ExcludedDirectories = new(StringComparer.OrdinalIgnoreCase)
-    {
-        ".git",
-        ".vs",
-        "bin",
-        "obj",
-        "node_modules",
-        "packages",
-        "artifacts"
-    };
-
     private readonly ObservableCollection<PortableSearchResult> _results = new();
+    private readonly ObservableCollection<SearchResultDisplayRow> _displayRows = new();
+    private readonly PortableSearchService _searchService = new();
+    private readonly PortableSearchResultGrouper _resultGrouper = new();
     private readonly Grid _control;
     private readonly TextBox _findText;
     private readonly TextBox _replaceText;
+    private readonly ComboBox _scopeSelector;
     private readonly TextBox _lookInText;
     private readonly TextBox _fileTypesText;
     private readonly CheckBox _matchCase;
     private readonly CheckBox _useRegex;
     private readonly CheckBox _includeSubdirectories;
+    private readonly ComboBox _groupingSelector;
+    private readonly Button _findButton;
+    private readonly Button _cancelButton;
     private readonly TextBlock _status;
+    private CancellationTokenSource? _searchCancellation;
 
     public SearchAndReplaceViewContent()
     {
@@ -45,25 +47,42 @@ public sealed class SearchAndReplaceViewContent : IViewContent
 
         _findText = new TextBox { PlaceholderText = "Find", MinWidth = 260, Text = GetActiveSelectedText() };
         _replaceText = new TextBox { PlaceholderText = "Replace", MinWidth = 260 };
+        _scopeSelector = new ComboBox
+        {
+            MinWidth = 180,
+            ItemsSource = SearchScopeItem.All,
+            SelectedIndex = 0,
+            DisplayMemberPath = nameof(SearchScopeItem.Label)
+        };
         _lookInText = new TextBox { Text = GetDefaultSearchRoot(), MinWidth = 360 };
-        _fileTypesText = new TextBox { Text = "*.cs;*.xaml;*.xml;*.resx;*.settings;*.txt;*.md", MinWidth = 260 };
+        _fileTypesText = new TextBox { Text = PortableSearchDefaults.FileTypes, MinWidth = 260 };
         _matchCase = new CheckBox { Content = "Match case" };
         _useRegex = new CheckBox { Content = "Regex" };
         _includeSubdirectories = new CheckBox { Content = "Include subdirectories", IsChecked = true };
+        _groupingSelector = new ComboBox
+        {
+            MinWidth = 160,
+            ItemsSource = SearchGroupingItem.All,
+            SelectedIndex = 0,
+            DisplayMemberPath = nameof(SearchGroupingItem.Label)
+        };
+        _groupingSelector.SelectionChanged += (_, _) => RefreshGroupedResults();
         _status = new TextBlock { Text = "Ready", Margin = new Thickness(8, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center };
 
-        var findButton = new Button { Content = "Find All", MinWidth = 96 };
-        findButton.Click += (_, _) => FindAll();
+        _findButton = new Button { Content = "Find All", MinWidth = 96 };
+        _findButton.Click += async (_, _) => await FindAllAsync();
+        _cancelButton = new Button { Content = "Cancel", MinWidth = 80, IsEnabled = false };
+        _cancelButton.Click += (_, _) => _searchCancellation?.Cancel();
 
         var replaceButton = new Button { Content = "Replace Listed", MinWidth = 112 };
         replaceButton.Click += (_, _) => ReplaceListed();
 
-        var form = CreateForm(findButton, replaceButton);
+        var form = CreateForm(replaceButton);
         var resultList = new ListView
         {
-            ItemsSource = _results,
+            ItemsSource = _displayRows,
             SelectionMode = ListViewSelectionMode.Single,
-            ItemTemplate = CreateResultTemplate(),
+            ItemTemplate = CreateDisplayRowTemplate(),
             Margin = new Thickness(8)
         };
         resultList.DoubleTapped += (_, _) => JumpToSelectedResult(resultList);
@@ -133,14 +152,15 @@ public sealed class SearchAndReplaceViewContent : IViewContent
         Disposed?.Invoke(this, EventArgs.Empty);
     }
 
-    private Grid CreateForm(Button findButton, Button replaceButton)
+    private Grid CreateForm(Button replaceButton)
     {
         var form = new Grid { Margin = new Thickness(8), ColumnSpacing = 8, RowSpacing = 8 };
         form.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         form.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         form.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         form.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        for (var i = 0; i < 5; i++)
+        form.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        for (var i = 0; i < 6; i++)
         {
             form.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         }
@@ -149,29 +169,36 @@ public sealed class SearchAndReplaceViewContent : IViewContent
         AddControl(form, _findText, 0);
         AddLabel(form, "Replace:", 1);
         AddControl(form, _replaceText, 1);
-        AddLabel(form, "Look in:", 2);
-        AddControl(form, _lookInText, 2);
-        AddLabel(form, "File types:", 3);
-        AddControl(form, _fileTypesText, 3);
+        AddLabel(form, "Scope:", 2);
+        AddControl(form, _scopeSelector, 2);
+        AddLabel(form, "Look in:", 3);
+        AddControl(form, _lookInText, 3);
+        AddLabel(form, "File types:", 4);
+        AddControl(form, _fileTypesText, 4);
 
         var options = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 16 };
         options.Children.Add(_matchCase);
         options.Children.Add(_useRegex);
         options.Children.Add(_includeSubdirectories);
+        options.Children.Add(new TextBlock { Text = "Group:", VerticalAlignment = VerticalAlignment.Center });
+        options.Children.Add(_groupingSelector);
         Grid.SetColumn(options, 1);
-        Grid.SetRow(options, 4);
+        Grid.SetRow(options, 5);
         form.Children.Add(options);
 
-        Grid.SetColumn(findButton, 2);
-        Grid.SetRow(findButton, 0);
-        form.Children.Add(findButton);
-        Grid.SetColumn(replaceButton, 3);
+        Grid.SetColumn(_findButton, 2);
+        Grid.SetRow(_findButton, 0);
+        form.Children.Add(_findButton);
+        Grid.SetColumn(_cancelButton, 3);
+        Grid.SetRow(_cancelButton, 0);
+        form.Children.Add(_cancelButton);
+        Grid.SetColumn(replaceButton, 4);
         Grid.SetRow(replaceButton, 0);
         form.Children.Add(replaceButton);
 
         Grid.SetColumn(_status, 2);
         Grid.SetColumnSpan(_status, 2);
-        Grid.SetRow(_status, 4);
+        Grid.SetRow(_status, 5);
         form.Children.Add(_status);
 
         return form;
@@ -197,9 +224,10 @@ public sealed class SearchAndReplaceViewContent : IViewContent
         grid.Children.Add(control);
     }
 
-    private void FindAll()
+    private async Task FindAllAsync()
     {
         _results.Clear();
+        _displayRows.Clear();
         var pattern = _findText.Text;
         if (string.IsNullOrEmpty(pattern))
         {
@@ -207,28 +235,49 @@ public sealed class SearchAndReplaceViewContent : IViewContent
             return;
         }
 
-        var root = _lookInText.Text;
-        if (string.IsNullOrWhiteSpace(root) || !Directory.Exists(root))
+        var scope = CreateScope();
+        if (scope.IsDirectory && (string.IsNullOrWhiteSpace(scope.Directory) || !Directory.Exists(scope.Directory)))
         {
             _status.Text = "Search directory does not exist.";
             return;
         }
+        if (!scope.IsDirectory && scope.FilePaths.Count == 0)
+        {
+            _status.Text = "No files available in the selected scope.";
+            return;
+        }
 
+        _searchCancellation?.Dispose();
+        _searchCancellation = new CancellationTokenSource();
+        var cancellationToken = _searchCancellation.Token;
+        _findButton.IsEnabled = false;
+        _cancelButton.IsEnabled = true;
         try
         {
-            var options = CreateOptions(pattern, _replaceText.Text ?? string.Empty, root);
-            var results = new PortableSearchEngine().FindAll(options, out var fileCount);
-            foreach (var result in results)
+            var options = CreateOptions(pattern, _replaceText.Text ?? string.Empty, scope.Directory ?? GetDefaultSearchRoot());
+            var progress = new Progress<int>(count => _status.Text = $"Searched {count} file(s)...");
+            var run = await Task.Run(() => _searchService.FindAll(options, scope, cancellationToken, progress), cancellationToken);
+            foreach (var result in run.Results)
             {
                 _results.Add(result);
             }
+            RefreshGroupedResults();
 
-            _status.Text = $"{_results.Count} result(s) in {fileCount} file(s).";
+            _status.Text = run.FormatStatus();
             PublishSearchResults(pattern);
+        }
+        catch (OperationCanceledException)
+        {
+            _status.Text = "Search cancelled.";
         }
         catch (Exception ex) when (ex is ArgumentException or IOException)
         {
             _status.Text = ex.Message;
+        }
+        finally
+        {
+            _findButton.IsEnabled = true;
+            _cancelButton.IsEnabled = false;
         }
     }
 
@@ -249,10 +298,31 @@ public sealed class SearchAndReplaceViewContent : IViewContent
 
         try
         {
-            var options = CreateOptions(pattern, _replaceText.Text ?? string.Empty, _lookInText.Text);
-            var changed = new PortableSearchEngine().ReplaceListed(_results, options);
-            _status.Text = $"Updated {changed} file(s).";
-            FindAll();
+            var scope = CreateScope();
+            var options = CreateOptions(pattern, _replaceText.Text ?? string.Empty, scope.Directory ?? GetDefaultSearchRoot());
+            var plan = _searchService.CreateReplacePlan(_results, options, scope);
+            _status.Text = plan.FormatStatus();
+            if (!plan.HasChanges)
+            {
+                return;
+            }
+
+            if (!MessageService.AskQuestion(
+                $"Replace {plan.MatchCount} occurrence(s) in {plan.ChangedFileCount} file(s)?",
+                "Search and Replace"))
+            {
+                _status.Text = "Replace cancelled.";
+                return;
+            }
+
+            var run = _searchService.ApplyReplacePlan(plan);
+            _status.Text = run.FormatStatus();
+            var openStatus = OpenChangedFiles(run);
+            if (!string.IsNullOrEmpty(openStatus))
+            {
+                _status.Text = run.FormatStatus() + " " + openStatus;
+            }
+            _ = FindAllAsync();
         }
         catch (Exception ex) when (ex is ArgumentException or IOException)
         {
@@ -263,15 +333,65 @@ public sealed class SearchAndReplaceViewContent : IViewContent
     private PortableSearchOptions CreateOptions(string pattern, string replacement, string root) =>
         new(pattern, replacement, root, _fileTypesText.Text, _matchCase.IsChecked == true, _useRegex.IsChecked == true, _includeSubdirectories.IsChecked == true);
 
-    private static DataTemplate CreateResultTemplate()
+    private PortableSearchScope CreateScope()
+    {
+        var selected = _scopeSelector.SelectedItem as SearchScopeItem ?? SearchScopeItem.All[0];
+        return selected.Kind switch
+        {
+            PortableSearchScopeKind.CurrentDocument => PortableSearchScope.ForFiles(selected.Kind, GetCurrentDocumentFiles()),
+            PortableSearchScopeKind.AllOpenFiles => PortableSearchScope.ForFiles(selected.Kind, GetOpenDocumentFiles()),
+            PortableSearchScopeKind.WholeProject => PortableSearchScope.ForFiles(selected.Kind, GetCurrentProjectFiles()),
+            PortableSearchScopeKind.WholeSolution => PortableSearchScope.ForFiles(selected.Kind, GetSolutionFiles()),
+            _ => PortableSearchScope.ForDirectory(_lookInText.Text)
+        };
+    }
+
+    private void RefreshGroupedResults()
+    {
+        _displayRows.Clear();
+        if (_results.Count == 0)
+        {
+            return;
+        }
+
+        var selected = _groupingSelector.SelectedItem as SearchGroupingItem ?? SearchGroupingItem.All[0];
+        var groups = _resultGrouper.Group(_results, selected.Kind, GetProjectNameForFile);
+        foreach (var group in groups)
+        {
+            AddGroupRows(group, level: 0);
+        }
+    }
+
+    private void AddGroupRows(PortableSearchResultGroup group, int level)
+    {
+        var title = group.Title;
+        if (group.Results.Count > 0 || group.Children.Count > 0)
+        {
+            _displayRows.Add(SearchResultDisplayRow.ForGroup(title, group.OccurrenceCount, level));
+        }
+
+        foreach (var result in group.Results)
+        {
+            _displayRows.Add(SearchResultDisplayRow.ForResult(result, level + 1));
+        }
+
+        foreach (var child in group.Children)
+        {
+            AddGroupRows(child, level + 1);
+        }
+    }
+
+    private static DataTemplate CreateDisplayRowTemplate()
     {
         var template = new DataTemplate(() =>
         {
             var panel = new StackPanel { Orientation = Orientation.Vertical, Spacing = 2, Margin = new Thickness(0, 2, 0, 2) };
             var location = new TextBlock { FontWeight = Microsoft.UI.Text.FontWeights.SemiBold };
-            location.SetBinding(TextBlock.TextProperty, new Binding { Path = new PropertyPath(nameof(PortableSearchResult.Location)) });
+            location.SetBinding(TextBlock.TextProperty, new Binding { Path = new PropertyPath(nameof(SearchResultDisplayRow.Title)) });
+            location.SetBinding(FrameworkElement.MarginProperty, new Binding { Path = new PropertyPath(nameof(SearchResultDisplayRow.Margin)) });
             var preview = new TextBlock { TextWrapping = TextWrapping.Wrap };
-            preview.SetBinding(TextBlock.TextProperty, new Binding { Path = new PropertyPath(nameof(PortableSearchResult.Preview)) });
+            preview.SetBinding(TextBlock.TextProperty, new Binding { Path = new PropertyPath(nameof(SearchResultDisplayRow.Preview)) });
+            preview.SetBinding(FrameworkElement.MarginProperty, new Binding { Path = new PropertyPath(nameof(SearchResultDisplayRow.Margin)) });
             panel.Children.Add(location);
             panel.Children.Add(preview);
             return panel;
@@ -281,7 +401,7 @@ public sealed class SearchAndReplaceViewContent : IViewContent
 
     private static void CopySelectedResult(ListView resultList)
     {
-        if (resultList.SelectedItem is not PortableSearchResult item)
+        if (resultList.SelectedItem is not SearchResultDisplayRow { Result: { } item })
         {
             return;
         }
@@ -293,7 +413,7 @@ public sealed class SearchAndReplaceViewContent : IViewContent
 
     private static void JumpToSelectedResult(ListView resultList)
     {
-        if (resultList.SelectedItem is not PortableSearchResult item)
+        if (resultList.SelectedItem is not SearchResultDisplayRow { Result: { } item })
         {
             return;
         }
@@ -305,6 +425,32 @@ public sealed class SearchAndReplaceViewContent : IViewContent
         }
 
         SD.FileService.JumpToFilePosition(fileName, item.Line, item.Column);
+    }
+
+    private static string OpenChangedFiles(PortableReplaceRunResult run)
+    {
+        if (run.ChangedFilePaths is not { Count: > 0 })
+        {
+            return string.Empty;
+        }
+
+        if (run.ChangedFilePaths.Count > PortableSearchDefaults.MaxAutoOpenChangedFiles)
+        {
+            return $"{run.ChangedFilePaths.Count} files changed; not auto-opening more than {PortableSearchDefaults.MaxAutoOpenChangedFiles} files.";
+        }
+
+        for (var i = 0; i < run.ChangedFilePaths.Count; i++)
+        {
+            var fileName = FileName.Create(run.ChangedFilePaths[i]);
+            if (fileName is null)
+            {
+                continue;
+            }
+
+            SD.FileService.OpenFile(fileName, switchToOpenedView: i == run.ChangedFilePaths.Count - 1);
+        }
+
+        return $"Opened {run.ChangedFilePaths.Count} changed file(s).";
     }
 
     private void PublishSearchResults(string pattern)
@@ -354,6 +500,97 @@ public sealed class SearchAndReplaceViewContent : IViewContent
         }
 
         return Environment.CurrentDirectory;
+    }
+
+    private static IEnumerable<string> GetCurrentDocumentFiles()
+    {
+        if (SD.Workbench.ActiveViewContent?.GetService(typeof(ITextEditor)) is ITextEditor editor
+            && editor.FileName is not null)
+        {
+            yield return editor.FileName;
+        }
+    }
+
+    private static IEnumerable<string> GetOpenDocumentFiles()
+    {
+        foreach (var view in SD.Workbench.ViewContentCollection)
+        {
+            if (view.GetService(typeof(ITextEditor)) is ITextEditor editor
+                && editor.FileName is not null)
+            {
+                yield return editor.FileName;
+            }
+        }
+    }
+
+    private static IEnumerable<string> GetCurrentProjectFiles()
+    {
+        var project = ProjectService.CurrentProject;
+        if (project is null)
+            yield break;
+
+        foreach (var item in project.Items.OfType<FileProjectItem>())
+        {
+            yield return item.FileName;
+        }
+    }
+
+    private static IEnumerable<string> GetSolutionFiles()
+    {
+        var solution = ProjectService.OpenSolution;
+        if (solution is null)
+            yield break;
+
+        foreach (var item in solution.AllItems.OfType<ISolutionFileItem>())
+        {
+            yield return item.FileName;
+        }
+
+        foreach (var item in solution.Projects.SelectMany(project => project.Items).OfType<FileProjectItem>())
+        {
+            yield return item.FileName;
+        }
+    }
+
+    private static string? GetProjectNameForFile(string filePath)
+    {
+        var fileName = FileName.Create(filePath);
+        if (fileName is null)
+            return null;
+
+        return SD.ProjectService.FindProjectContainingFile(fileName)?.Name;
+    }
+
+    private sealed record SearchScopeItem(string Label, PortableSearchScopeKind Kind)
+    {
+        public static IReadOnlyList<SearchScopeItem> All { get; } =
+        [
+            new("Directory", PortableSearchScopeKind.Directory),
+            new("Current document", PortableSearchScopeKind.CurrentDocument),
+            new("All open files", PortableSearchScopeKind.AllOpenFiles),
+            new("Current project", PortableSearchScopeKind.WholeProject),
+            new("Whole solution", PortableSearchScopeKind.WholeSolution)
+        ];
+    }
+
+    private sealed record SearchGroupingItem(string Label, PortableSearchResultGroupingKind Kind)
+    {
+        public static IReadOnlyList<SearchGroupingItem> All { get; } =
+        [
+            new("Flat", PortableSearchResultGroupingKind.Flat),
+            new("File", PortableSearchResultGroupingKind.PerFile),
+            new("Project", PortableSearchResultGroupingKind.PerProject),
+            new("Project/File", PortableSearchResultGroupingKind.PerProjectAndFile)
+        ];
+    }
+
+    private sealed record SearchResultDisplayRow(string Title, string Preview, PortableSearchResult? Result, Thickness Margin)
+    {
+        public static SearchResultDisplayRow ForGroup(string title, int occurrenceCount, int level) =>
+            new($"{title} ({occurrenceCount})", string.Empty, null, new Thickness(level * 16, 0, 0, 0));
+
+        public static SearchResultDisplayRow ForResult(PortableSearchResult result, int level) =>
+            new(result.Location, result.Preview, result, new Thickness(level * 16, 0, 0, 0));
     }
 
     private sealed class SearchAndReplaceNavigationPoint : INavigationPoint

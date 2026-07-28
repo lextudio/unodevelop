@@ -3,7 +3,7 @@
 // ObservedSave/FileSaved/FileErrorPolicy, none of which have any WPF dependency. The rest of that
 // file overlaps with FileUtility.uno.cs's own Uno-native implementations (GetRelativePath,
 // IsValidPath, etc.), so it isn't linked wholesale — this is the portable slice CustomTool.cs
-// (docs/t4-templating.md) needs that the trimmed FileUtility.Minimal.cs doesn't have.
+// (externals/OpenDevelop/doc/technotes/t4-templating.md) needs that the trimmed FileUtility.Minimal.cs doesn't have.
 
 using System;
 
