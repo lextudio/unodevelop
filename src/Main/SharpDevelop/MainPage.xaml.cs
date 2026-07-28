@@ -3392,18 +3392,11 @@ public partial class MainPage : Page, IProjectBrowserHost
         }
     }
 
-    private sealed class DocumentOpenedFile : OpenedFile
+    private sealed class DocumentOpenedFile : SimpleOpenedFile
     {
         public DocumentOpenedFile(string filePath)
+            : base(filePath)
         {
-            FileName = ICSharpCode.Core.FileName.Create(filePath);
-        }
-
-        public override event EventHandler? FileClosed;
-
-        public void NotifyClosed()
-        {
-            FileClosed?.Invoke(this, EventArgs.Empty);
         }
     }
 

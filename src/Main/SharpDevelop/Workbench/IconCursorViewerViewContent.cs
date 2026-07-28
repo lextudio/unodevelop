@@ -281,16 +281,12 @@ internal sealed class IconCursorViewerViewContent : IViewContent
         Clipboard.SetContent(package);
     }
 
-    private sealed class IconCursorOpenedFile : OpenedFile
+    private sealed class IconCursorOpenedFile : SimpleOpenedFile
     {
         public IconCursorOpenedFile(string filePath)
+            : base(filePath)
         {
-            FileName = ICSharpCode.Core.FileName.Create(filePath);
         }
-
-        public override event EventHandler? FileClosed;
-
-        public void NotifyClosed() => FileClosed?.Invoke(this, EventArgs.Empty);
     }
 
     private sealed class IconCursorNavigationPoint : INavigationPoint

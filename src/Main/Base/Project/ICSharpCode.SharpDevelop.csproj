@@ -50,7 +50,8 @@
     <Compile Include="..\Src\AssemblyInfo.uno.cs" />
     <Compile Include="..\Src\SharpDevelopExtensions.uno.cs" />
     <Compile Include="..\Src\Commands\SaveAllFiles.uno.cs" />
-    <Compile Include="..\Src\Parser\MinimalParserService.uno.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Parser\MinimalParserService.cs"
+             Link="Upstream\Parser\MinimalParserService.cs" />
     <Compile Include="..\Src\Migration\BaseMigrationBatch.cs" />
     <Compile Include="..\Src\Workspace\WorkspaceDescriptor.cs" />
     <!-- Language services shared with OpenDevelop: contracts/DTOs, LSP bridge, and the Roslyn backend
@@ -127,7 +128,8 @@
              Link="Upstream\Project\ProjectCustomToolOptions.cs" />
     <Compile Include="..\Src\Gui\PadDescriptor.uno.cs" />
     <Compile Include="..\Src\Gui\PadExtensions.uno.cs" />
-    <Compile Include="..\Src\Gui\ErrorListPadStub.uno.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Gui\Pads\Stubs\ErrorListPadStub.cs"
+             Link="Upstream\Gui\Pads\Stubs\ErrorListPadStub.cs" />
     <Compile Include="..\Src\Gui\IToolboxProvider.uno.cs" />
     <Compile Include="..\Src\Gui\IOutlineContentHost.uno.cs" />
     <Compile Include="..\Src\Workbench\WorkbenchPlatformBridge.cs" />
@@ -211,7 +213,8 @@
     <!-- Parser -->
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Services\Tasks\TagComment.cs"
              Link="Upstream\Services\Tasks\TagComment.cs" />
-    <Compile Include="..\Src\Services\Tasks\TaskService.uno.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Services\Tasks\TaskServiceHostBridge.cs"
+             Link="Upstream\Services\Tasks\TaskServiceHostBridge.cs" />
     <Compile Include="..\Src\Services\FileService.uno.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Parser\ParseInformation.cs"
              Link="Upstream\Parser\ParseInformation.cs" />
@@ -239,7 +242,10 @@
     <Compile Include="..\Src\Workbench\IImage.uno.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Services\StatusBar\StatusBarService.cs"
              Link="Upstream\Services\StatusBar\IStatusBarService.cs" />
-    <Compile Include="..\Src\Workbench\File\OpenedFile.uno.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Workbench\File\OpenedFile.cs"
+             Link="Upstream\Workbench\File\OpenedFile.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Workbench\File\SimpleOpenedFile.cs"
+             Link="Upstream\Workbench\File\SimpleOpenedFile.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Workbench\File\IFileService.cs"
              Link="Upstream\Workbench\File\IFileService.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Workbench\File\IRecentOpen.cs"
@@ -491,6 +497,8 @@
     <Compile Include="..\Src\Gui\Pads\CompilerMessageView\CompilerMessageView.uno.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Project\IProjectChangeWatcher.cs"
              Link="Upstream\Project\IProjectChangeWatcher.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Project\ProjectFileChangeWatcher.cs"
+             Link="Upstream\Project\ProjectFileChangeWatcher.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Project\ProjectStartException.cs"
              Link="Upstream\Project\ProjectStartException.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Project\ProjectPropertyChangedEventArgs.cs"
@@ -533,12 +541,16 @@
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Services\AmbienceService\DefaultAmbience.cs"
              Link="Upstream\Services\AmbienceService\DefaultAmbience.cs" />
     <Compile Include="..\Src\Project\ProjectChangeWatcher.uno.cs" />
-    <Compile Include="..\Src\Util\StringExtensions.uno.cs" />
-    <Compile Include="..\Src\Gui\WorkbenchSingleton.uno.cs" />
-    <Compile Include="..\Src\Services\ClassBrowserIcons\ClassBrowserIconService.uno.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Util\StringExtensions.cs"
+             Link="Upstream\Util\StringExtensions.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Gui\WorkbenchSingletonBridge.cs"
+             Link="Upstream\Gui\WorkbenchSingletonBridge.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Gui\Pads\Stubs\ClassBrowserIconServiceStub.cs"
+             Link="Upstream\Services\ClassBrowserIcons\ClassBrowserIconServiceStub.cs" />
     <Compile Include="..\Src\Services\ProjectService\ProjectService.uno.cs" />
     <Compile Include="..\Src\Editor\Search\SearchResultsPad.uno.cs" />
-    <Compile Include="..\Src\Util\DotnetDetection.uno.cs" />
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Util\DotnetDetection.cs"
+             Link="Upstream\Util\DotnetDetection.cs" />
     <!-- TargetFramework infrastructure -->
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Util\Versions.cs"
              Link="Upstream\Util\Versions.cs" />

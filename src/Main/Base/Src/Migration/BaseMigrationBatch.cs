@@ -9,7 +9,6 @@ public static class BaseMigrationBatch
         "Workbench/IWorkbenchWindow.uno.cs",
         "Workbench/IWorkbench.uno.cs",
         "Workbench/ViewContentEventArgs.uno.cs",
-        "Workbench/File/OpenedFile.uno.cs",
         "Project/IProject.uno.cs",
         "Project/ProjectItem.uno.cs",
         "Project/ProjectBindingDescriptor.uno.cs",

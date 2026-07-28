@@ -415,16 +415,12 @@ public sealed class SettingsEditorViewContent : IViewContent
         }
     }
 
-    private sealed class SettingsOpenedFile : OpenedFile
+    private sealed class SettingsOpenedFile : SimpleOpenedFile
     {
         public SettingsOpenedFile(string filePath)
+            : base(filePath)
         {
-            FileName = ICSharpCode.Core.FileName.Create(filePath);
         }
-
-        public override event EventHandler? FileClosed;
-
-        public void NotifyClosed() => FileClosed?.Invoke(this, EventArgs.Empty);
     }
 
     private sealed class SettingsNavigationPoint : INavigationPoint

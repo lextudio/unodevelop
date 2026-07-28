@@ -1069,13 +1069,11 @@ public static class UnoDevelopDevFlowActions
         public void Dispose() { IsDisposed = true; Disposed?.Invoke(this, System.EventArgs.Empty); }
     }
 
-    private sealed class FileRefOpenedFile : OpenedFile
+    private sealed class FileRefOpenedFile : SimpleOpenedFile
     {
-        public override event System.EventHandler? FileClosed;
-
         public FileRefOpenedFile(string path)
+            : base(path)
         {
-            FileName = FileName.Create(path);
         }
     }
 

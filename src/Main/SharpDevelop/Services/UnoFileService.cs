@@ -240,18 +240,11 @@ internal sealed class UnoFileService : IFileService
 
     // ── Minimal OpenedFile implementation ─────────────────────────────────
 
-    private sealed class UnoOpenedFile : OpenedFile
+    private sealed class UnoOpenedFile : SimpleOpenedFile
     {
         public UnoOpenedFile(string filePath)
+            : base(filePath)
         {
-            FileName = ICSharpCode.Core.FileName.Create(filePath);
-        }
-
-        public override event EventHandler? FileClosed;
-
-        public void NotifyClosed()
-        {
-            FileClosed?.Invoke(this, EventArgs.Empty);
         }
     }
 }

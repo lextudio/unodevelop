@@ -192,14 +192,12 @@ public sealed class HexEditorViewContent : IViewContent
         Clipboard.SetContent(package);
     }
 
-    private sealed class HexOpenedFile : OpenedFile
+    private sealed class HexOpenedFile : SimpleOpenedFile
     {
         public HexOpenedFile(FileName fileName)
+            : base(fileName)
         {
-            FileName = fileName;
         }
-
-        public override event EventHandler? FileClosed;
     }
 
     private sealed class HexNavigationPoint : INavigationPoint

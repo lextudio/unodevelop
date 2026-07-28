@@ -494,16 +494,12 @@ internal sealed class ResourceViewerViewContent : IViewContent
         return (state & Windows.UI.Core.CoreVirtualKeyStates.Down) == Windows.UI.Core.CoreVirtualKeyStates.Down;
     }
 
-    private sealed class ResourceOpenedFile : OpenedFile
+    private sealed class ResourceOpenedFile : SimpleOpenedFile
     {
         public ResourceOpenedFile(string filePath)
+            : base(filePath)
         {
-            FileName = ICSharpCode.Core.FileName.Create(filePath);
         }
-
-        public override event EventHandler? FileClosed;
-
-        public void NotifyClosed() => FileClosed?.Invoke(this, EventArgs.Empty);
     }
 
     private sealed class ResourceNavigationPoint : INavigationPoint
