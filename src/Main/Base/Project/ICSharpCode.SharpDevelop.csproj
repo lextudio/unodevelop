@@ -122,7 +122,11 @@
     <Compile Include="..\Src\Workbench\IWorkbench.uno.cs" />
     <Compile Include="..\Src\Workbench\ViewContentEventArgs.uno.cs" />
     <Compile Include="..\Src\Editor\ITextMarker.uno.cs" />
-    <Compile Include="..\Src\Internal\Doozers\IOptionPanel.uno.cs" />
+    <Compile Include="..\Src\OptionPanels\IOptionPanel.cs" />
+    <Compile Include="..\Src\OptionPanels\IOptionPanelDescriptor.cs" />
+    <Compile Include="..\Src\OptionPanels\OptionPanel.cs" />
+    <Compile Include="..\Src\OptionPanels\DefaultOptionPanelDescriptor.cs" />
+    <Compile Include="..\Src\OptionPanels\OptionPanelDoozer.cs" />
     <!-- Editor Bookmarks -->
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Editor\Bookmarks\IBookmark.cs"
              Link="Upstream\Editor\Bookmarks\IBookmark.cs" />

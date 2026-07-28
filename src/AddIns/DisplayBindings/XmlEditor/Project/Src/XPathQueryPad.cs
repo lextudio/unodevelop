@@ -4,6 +4,8 @@ namespace ICSharpCode.XmlEditor
 {
 	public class XPathQueryPad : AbstractPadContent
 	{
-		public override object Control => null;
+		XPathQueryControl control = new XPathQueryControl();
+
+		public override object Control => control;
 	}
 }

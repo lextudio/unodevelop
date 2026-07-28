@@ -1,14 +1,25 @@
 using System;
-using System.Collections.Generic;
-using Windows.UI;
 using ICSharpCode.AvalonEdit.Document;
 using ICSharpCode.SharpDevelop.Editor;
 
 namespace ICSharpCode.XmlEditor
 {
-	public static class XPathNodeTextMarker
+	public class XPathNodeTextMarker
 	{
-		public static void RemoveMarkers(ITextEditor textEditor)
+		IDocument document;
+		ITextMarkerService markerService;
+
+		public XPathNodeTextMarker(IDocument document)
+		{
+			this.document = document;
+			markerService = document.GetService(typeof(ITextMarkerService)) as ITextMarkerService;
+		}
+
+		public void AddMarkers(XPathNodeMatch[] nodes)
+		{
+		}
+
+		public static void RemoveMarkers(IServiceProvider serviceProvider)
 		{
 		}
 	}

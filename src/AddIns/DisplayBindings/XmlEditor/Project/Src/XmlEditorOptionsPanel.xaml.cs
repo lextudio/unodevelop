@@ -1,30 +1,84 @@
-﻿// Copyright (c) 2014 AlphaSierraPapa for the SharpDevelop Team
-// 
-// Permission is hereby granted, free of charge, to any person obtaining a copy of this
-// software and associated documentation files (the "Software"), to deal in the Software
-// without restriction, including without limitation the rights to use, copy, modify, merge,
-// publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons
-// to whom the Software is furnished to do so, subject to the following conditions:
-// 
-// The above copyright notice and this permission notice shall be included in all copies or
-// substantial portions of the Software.
-// 
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
-// INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
-// PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE
-// FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
-// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-// DEALINGS IN THE SOFTWARE.
-
-using System;
-using ICSharpCode.SharpDevelop.Gui;
+﻿using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
+using UnoDevelop.OptionPanels;
 
 namespace ICSharpCode.XmlEditor
 {
-	public partial class XmlEditorOptionsPanel : OptionPanel
+	public class XmlEditorOptionsPanel : OptionPanel
 	{
+		CheckBox showAttributesWhenFoldedCheckBox;
+		CheckBox showSchemaAnnotationCheckBox;
+
 		public XmlEditorOptionsPanel()
 		{
+			showAttributesWhenFoldedCheckBox = new CheckBox
+			{
+				Content = "${res:ICSharpCode.XmlEditor.XmlEditorOptionsPanel.ShowAttributesWhenFoldedLabel}",
+				IsChecked = XmlEditorService.ShowAttributesWhenFolded,
+			};
+			showAttributesWhenFoldedCheckBox.Checked += (s, e) => XmlEditorService.ShowAttributesWhenFolded = true;
+			showAttributesWhenFoldedCheckBox.Unchecked += (s, e) => XmlEditorService.ShowAttributesWhenFolded = false;
+
+			var foldingGroup = new Border
+			{
+				BorderBrush = Application.Current.Resources["CardStrokeColorDefaultBrush"] as Brush,
+				BorderThickness = new Thickness(1),
+				CornerRadius = new CornerRadius(4),
+				Padding = new Thickness(8),
+				Margin = new Thickness(5),
+				Child = new StackPanel
+				{
+					Children =
+					{
+						new TextBlock
+						{
+							Text = "${res:ICSharpCode.XmlEditor.XmlEditorOptionsPanel.FoldingGroupLabel}",
+							FontWeight = Microsoft.UI.Text.FontWeights.Bold,
+							Margin = new Thickness(0, 0, 0, 4),
+						},
+						showAttributesWhenFoldedCheckBox,
+					}
+				}
+			};
+
+			showSchemaAnnotationCheckBox = new CheckBox
+			{
+				Content = "${res:ICSharpCode.XmlEditor.XmlEditorOptionsPanel.ShowSchemaAnnotationLabel}",
+				IsChecked = XmlEditorService.ShowSchemaAnnotation,
+			};
+			showSchemaAnnotationCheckBox.Checked += (s, e) => XmlEditorService.ShowSchemaAnnotation = true;
+			showSchemaAnnotationCheckBox.Unchecked += (s, e) => XmlEditorService.ShowSchemaAnnotation = false;
+
+			var completionGroup = new Border
+			{
+				BorderBrush = Application.Current.Resources["CardStrokeColorDefaultBrush"] as Brush,
+				BorderThickness = new Thickness(1),
+				CornerRadius = new CornerRadius(4),
+				Padding = new Thickness(8),
+				Margin = new Thickness(5),
+				Child = new StackPanel
+				{
+					Children =
+					{
+						new TextBlock
+						{
+							Text = "${res:ICSharpCode.XmlEditor.XmlEditorOptionsPanel.XmlCompletionGroupLabel}",
+							FontWeight = Microsoft.UI.Text.FontWeights.Bold,
+							Margin = new Thickness(0, 0, 0, 4),
+						},
+						showSchemaAnnotationCheckBox,
+					}
+				}
+			};
+
+			Content = new StackPanel
+			{
+				Children =
+				{
+					foldingGroup,
+					completionGroup,
+				}
+			};
 		}
 	}
 }

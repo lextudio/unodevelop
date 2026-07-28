@@ -11,11 +11,45 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- Locally-kept sources: the 14 files that genuinely diverged from upstream (ported to Uno /
+         reworked) plus Stubs.cs, which stands in for the WPF tree-view UI still sitting unported in
+         _WpfToPort (XmlTreeView/XmlTreeViewControl/XmlTreeViewContainerControl/SelectXmlSchemaWindow).
+         Everything else is linked from upstream below - see doc/technotes/xml-editor.md. -->
     <Compile Include="Src\**\*.cs" />
     <Content Remove="_WpfToPort\**\*.*" />
     <Compile Remove="_WpfToPort\**\*.*" />
     <Page Remove="_WpfToPort\**\*.*" />
     <None Remove="_WpfToPort\**\*.*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- 78 files that were byte-for-byte identical hand-copies of OpenDevelop's XmlEditor AddIn,
+         now linked from upstream instead of maintained as a second copy (see
+         doc/technotes/xml-editor.md). The Exclude list is the 14 diverged files kept locally above,
+         plus the 6 WPF-only UI classes UnoDevelop replaces with Stubs.cs - those must NOT be
+         compiled here (they are WPF UserControls with no Uno equivalent). -->
+    <Compile Include="$(SharpDevelopSourceRoot)\src\AddIns\DisplayBindings\XmlEditor\Project\Src\**\*.cs"
+             Exclude="$(SharpDevelopSourceRoot)\src\AddIns\DisplayBindings\XmlEditor\Project\Src\AddXmlNodeDialog.cs;
+             $(SharpDevelopSourceRoot)\src\AddIns\DisplayBindings\XmlEditor\Project\Src\AssignStylesheetCommand.cs;
+             $(SharpDevelopSourceRoot)\src\AddIns\DisplayBindings\XmlEditor\Project\Src\FoldingManagerAdapter.cs;
+             $(SharpDevelopSourceRoot)\src\AddIns\DisplayBindings\XmlEditor\Project\Src\IXmlSchemasPanel.cs;
+             $(SharpDevelopSourceRoot)\src\AddIns\DisplayBindings\XmlEditor\Project\Src\RegisteredXmlSchemasEditor.cs;
+             $(SharpDevelopSourceRoot)\src\AddIns\DisplayBindings\XmlEditor\Project\Src\RunXslTransformCommand.cs;
+             $(SharpDevelopSourceRoot)\src\AddIns\DisplayBindings\XmlEditor\Project\Src\SelectXmlSchemaWindow.xaml.cs;
+             $(SharpDevelopSourceRoot)\src\AddIns\DisplayBindings\XmlEditor\Project\Src\XPathNodeTextMarker.cs;
+             $(SharpDevelopSourceRoot)\src\AddIns\DisplayBindings\XmlEditor\Project\Src\XPathQueryControl.cs;
+             $(SharpDevelopSourceRoot)\src\AddIns\DisplayBindings\XmlEditor\Project\Src\XPathQueryPad.cs;
+             $(SharpDevelopSourceRoot)\src\AddIns\DisplayBindings\XmlEditor\Project\Src\XmlDisplayBinding.cs;
+             $(SharpDevelopSourceRoot)\src\AddIns\DisplayBindings\XmlEditor\Project\Src\XmlEditorOptionsPanel.xaml.cs;
+             $(SharpDevelopSourceRoot)\src\AddIns\DisplayBindings\XmlEditor\Project\Src\XmlFoldingManager.cs;
+             $(SharpDevelopSourceRoot)\src\AddIns\DisplayBindings\XmlEditor\Project\Src\XmlFormattingStrategy.cs;
+             $(SharpDevelopSourceRoot)\src\AddIns\DisplayBindings\XmlEditor\Project\Src\XmlSchemasPanel.xaml.cs;
+             $(SharpDevelopSourceRoot)\src\AddIns\DisplayBindings\XmlEditor\Project\Src\XmlTreeNode.cs;
+             $(SharpDevelopSourceRoot)\src\AddIns\DisplayBindings\XmlEditor\Project\Src\XmlTreeView.cs;
+             $(SharpDevelopSourceRoot)\src\AddIns\DisplayBindings\XmlEditor\Project\Src\XmlTreeViewContainerControl.cs;
+             $(SharpDevelopSourceRoot)\src\AddIns\DisplayBindings\XmlEditor\Project\Src\XmlTreeViewControl.cs;
+             $(SharpDevelopSourceRoot)\src\AddIns\DisplayBindings\XmlEditor\Project\Src\XmlView.cs"
+             Link="Upstream\%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
 
   <ItemGroup>
