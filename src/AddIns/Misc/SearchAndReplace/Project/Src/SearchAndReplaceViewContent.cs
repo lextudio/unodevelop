@@ -525,7 +525,7 @@ public sealed class SearchAndReplaceViewContent : IViewContent
 
     private static IEnumerable<string> GetCurrentProjectFiles()
     {
-        var project = ProjectService.CurrentProject;
+        var project = SD.ProjectService.CurrentProject;
         if (project is null)
             yield break;
 
@@ -537,7 +537,7 @@ public sealed class SearchAndReplaceViewContent : IViewContent
 
     private static IEnumerable<string> GetSolutionFiles()
     {
-        var solution = ProjectService.OpenSolution;
+        var solution = SD.ProjectService.CurrentSolution;
         if (solution is null)
             yield break;
 

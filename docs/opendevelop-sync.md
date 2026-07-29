@@ -83,7 +83,25 @@ IParserService
 
 - Decision: keep UnoDevelop's DAP-based `DebugService` and `Main/Debugger` surface.
 - Do not port OpenDevelop's Windows/COM-oriented `Debugger.Core` wholesale.
-- Still needed: stronger debugger parity tests for live break mode, stepping, continue, current file/line, locals, expression evaluation, and failure handling.
+- Done: strengthened debugger parity tests. `DebuggerIntegrationTests.cs` (real DAP session against
+  the `DebugTestApp` fixture) gained 5 tests: invalid-expression evaluate (must error via `ide-evaluate`,
+  not throw/hang the DevFlow round-trip, then a subsequent valid evaluate still succeeds), double-start
+  rejection (`ide-debug-project` while already debugging returns `started:false, error:"Already
+  debugging."` without disturbing the live session), stop-while-stepping (`ide-stop-debug` issued
+  immediately after an in-flight step terminates cleanly, no hang/exception), an out-of-range
+  breakpoint line (99999) not crashing bookmark-add/sync/debug-launch, and a multi-breakpoint
+  stop-sequencing test proving `CurrentStopSequence` strictly increases and reported current
+  file/line change correctly across breakpoint-hit → step-over → (line advances, no more
+  breakpoints ahead so a further continue reports `stopped:false` rather than hanging).
+  `DebugServiceStateTests.cs` gained a not-debugging `SetBreakpointsAsync` no-op test, plus a new
+  sibling `DebugServiceBuildResolutionTests.cs` reaching the private static
+  `ResolveBuildOutputAsync` build-output-resolution helper via reflection to verify it returns null
+  (not an exception) and reports something to the output category when pointed at a nonexistent
+  project. Verified: `UnoDevelop.Core.Tests` 234/234, `UnoDevelop.IntegrationTests` 79/79.
+  Remaining gap: no test drives a *second* real breakpoint hit purely via `ide-debug-continue`
+  (the existing `ContinueDebug_HitsSecondBreakpoint` test covers that path already); the new
+  stop-sequencing test instead uses step-over for its second stop since the fixture app's `Main`
+  has no loop to hit the same breakpoint twice under `continue`.
 
 ### Parser Compatibility
 
@@ -318,8 +336,27 @@ because LibreWPF MVP has fully modernized them. Do not use their presence as a m
 
 ### Packaging / CI
 
-- macOS `.app`/`.dmg` packaging is not unified with OpenDevelop's packaging flow yet.
-- CI should wait until build scripts, integration tests, and package layout are stable.
+- Investigated: OpenDevelop does not currently have a committed, working macOS packaging flow to
+  unify against. `externals/OpenDevelop/dist.macos.sh` references `build/macos/build-application-bundle.sh`,
+  `build/macos/build-dmg.sh`, `build/macos/Info.plist`, and an icon file, but that whole `build/`
+  directory is gitignored in the OpenDevelop submodule (`externals/OpenDevelop/.gitignore:5`) and is
+  absent from disk and from git history — it's WIP/local-only tooling that never landed. OpenDevelop's
+  own sync ledger (`externals/OpenDevelop/doc/technotes/opendevelop-sync.md:24`) already documents this
+  as deliberately deferred, "its own verification pass, not a safe drive-by edit." There is also no
+  `.github/workflows/` in either repo today.
+- UnoDevelop's own flow (`dist.macos.sh` + `build/macos/build-application-bundle.sh` + `build/macos/build-dmg.sh`
+  + `build/macos/Info.plist`/icon) is the more complete, actually-working reference implementation right
+  now — it was ported from OpenDevelop's script skeleton and extended with a Uno/Skia-specific fix
+  (mirroring assets into `Contents/MacOS/Resources` so `ms-appx:///Resources` paths resolve, see comments
+  in `build-application-bundle.sh`). Neither script signs or notarizes the bundle.
+- True unification can't mean byte-identical logic even once OpenDevelop's flow lands: OpenDevelop is
+  WPF/LibreWPF (`net10.0-windows`, running on macOS only via LibreWPF's Win32 shims) with its own AvalonDock
+  auto-hide workaround needs, while UnoDevelop is Uno/Skia-backed with different asset-resolution needs.
+  What's realistically shareable is the script *skeleton* (publish-per-RID → build bundle → build dmg),
+  parameterized by app name/TFM/RID list/Info.plist/icon, with framework-specific steps (Skia resource
+  mirror vs AvalonDock workaround) as opt-in stages — not shared step-for-step logic.
+- CI should still wait until OpenDevelop's own build scripts, integration tests, and package layout are
+  stable and actually committed — there's nothing to converge with yet.
 
 ### Open Test Debt
 
@@ -330,7 +367,20 @@ because LibreWPF MVP has fully modernized them. Do not use their presence as a m
   session reuse across repeated calls, TFM-set-change rebuild, and prune/dispose-and-rebuild — the
   behaviors that live specifically in the factory rather than in `ProjectSystemTreeProviderTests`'s
   already-existing end-to-end tree-shape coverage. Verified via `UnoDevelop.Core.Tests` (228/228).
-- Still needed: regression coverage for solution-explorer context-menu hit testing and flyout command routing.
+- Done: added `SolutionExplorerContextMenuTests.cs` covering Solution Explorer's context-menu
+  pipeline. Layer B (priority) builds a fresh, isolated `AddInTreeImpl` loaded with a synthetic
+  in-memory addin (via `AddIn.Load(IAddInTree, TextReader, ...)`), temporarily swaps
+  `ServiceSingleton.ServiceProvider` (save/restore in try/finally) to resolve `IAddInTree` to it, and
+  drives the exact `BuildItems`/`Condition.GetFailedAction`/`CommandWrapper.CreateLazyCommand`
+  pipeline `UnoAddInContextMenuBuilder` itself calls, proving Exclude/Disable/plain-item outcomes and
+  that "clicking" invokes a real `AbstractMenuCommand` subclass with the correct Owner. It also loads
+  the real, unmodified `Explorer.addin` to lock in a known, pre-existing gap: a `<Condition>` nested
+  as a *child* of a leaf `<MenuItem>` (Explorer.addin's actual syntax for Rename/Delete/etc.) is
+  silently dropped by `ExtensionPath.DoSetUp` and never reaches that item's `Codon.Conditions`.
+  Layer A (`MainPage.TryResolveNodeContext`, widened from private to internal for testability) was
+  scoped out: realizing a live `TreeViewItem` container and even constructing a bare `MenuFlyout`
+  both require a running Uno dispatcher/layout pass that this headless NUnit host doesn't have.
+  Verified via `UnoDevelop.Core.Tests` (232/232).
 - Keep full integration verification on the MTP runner path documented in `AGENTS.md`.
 
 ## Deliberately Not Unified

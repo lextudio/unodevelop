@@ -82,10 +82,6 @@
     <MenuItem id="Options" label="Options" class="UnoDevelop.Commands.OptionsCommand" />
   </Path>
 
-  <Path name="/UnoDevelop/MainMenu/Window">
-    <MenuItem id="ShowStartPage" label="Start Page" class="UnoDevelop.StartPage.ShowStartPageCommand" />
-  </Path>
-
   <Path name="/UnoDevelop/MainMenu/Help">
   </Path>
 

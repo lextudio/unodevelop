@@ -30,24 +30,25 @@ public partial class MainPage
 
     private async Task LoadSolutionTreeAsync()
     {
-        var projectRoot = Directory.GetCurrentDirectory();
         SolutionTree.RootNodes.Clear();
 
-        if (_projectService?.CurrentSolution is not null)
+        // UnoProjectService always has a non-null CurrentSolution: a placeholder "Untitled"
+        // solution with no backing file and no projects, used purely so other code doesn't need
+        // to null-check CurrentSolution. It was never actually opened, so it must not surface as a
+        // Solution Explorer node (an empty tree - with the Start Page shown instead - is correct
+        // here). A real, opened solution always has projects and/or a FileName that exists on
+        // disk; the placeholder has neither.
+        var currentSolution = _projectService?.CurrentSolution;
+        var isRealSolution = currentSolution is not null
+            && ((currentSolution.Projects?.Count ?? 0) > 0 || File.Exists(currentSolution.FileName?.ToString()));
+        if (isRealSolution)
         {
-            SolutionTree.RootNodes.Add(await SolutionExplorerTreeBuilder.CreateSolutionNodeAsync(_projectService.CurrentSolution));
-            return;
+            SolutionTree.RootNodes.Add(await SolutionExplorerTreeBuilder.CreateSolutionNodeAsync(currentSolution!));
         }
 
-        var solutionPath = SolutionExplorerTreeBuilder.ResolveBestSolutionPath(projectRoot);
-        if (solutionPath != null)
-        {
-            SolutionTree.RootNodes.Add(await SolutionExplorerTreeBuilder.CreateSolutionNodeAsync(solutionPath, projectRoot));
-            return;
-        }
-
-        var rootItem = new ProjectBrowserNodeContext(Path.GetFileName(projectRoot), projectRoot, true);
-        SolutionTree.RootNodes.Add(SolutionExplorerTreeBuilder.CreateDirectoryNode(rootItem, 0, 3));
+        // No real solution/project is open: leave the tree empty rather than guessing at a
+        // directory-derived tree - the Start Page is shown instead (see AutostartNothingLoaded
+        // wiring in MainPage.xaml.cs).
     }
 
     private void EnsureProjectServiceSolutionLoaded(string projectRoot)

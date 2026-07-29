@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using NUnit.Framework;
 using UnoDevelop.Services;
@@ -124,6 +125,17 @@ public sealed class DebugServiceStateTests
     {
         using var s = new DebugService();
         Assert.That(() => s.PauseAsync(), Throws.Nothing);
+    }
+
+    [Test]
+    public async Task SetBreakpointsAsync_WhenNotDebugging_DoesNotThrow()
+    {
+        // No live DAP session yet (_session is null) - DebugService.SetBreakpointsAsync must just
+        // no-op rather than throw, since the real bookkeeping ("what breakpoints exist") lives in
+        // SD.BookmarkManager and gets synced to the session on the next StartAsync via
+        // SyncAllBreakpointsAsync, not in DebugService itself.
+        using var s = new DebugService();
+        Assert.That(async () => await s.SetBreakpointsAsync("Program.cs", new List<int> { 5, 10 }), Throws.Nothing);
     }
 
     [Test]

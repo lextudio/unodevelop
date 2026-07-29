@@ -1180,11 +1180,19 @@ public partial class MainPage : Page, IProjectBrowserHost
                 PopulateExplorerChrome();
                 if ((_projectService?.CurrentSolution?.Projects?.Count ?? 0) == 0)
                 {
-                    foreach (System.Windows.Input.ICommand command in ICSharpCode.Core.AddInTree.BuildItems<System.Windows.Input.ICommand>(
-                        "/SharpDevelop/Workbench/AutostartNothingLoaded", null, false))
+                    // Deferred to a later dispatcher turn: this fires from the very first
+                    // SolutionExplorerPad attach, before the docking layout has finished being
+                    // deserialized/attached to the DockingManager - adding a document directly to
+                    // DocumentPane.Children at this point silently has no visible effect (the
+                    // pane reference isn't yet the one the DockingManager is actually rendering).
+                    DispatcherQueue.TryEnqueue(() =>
                     {
-                        command.Execute(null);
-                    }
+                        foreach (System.Windows.Input.ICommand command in ICSharpCode.Core.AddInTree.BuildItems<System.Windows.Input.ICommand>(
+                            "/SharpDevelop/Workbench/AutostartNothingLoaded", null, false))
+                        {
+                            command.Execute(null);
+                        }
+                    });
                 }
                 break;
             case TestResultsPad testResultsPad:

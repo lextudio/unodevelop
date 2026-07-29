@@ -288,6 +288,176 @@ public sealed class DebuggerIntegrationTests
         }
     }
 
+    [Fact]
+    public async Task Evaluate_WithInvalidExpression_ReturnsErrorInsteadOfThrowingOrHanging()
+    {
+        var program = ProgramPath;
+        var breakpointLine = FindLine(program, "var message = ComputeGreeting(\"World\");");
+
+        await _app.InvokeAsync("ide-open-project", _app.DebugTestProjectPath);
+        await _app.InvokeAsync("ide-open-file", program);
+        await _app.InvokeAsync("ide-clear-breakpoints");
+        await _app.InvokeAsync("ide-set-breakpoint", program, breakpointLine);
+
+        try
+        {
+            var start = await _app.InvokeAsync("ide-debug-project", _app.DebugTestProjectPath, true, 45);
+            Assert.True(start.GetProperty("stopped").GetBoolean(), start.ToString());
+
+            // ide-evaluate returns a plain "ERROR: ..." string (not JSON) on failure, so use
+            // InvokeStringAsync rather than InvokeAsync (which would try to JSON-parse it).
+            var evaluated = await _app.InvokeStringAsync("ide-evaluate", "this is not ) a valid c# expr (((");
+            Assert.StartsWith("ERROR", evaluated);
+
+            // The round-trip itself must still be alive afterwards - a real subsequent call succeeds.
+            var validEvaluate = await _app.InvokeAsync("ide-evaluate", "answer");
+            Assert.Contains("42", validEvaluate.GetProperty("Value").GetString());
+        }
+        finally
+        {
+            await _app.InvokeAsync("ide-stop-debug");
+        }
+    }
+
+    [Fact]
+    public async Task DebugProject_WhileAlreadyDebugging_IsRejectedNotDoubleStarted()
+    {
+        var program = ProgramPath;
+        var breakpointLine = FindLine(program, "var message = ComputeGreeting(\"World\");");
+
+        await _app.InvokeAsync("ide-open-project", _app.DebugTestProjectPath);
+        await _app.InvokeAsync("ide-open-file", program);
+        await _app.InvokeAsync("ide-clear-breakpoints");
+        await _app.InvokeAsync("ide-set-breakpoint", program, breakpointLine);
+
+        try
+        {
+            var start = await _app.InvokeAsync("ide-debug-project", _app.DebugTestProjectPath, true, 45);
+            Assert.True(start.GetProperty("stopped").GetBoolean(), start.ToString());
+
+            // A second concurrent ide-debug-project call must be rejected cleanly, not spawn a
+            // second session or crash - DebugService.StartAsync/the action both guard IsDebugging.
+            // Use InvokeRawAsync (not InvokeAsync) since the expected result legitimately contains
+            // an "error" property - InvokeAsync would treat that as a probe failure and throw.
+            var second = await _app.InvokeRawAsync("ide-debug-project", _app.DebugTestProjectPath, false, 5);
+            Assert.False(second.GetProperty("started").GetBoolean(), second.ToString());
+            Assert.True(second.TryGetProperty("error", out var err), second.ToString());
+            Assert.Contains("Already debugging", err.GetString());
+
+            // The original session must still be alive and unaffected.
+            var info = await _app.InvokeAsync("ide-debug-service-info");
+            Assert.True(info.GetProperty("isDebugging").GetBoolean());
+        }
+        finally
+        {
+            await _app.InvokeAsync("ide-stop-debug");
+        }
+    }
+
+    [Fact]
+    public async Task StopDebug_WhileStepInFlight_TerminatesCleanlyWithoutHanging()
+    {
+        var program = ProgramPath;
+        var breakpointLine = FindLine(program, "var message = ComputeGreeting(\"World\");");
+
+        await _app.InvokeAsync("ide-open-project", _app.DebugTestProjectPath);
+        await _app.InvokeAsync("ide-open-file", program);
+        await _app.InvokeAsync("ide-clear-breakpoints");
+        await _app.InvokeAsync("ide-set-breakpoint", program, breakpointLine);
+
+        try
+        {
+            var start = await _app.InvokeAsync("ide-debug-project", _app.DebugTestProjectPath, true, 45);
+            Assert.True(start.GetProperty("stopped").GetBoolean(), start.ToString());
+
+            // Fire a step-into but don't await its full round trip (short timeout so the HTTP call
+            // itself still returns), then immediately request stop-debug. Neither call should hang
+            // nor surface an exception to the client.
+            var stepTask = _app.InvokeAsync("ide-debug-step-into", 1);
+            var stop = await _app.InvokeAsync("ide-stop-debug");
+            Assert.True(stop.GetProperty("success").GetBoolean(), stop.ToString());
+            Assert.False(stop.GetProperty("isDebugging").GetBoolean());
+
+            // The in-flight step call must still complete (its own timeout) rather than hang forever.
+            var stepResult = await stepTask;
+            Assert.False(stepResult.GetProperty("isDebugging").GetBoolean(), stepResult.ToString());
+
+            var info = await _app.InvokeAsync("ide-debug-service-info");
+            Assert.False(info.GetProperty("isDebugging").GetBoolean());
+        }
+        finally
+        {
+            await _app.InvokeAsync("ide-stop-debug");
+        }
+    }
+
+    [Fact]
+    public async Task MultipleBreakpoints_StopSequenceAndPositionAdvanceAcrossStepAndContinue()
+    {
+        var program = ProgramPath;
+        var firstLine = FindLine(program, "var message = ComputeGreeting(\"World\");");
+        var secondLine = FindLine(program, "Console.WriteLine(message);");
+
+        await _app.InvokeAsync("ide-open-project", _app.DebugTestProjectPath);
+        await _app.InvokeAsync("ide-open-file", program);
+        await _app.InvokeAsync("ide-clear-breakpoints");
+        await _app.InvokeAsync("ide-set-breakpoint", program, firstLine);
+        await _app.InvokeAsync("ide-set-breakpoint", program, secondLine);
+
+        try
+        {
+            var start = await _app.InvokeAsync("ide-debug-project", _app.DebugTestProjectPath, true, 45);
+            Assert.True(start.GetProperty("stopped").GetBoolean(), start.ToString());
+            var sequenceAtFirstBreak = start.GetProperty("stopSequence").GetInt32();
+            Assert.Equal(firstLine, start.GetProperty("currentLine").GetInt32());
+            Assert.EndsWith("Program.cs", Normalize(start.GetProperty("currentFile").GetString()));
+
+            var stepOver = await _app.InvokeAsync("ide-debug-step-over", 30);
+            Assert.True(stepOver.GetProperty("stopped").GetBoolean(), stepOver.ToString());
+            var sequenceAfterStepOver = stepOver.GetProperty("stopSequence").GetInt32();
+            Assert.True(sequenceAfterStepOver > sequenceAtFirstBreak,
+                $"expected stop sequence to advance: {sequenceAtFirstBreak} -> {sequenceAfterStepOver}");
+            Assert.Equal(secondLine, stepOver.GetProperty("currentLine").GetInt32());
+            Assert.EndsWith("Program.cs", Normalize(stepOver.GetProperty("currentFile").GetString()));
+
+            // Continuing now runs the program to completion (no further breakpoints ahead), so this
+            // exercises that ide-debug-continue reports "not stopped" (timeout) rather than hanging.
+            var cont = await _app.InvokeAsync("ide-debug-continue", 5);
+            Assert.False(cont.GetProperty("stopped").GetBoolean(), cont.ToString());
+        }
+        finally
+        {
+            await _app.InvokeAsync("ide-stop-debug");
+        }
+    }
+
+    [Fact]
+    public async Task SetBreakpoint_AtOutOfRangeLine_DoesNotCrashDebugStart()
+    {
+        var program = ProgramPath;
+        // Program.cs is only ~23 lines; this is well past EOF and must not crash bookmark-add,
+        // breakpoint sync, or the subsequent debug launch - either ignored or reported, never hung.
+        const int outOfRangeLine = 99999;
+        var realBreakpointLine = FindLine(program, "var message = ComputeGreeting(\"World\");");
+
+        await _app.InvokeAsync("ide-open-project", _app.DebugTestProjectPath);
+        await _app.InvokeAsync("ide-open-file", program);
+        await _app.InvokeAsync("ide-clear-breakpoints");
+        await _app.InvokeAsync("ide-set-breakpoint", program, outOfRangeLine);
+        await _app.InvokeAsync("ide-set-breakpoint", program, realBreakpointLine);
+
+        try
+        {
+            var start = await _app.InvokeAsync("ide-debug-project", _app.DebugTestProjectPath, true, 45);
+            Assert.True(start.GetProperty("stopped").GetBoolean(), start.ToString());
+            Assert.Equal(realBreakpointLine, start.GetProperty("currentLine").GetInt32());
+        }
+        finally
+        {
+            await _app.InvokeAsync("ide-stop-debug");
+        }
+    }
+
     string ProgramPath => Path.Combine(Path.GetDirectoryName(_app.DebugTestProjectPath)!, "Program.cs");
 
     static int FindLine(string path, string marker)

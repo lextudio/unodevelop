@@ -3,6 +3,7 @@
   <RootPanel Orientation="Horizontal">
     <LayoutAnchorablePane DockWidth="280" Id="d1e25324-55c5-4a2c-9007-94a9113e85e1" Name="LeftPane">
       <LayoutAnchorable Title="Solution Explorer" ContentId="UnoDevelop.Workbench.SolutionExplorerPad" IsSelected="true" AutoHideMinWidth="100" AutoHideMinHeight="100" />
+      <LayoutAnchorable Title="Toolbox" ContentId="UnoDevelop.Workbench.ToolboxPad" AutoHideMinWidth="100" AutoHideMinHeight="100" />
     </LayoutAnchorablePane>
     <LayoutPanel Orientation="Vertical">
       <LayoutDocumentPane>
@@ -21,11 +22,7 @@
       <LayoutAnchorable Title="Properties" ContentId="UnoDevelop.Workbench.PropertiesPad" IsSelected="true" AutoHideMinWidth="100" AutoHideMinHeight="100" />
     </LayoutAnchorGroup>
   </RightSide>
-  <LeftSide>
-    <LayoutAnchorGroup PreviousContainerId="d1e25324-55c5-4a2c-9007-94a9113e85e1">
-      <LayoutAnchorable Title="Toolbox" ContentId="UnoDevelop.Workbench.ToolboxPad" AutoHideMinWidth="100" AutoHideMinHeight="100" />
-    </LayoutAnchorGroup>
-  </LeftSide>
+  <LeftSide />
   <BottomSide />
   <FloatingWindows />
   <Hidden>

@@ -20,10 +20,16 @@
 		       class="UnoDevelop.StartPage.ShowStartPageCommand" />
 	</Path>
 	
-	<!-- View > Show Start Page menu -->
-	<Path name="/SharpDevelop/Workbench/MainMenu/View">
+	<!-- Window > Start Page menu - UnoDevelop's own main menu bar (MainPage.SolutionExplorer.cs's
+	     PopulateAddInMenu) builds from /UnoDevelop/MainMenu/*, not OpenDevelop's
+	     /SharpDevelop/Workbench/MainMenu/* paths, and has no "View" menu (only File/Edit/Project/
+	     Build/Debug/Search/Tools/Window/Help) - registering under the Window menu here, in this
+	     addin's own file, so its <Runtime> import of UnoDevelop.StartPage.dll can actually resolve
+	     the class (a copy previously lived in Shell.addin instead, whose <Runtime> only imports
+	     ":UnoDevelop" and had no way to resolve a type from this separate addin assembly). -->
+	<Path name="/UnoDevelop/MainMenu/Window">
 		<MenuItem id="ShowStartPage"
-		          label="Show Start Page"
+		          label="Start Page"
 		          class="UnoDevelop.StartPage.ShowStartPageCommand" />
 	</Path>
 	
