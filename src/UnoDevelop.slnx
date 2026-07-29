@@ -3,6 +3,9 @@
   <Folder Name="/Main/">
     <Project Path="Main/SharpDevelop/SharpDevelop.csproj" />
   </Folder>
+  <Folder Name="/LanguageServer/">
+    <Project Path="LanguageServer/XamlLanguageServer.Uno/XamlLanguageServer.Uno.csproj" />
+  </Folder>
   <Folder Name="/Main/Core/" />
   <Folder Name="/Main/Core/Project/">
     <Project Path="Main/Core/Project/ICSharpCode.Core.csproj" />

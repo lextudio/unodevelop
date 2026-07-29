@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Windows.Threading;
 using ICSharpCode.Core;
@@ -109,9 +110,39 @@ internal static class ServiceBootstrapper
         // lazily on first document of its language; silently falls back to lexical-only
         // highlighting if the configured command isn't on PATH.
         var lspServerRegistry = LspServerRegistry.CreateDefault();
+        // CreateDefault() maps ".xaml" to OpenDevelop's WPF language server (both hosts share
+        // this Base-layer registry via SharpDevelopSourceRoot), which serves WPF's XAML dialect,
+        // not Uno's. Overwrite it with UnoDevelop's own Uno-framework language server before the
+        // registration loop below picks it up - see externals/OpenDevelop/doc/technotes/language-services.md.
+        var unoDevelopRoot = FindUnoDevelopRoot();
+        if (unoDevelopRoot != null)
+        {
+            var unoServerDll = FindUnoLanguageServerDll(unoDevelopRoot);
+            if (unoServerDll != null)
+            {
+                // "dotnet exec <dll>" instead of "dotnet run --project <csproj>": a plain
+                // "dotnet run" triggers an implicit restore/build whenever anything is out of
+                // date, and MSBuild/NuGet write that progress to stdout - the same stream this
+                // process's stdio-framed LSP protocol lives on, corrupting every frame after it.
+                // "dotnet exec" runs the already-built assembly directly with no such check, so
+                // the very first byte on stdout is the LSP handshake. This does mean the project
+                // must have been built at least once (true for a normal solution build, since
+                // XamlLanguageServer.Uno.csproj is now part of UnoDevelop.slnx) - if it hasn't,
+                // there's no fallback here and the language service quietly stays unavailable
+                // (falls back to lexical-only highlighting) rather than corrupting its own pipe.
+                lspServerRegistry.Register(".xaml", new LspServerLaunchSpec(
+                    "xaml",
+                    "dotnet",
+                    unoDevelopRoot,
+                    "exec",
+                    unoServerDll,
+                    "--workspace",
+                    unoDevelopRoot));
+            }
+        }
         var rootUri = new System.Uri(System.IO.Path.GetFullPath(System.IO.Directory.GetCurrentDirectory())).AbsoluteUri;
         var lspServicesByLanguageId = new Dictionary<string, LspLanguageService>();
-        foreach (var extension in new[] { ".ts", ".tsx", ".js", ".jsx", ".py", ".fs", ".fsi" })
+        foreach (var extension in new[] { ".xaml", ".ts", ".tsx", ".js", ".jsx", ".py", ".fs", ".fsi" })
         {
             if (!lspServerRegistry.TryGetLaunchSpec(extension, out var launchSpec))
                 continue;
@@ -203,5 +234,48 @@ internal static class ServiceBootstrapper
             .ToList();
         addInTree.Load(addInFiles, new List<string>());
         addInTree.BuildItems<object>("/SharpDevelop/Services", container, false);
+    }
+
+    /// <summary>
+    /// Walks up from the running assembly's output directory (and, as a fallback, the current
+    /// directory) to find the UnoDevelop repository root - identified by the presence of
+    /// src/LanguageServer/XamlLanguageServer.Uno, which only exists in this repository, not in
+    /// OpenDevelop's. Mirrors LspServerRegistry.FindOpenDevelopRoot's search strategy.
+    /// </summary>
+    private static string? FindUnoDevelopRoot()
+    {
+        foreach (var candidate in new[] { AppContext.BaseDirectory, Directory.GetCurrentDirectory() })
+        {
+            var directory = string.IsNullOrEmpty(candidate) ? null : new DirectoryInfo(candidate);
+            while (directory != null)
+            {
+                if (Directory.Exists(Path.Combine(directory.FullName, "src", "LanguageServer", "XamlLanguageServer.Uno")))
+                    return directory.FullName;
+                directory = directory.Parent;
+            }
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// Finds the built uno-xaml-ls.dll under XamlLanguageServer.Uno's bin output, preferring
+    /// Release over Debug and the most recently written one within a configuration (multiple
+    /// TFM/RID subfolders are possible depending on how it was last built). Returns null if it
+    /// has never been built - callers must not fall back to "dotnet run", which would corrupt
+    /// the LSP stdio stream (see the call site's comment).
+    /// </summary>
+    private static string? FindUnoLanguageServerDll(string unoDevelopRoot)
+    {
+        var binRoot = Path.Combine(
+            unoDevelopRoot, "src", "LanguageServer", "XamlLanguageServer.Uno", "bin");
+        if (!Directory.Exists(binRoot))
+            return null;
+
+        return new[] { "Release", "Debug" }
+            .Select(configuration => Path.Combine(binRoot, configuration))
+            .Where(Directory.Exists)
+            .SelectMany(configurationDirectory => Directory.GetFiles(configurationDirectory, "uno-xaml-ls.dll", SearchOption.AllDirectories))
+            .OrderByDescending(File.GetLastWriteTimeUtc)
+            .FirstOrDefault();
     }
 }

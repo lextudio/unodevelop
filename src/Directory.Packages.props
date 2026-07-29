@@ -21,7 +21,7 @@
          actually get found - without this, in-process project evaluation silently drops every
          SDK-default item glob (Compile, Page, ...), the root cause of Solution Explorer's
          "files missing until Show All Files" bug. See ServiceBootstrapper.Initialize. -->
-    <PackageVersion Include="Microsoft.Build.Locator" Version="1.7.8" />
+    <PackageVersion Include="Microsoft.Build.Locator" Version="1.10.12" />
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp.Features" Version="5.3.0" />
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="5.3.0" />
     <PackageVersion Include="Microsoft.CodeAnalysis.VisualBasic.Features" Version="5.3.0" />

@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <!-- Plain net10.0, not net10.0-windows: unlike WPF, Uno/WinUI XAML has no
+         Windows-only reference-assembly dependency this host needs at build
+         time - all framework types come from the target project's own
+         Uno.WinUI/Uno.UI package references, resolved by MsBuildCompilationProvider
+         at runtime, not by this project's own compilation. -->
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>uno-xaml-ls</AssemblyName>
+    <RootNamespace>XamlLanguageServer.Uno</RootNamespace>
+    <!-- Single framework-dependent, portable (no RID) build - see
+         XamlLanguageServer.Wpf.csproj's identical comment for why
+         PublishReadyToRun must stay off without an explicit RID. -->
+    <PublishReadyToRun Condition="'$(RuntimeIdentifier)' == ''">false</PublishReadyToRun>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- AXSG language service infrastructure (submodule, shared with vscode-wpf) -->
+    <ProjectReference Include="..\..\..\externals\OpenDevelop\externals\vscode-wpf\external\wxsg\external\XamlToCSharpGenerator\src\XamlToCSharpGenerator.LanguageService\XamlToCSharpGenerator.LanguageService.csproj" />
+    <ProjectReference Include="..\..\..\externals\OpenDevelop\externals\vscode-wpf\external\wxsg\external\XamlToCSharpGenerator\src\XamlToCSharpGenerator.LanguageServer\XamlToCSharpGenerator.LanguageServer.csproj" />
+    <ProjectReference Include="..\..\..\externals\OpenDevelop\externals\vscode-wpf\external\wxsg\external\XamlToCSharpGenerator\src\XamlToCSharpGenerator.Framework.Abstractions\XamlToCSharpGenerator.Framework.Abstractions.csproj" />
+    <ProjectReference Include="..\..\..\externals\OpenDevelop\externals\vscode-wpf\external\wxsg\external\XamlToCSharpGenerator\src\XamlToCSharpGenerator.Core\XamlToCSharpGenerator.Core.csproj" />
+    <ProjectReference Include="..\..\..\externals\OpenDevelop\externals\vscode-wpf\external\wxsg\external\XamlToCSharpGenerator\src\XamlToCSharpGenerator.LanguageService.Framework\XamlToCSharpGenerator.LanguageService.Framework.csproj" />
+    <ProjectReference Include="..\..\..\externals\OpenDevelop\externals\vscode-wpf\external\wxsg\external\XamlToCSharpGenerator\src\XamlToCSharpGenerator.LanguageService.Framework.Uno\XamlToCSharpGenerator.LanguageService.Framework.Uno.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>XamlLanguageServer.Uno.Tests</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+</Project>
