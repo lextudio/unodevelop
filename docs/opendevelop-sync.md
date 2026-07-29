@@ -175,29 +175,54 @@ a modern technote, MVP implementation, or reusable UI-free service layer.
     handshake + completion/hover request - proving the process launches and speaks LSP correctly,
     end to end, for the first time.
 
-  **Known gaps, not yet done**:
+  **Closed since the above was written**:
+  - `LspServerRegistry.CreateDefault()`'s WPF `.xaml` mapping now launches `wpf-xaml-ls` via
+    `dotnet exec <prebuilt dll>` instead of `dotnet run --project <csproj>` - the plain `dotnet run`
+    exposure flagged below was real and has been fixed, verified via a new
+    `WpfLanguageServerIntegrationTests` that launches the actual process end to end (previously no
+    integration test had ever done so). If the dll was never built, `.xaml` is now left
+    unregistered rather than risking a corrupted stdio pipe.
+  - A real, restorable Uno.Sdk fixture now exists (`src/Tests/fixtures/UnoXamlFixture`, a minimal
+    net10.0-desktop single project) and `UnoLanguageServerIntegrationTests` drives a genuine
+    MSBuild evaluation against it, asserting on `x:Bind` completion (declared only by
+    `UnoLanguageFrameworkProvider`'s real profile, not the engine's fallback list) - proving type-
+    aware completion actually works end to end for a real Uno project, not just that the
+    process/protocol plumbing is sound.
+  - Getting the fixture test to pass surfaced a real, previously-undiscovered bug: AXSG's own
+    `Directory.Build.props` pinned `Microsoft.CodeAnalysis.Workspaces.MSBuild` at 4.10.0, but
+    UnoDevelop's central package management pins `Microsoft.CodeAnalysis.*` at 5.3.0 for its own
+    Roslyn C#/VB service - and NuGet resolves the actual `Common`/`Workspaces.Common` versions
+    across the whole graph in any build that references AXSG from UnoDevelop, so 5.3.0 always won
+    regardless. The resulting 4.10.0-vs-5.3.0 internal API mismatch threw
+    `System.MissingMethodException` at runtime the instant `MSBuildWorkspace` opened a real
+    project - silently swallowed by `MsBuildCompilationProvider`'s catch-all, so "does
+    MSBuildWorkspace even work when consumed from UnoDevelop" had never actually been verified
+    before this fixture existed. Fixed by bumping AXSG's own version pins to 5.3.0/9.0.0 to match;
+    the catch block now also logs the real exception to stderr permanently, so a regression like
+    this won't be silent again.
+
+  **Still not done**:
   - No Uno Tier-1 fast-snapshot provider (cold start isn't accelerated the way WPF/Avalonia's are).
     Unlike WPF's `Microsoft.WindowsDesktop.App.Ref`, Uno/WinUI has no single reference-assembly-only
     NuGet package that resolves without a prior build, so this needs real design work, not a
     straight copy of the WPF approach.
-  - No restorable Uno.Sdk project fixture to drive real MSBuild evaluation, so nothing yet proves
-    type-aware completion actually works for a real Uno project (only that the process/protocol
-    plumbing is sound) - `UnoLanguageServerIntegrationTests` says so explicitly rather than
-    overclaiming.
-  - **OpenDevelop's own WPF `.xaml` mapping likely has the same `dotnet run` stdout-corruption
-    exposure** (it's the same Base-layer `LspServerRegistry.CreateDefault()`, unchanged) - flagged,
-    not fixed, since no integration test had ever launched that real process before either. Worth a
-    dedicated follow-up.
   - **The underlying AXSG submodule state is fragmented across three uncommitted-upstream local
     lines**, none pushed: a `tiered-completion` branch (this repo's checkout, built on AXSG's own
     unpushed local `main`, carries the Uno provider + a from-scratch tiered-compilation
-    reimplementation + its tests), a separate `wpf` branch (in the *other* local clone at
-    `~/vscode-axaml/src/XamlToCSharpGenerator` - has WPF-specific model types `tiered-completion`
-    lacks, e.g. `XamlCodeBlockDefinition` for `x:Code` blocks), and that same clone's own `main`
-    (has the original tiered-completion commits pre-dating this session's rework). A full merge
-    was attempted and aborted mid-session (real conflicts in `TieredCompilationProvider`,
-    `AvaloniaTypeIndex`, `XamlLanguageServiceEngine`) - reconciling these three lines into one is
-    unresolved and will need a deliberate decision, not another ad-hoc attempt.
+    reimplementation + its tests + the two fixes above), a separate `wpf` branch (in the *other*
+    local clone at `~/vscode-axaml/src/XamlToCSharpGenerator` - has WPF-specific model types
+    `tiered-completion` lacks, e.g. `XamlCodeBlockDefinition` for `x:Code` blocks), and that same
+    clone's own `main` (has the original tiered-completion commits pre-dating this session's
+    rework). A full merge was attempted and aborted mid-session (real conflicts in
+    `TieredCompilationProvider`, `AvaloniaTypeIndex`, `XamlLanguageServiceEngine`) - reconciling
+    these three lines into one is unresolved and will need a deliberate decision, not another
+    ad-hoc attempt.
+  - A malformed/unclosed multi-line XAML element tag returned zero completion items (even the
+    engine's hardcoded fallback ones) when targeted against the real `UnoXamlFixture` compilation,
+    despite the identical shape working fine with no project loaded at all - switching the test to
+    a well-formed, self-closed document fixed it, so this looks like a parser/analysis requirement
+    rather than a real Uno-completion gap, but was not root-caused further (see
+    `UnoLanguageServerIntegrationTests`'s comment).
 
 ### OpenDevelop Has Source, But Not A Clean MVP Migration Target
 
