@@ -201,15 +201,32 @@ a modern technote, MVP implementation, or reusable UI-free service layer.
     the catch block now also logs the real exception to stderr permanently, so a regression like
     this won't be silent again.
 
+  **Closed since the above was written (2)**:
+  - Uno now has a real Tier-1 fast-snapshot provider (`UnoFastCompilationProvider`, in the
+    `XamlLanguageServer.Uno` host, not AXSG core - it's host-specific like WPF's). Since Uno/WinUI
+    has no single fixed reference-assembly package the way WPF's `Microsoft.WindowsDesktop.App.Ref`
+    is (the real assembly set is per-project: Uno.WinUI version, Skia/WebAssembly/mobile runtime
+    backend, Toolkit, fonts, ...), it instead reads the target project's own
+    `obj/project.assets.json` - a NuGet *restore* artifact, not a full build - and resolves the
+    listed `compile` assemblies against `packageFolders` directly into a Roslyn compilation. Only
+    requires a prior restore (which normal project-open flows already trigger), same "instant,
+    still not requiring the user's own code to compile" property Tier 1 exists for.
+    `UnoLanguageServer_Tier1FastSnapshot_ServesFrameworkCompletionBeforeMsBuildFinishes` requests
+    completion with zero delay against the real fixture and asserts on `x:Bind` - proving Tier 1
+    serves something real before the background MSBuild evaluation could plausibly have finished.
+  - Along the way, found (not fixed): **element-type completion against a real, non-null workspace
+    root returned zero items** in every document shape tried (single-line, multi-line, with or
+    without a real MSBuild-backed `Project`, at either tier) - only markup-extension/directive
+    completion (`x:Bind`) was reliably testable this way. This looks like a real, separate gap
+    somewhere in element-name completion specifically when a real workspace root is involved, not
+    anything to do with Tier 1/2 or Uno specifically - genuinely not root-caused, worth a dedicated
+    investigation later.
+
   **Still not done**:
-  - No Uno Tier-1 fast-snapshot provider (cold start isn't accelerated the way WPF/Avalonia's are).
-    Unlike WPF's `Microsoft.WindowsDesktop.App.Ref`, Uno/WinUI has no single reference-assembly-only
-    NuGet package that resolves without a prior build, so this needs real design work, not a
-    straight copy of the WPF approach.
   - **The underlying AXSG submodule state is fragmented across three uncommitted-upstream local
     lines**, none pushed: a `tiered-completion` branch (this repo's checkout, built on AXSG's own
     unpushed local `main`, carries the Uno provider + a from-scratch tiered-compilation
-    reimplementation + its tests + the two fixes above), a separate `wpf` branch (in the *other*
+    reimplementation + its tests + the fixes above), a separate `wpf` branch (in the *other*
     local clone at `~/vscode-axaml/src/XamlToCSharpGenerator` - has WPF-specific model types
     `tiered-completion` lacks, e.g. `XamlCodeBlockDefinition` for `x:Code` blocks), and that same
     clone's own `main` (has the original tiered-completion commits pre-dating this session's
