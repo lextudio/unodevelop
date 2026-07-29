@@ -1,5 +1,6 @@
 using System;
 using System.Threading;
+using XamlLanguageServer.Uno.Workspace;
 using XamlToCSharpGenerator.Core.Models;
 using XamlToCSharpGenerator.LanguageService;
 using XamlToCSharpGenerator.LanguageService.Framework;
@@ -24,16 +25,28 @@ var frameworkRegistry = new XamlLanguageFrameworkRegistryBuilder()
     .Build(FrameworkProfileIds.Uno);
 var options = new XamlLanguageServiceOptions(workspaceRoot, FrameworkId: FrameworkProfileIds.Uno);
 
-// Tier 1 is intentionally absent for now (fastSnapshot: null): unlike WPF's
-// Microsoft.WindowsDesktop.App.Ref, Uno/WinUI has no single reference-assembly
-// NuGet package that resolves without a prior build (see
-// UnoLanguageFrameworkProvider's doc comment on why a dedicated Uno Tier-1
-// provider is deferred). TieredCompilationProvider still prewarms the full
-// compilation eagerly at startup rather than lazily on first keystroke, so
-// requests before prewarm completes fall straight through to Tier 2.
+// Tier 1: built from the target project's own obj/project.assets.json (a NuGet
+// *restore* artifact, not a full build) rather than a single fixed framework
+// package like WPF's Microsoft.WindowsDesktop.App.Ref - Uno/WinUI has no such
+// package, since the real assembly set is per-project (Uno.WinUI version,
+// runtime backend, Toolkit, fonts, ...). See UnoFastCompilationProvider's doc
+// comment. Null (Tier 1 skipped, straight to Tier 2 once ready) if the project
+// has never been restored, or no workspace root was given at all.
+var fastSnapshot = workspaceRoot is not null
+    ? UnoFastCompilationProvider.TryBuildFastSnapshot(workspaceRoot)
+    : null;
+if (fastSnapshot is not null)
+{
+    Console.Error.WriteLine("[UNO-LS] Tier-1 fast snapshot built from project.assets.json.");
+}
+else
+{
+    Console.Error.WriteLine("[UNO-LS] No Tier-1 fast snapshot available (project not yet restored, or no workspace) - starting at Tier 2 only.");
+}
+
 var tieredProvider = new TieredCompilationProvider(
     fullProvider: new MsBuildCompilationProvider(),
-    fastSnapshot: null);
+    fastSnapshot: fastSnapshot);
 
 using var engine = new XamlLanguageServiceEngine(tieredProvider, frameworkRegistry);
 using var server = new AxsgLanguageServer(
@@ -42,12 +55,12 @@ using var server = new AxsgLanguageServer(
     engine,
     options);
 
-// No fast snapshot means every request already goes to Tier 2 (see
-// TieredCompilationProvider.GetCompilationAsync), so there is nothing for
-// open documents to have cached from a Tier 1 that never ran - unlike WPF/
-// Avalonia's hosts, this callback has no stale-cache gap to close. It still
-// exists so a future Uno Tier-1 provider can be added here without touching
-// anything else.
+// When Tier 1 was available, a request for a document that hasn't changed
+// version since a Tier-1-served analysis would otherwise keep returning that
+// stale result even after Tier 2 becomes ready (the analysis cache is keyed on
+// document version, not tier) - see TieredCompilationProvider's own doc
+// comment. Invalidating on prewarm completion closes that gap, matching
+// XamlLanguageServer.Wpf's identical wiring.
 tieredProvider.OnPrewarmCompleted = () =>
 {
     engine.InvalidateAllOpenDocumentCaches();

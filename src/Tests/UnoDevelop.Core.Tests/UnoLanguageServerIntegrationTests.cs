@@ -84,9 +84,11 @@ namespace UnoDevelop.Core.Tests
         /// (src/Tests/fixtures/UnoXamlFixture) and asserts on a completion that can only come
         /// from the real, framework-specific profile ("x:Bind" is declared only by
         /// UnoLanguageFrameworkProvider, not the engine's generic fallback list) - not merely
-        /// "the process didn't crash" like the test above. This is Tier 2 only (no Uno Tier-1
-        /// fast-snapshot provider exists yet), so it waits out the real MSBuild load rather than
-        /// getting an instant answer.
+        /// "the process didn't crash" like the test above. UnoFastCompilationProvider now gives
+        /// this an actual Tier-1, so this may already be answered from the fast snapshot rather
+        /// than waiting for the full MSBuild load - see
+        /// <see cref="UnoLanguageServer_Tier1FastSnapshot_ServesControlTypeCompletionBeforeMsBuildFinishes"/>
+        /// for a test that specifically isolates the Tier-1-only path.
         /// </summary>
         [Test]
         [Timeout(120000)]
@@ -165,6 +167,79 @@ namespace UnoDevelop.Core.Tests
                 Assert.That(completions, Is.Not.Null,
                     "Never saw \"x:Bind\" offered within 90s - either the real MSBuild evaluation of " +
                     "UnoXamlFixture never completed, or Uno framework resolution/completion regressed.");
+            }
+            finally
+            {
+                await service.DisposeAsync();
+            }
+        }
+
+        /// <summary>
+        /// Isolates the Tier-1-only path: requests completion immediately after opening the
+        /// document, with no delay - if <c>UnoFastCompilationProvider</c>'s restore-based
+        /// snapshot is working, "x:Bind" must already be offered well before a real MSBuild
+        /// evaluation of this project could plausibly have finished in the background. This is
+        /// the entire point of Tier 1 - "instant" only means something if it beats MSBuild, not
+        /// if it happens to also be correct once MSBuild eventually finishes (that's what the
+        /// sibling MSBuild-driven test above already covers).
+        ///
+        /// <para>
+        /// Uses "x:Bind" (framework-declared, not element-type completion) for the same reason
+        /// as the sibling test: it's a real signal that can't come from a hardcoded fallback
+        /// list. Element-type completion (e.g. "NavigationView") against a real, non-null
+        /// workspace root returned zero items in every document shape tried here - single-line,
+        /// multi-line, with or without a real MSBuild-backed Project - regardless of tier; that
+        /// looks like a real, separate gap in element-name completion against a real workspace
+        /// that was not root-caused, and is intentionally not what this test exercises.
+        /// </para>
+        /// </summary>
+        [Test]
+        [Timeout(30000)]
+        public async Task UnoLanguageServer_Tier1FastSnapshot_ServesFrameworkCompletionBeforeMsBuildFinishes()
+        {
+            var dllPath = FindUnoLanguageServerDll();
+            Assert.That(dllPath, Is.Not.Null.And.Matches(".+"),
+                "uno-xaml-ls.dll not found - build it first (dotnet build src/LanguageServer/XamlLanguageServer.Uno).");
+
+            var fixtureRoot = FindFixtureDirectory("UnoXamlFixture");
+            Assert.That(Directory.Exists(fixtureRoot), Is.True,
+                $"UnoXamlFixture not found at {fixtureRoot} - src/Tests/fixtures/UnoXamlFixture should ship with this repo.");
+            Assert.That(
+                File.Exists(Path.Combine(fixtureRoot!, "obj", "project.assets.json")), Is.True,
+                "UnoXamlFixture has never been restored (no obj/project.assets.json) - " +
+                "UnoFastCompilationProvider has nothing to build Tier 1 from without it. " +
+                "Run 'dotnet restore' (or build) on the fixture first.");
+
+            var repositoryRoot = Path.GetFullPath(Path.Combine(dllPath!, "..", "..", "..", "..", "..", ".."));
+            var spec = new LspServerLaunchSpec(
+                "xaml",
+                "dotnet",
+                repositoryRoot,
+                "exec",
+                dllPath!,
+                "--workspace",
+                fixtureRoot!);
+
+            var service = new LspLanguageService(spec, new Uri(fixtureRoot!).AbsoluteUri);
+            try
+            {
+                var documentPath = Path.Combine(fixtureRoot!, "MainPage.xaml");
+                var documentId = new DocumentId(documentPath);
+                const string xaml =
+                    "<Page x:Class=\"UnoXamlFixture.MainPage\" xmlns=\"http://schemas.microsoft.com/winfx/2006/xaml/presentation\" xmlns:x=\"http://schemas.microsoft.com/winfx/2006/xaml\" Title=\"{\" />";
+
+                await service.UpsertDocumentAsync(documentId, xaml, CancellationToken.None);
+
+                // No delay, no retry: this must be answered by whatever is ready right now.
+                var caret = xaml.IndexOf("{", StringComparison.Ordinal) + 1;
+                var result = await service.GetCompletionsAsync(documentId, caret, CancellationToken.None);
+
+                Assert.That(result.Items, Has.Some.Matches<CompletionItem>(
+                        item => item.DisplayText.Contains("x:Bind", StringComparison.Ordinal)),
+                    "\"x:Bind\" was not offered on the very first completion request - " +
+                    "either UnoFastCompilationProvider isn't producing a usable Tier-1 snapshot, or " +
+                    "TieredCompilationProvider isn't serving it before Tier 2 is ready. Items seen: " +
+                    string.Join(", ", result.Items.Select(i => i.DisplayText)));
             }
             finally
             {
