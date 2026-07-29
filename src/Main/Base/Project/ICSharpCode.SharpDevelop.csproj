@@ -65,7 +65,7 @@
              Link="Upstream\Commands\SaveAllFiles.cs" />
     <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Parser\LanguageServiceParserAdapter.cs"
              Link="Upstream\Parser\LanguageServiceParserAdapter.cs" />
-    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\SharpDevelop\Parser\UnknownCodeContext.cs"
+    <Compile Include="$(SharpDevelopSourceRoot)\src\Main\Base\Project\Src\Parser\UnknownCodeContext.cs"
              Link="Upstream\Parser\UnknownCodeContext.cs" />
     <Compile Include="..\Src\Migration\BaseMigrationBatch.cs" />
     <Compile Include="..\Src\Workspace\WorkspaceDescriptor.cs" />

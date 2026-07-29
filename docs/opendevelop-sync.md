@@ -323,8 +323,14 @@ because LibreWPF MVP has fully modernized them. Do not use their presence as a m
 
 ### Open Test Debt
 
-- Rewrite `UnoDevelopDependenciesSnapshotFactoryTests.cs.disabled` against the current OpenDevelop CPS API.
-- Add regression coverage for solution-explorer context-menu hit testing and flyout command routing.
+- Done: `UnoDevelopDependenciesSnapshotFactoryTests.cs.disabled` rewritten as
+  `UnoDevelopDependenciesSnapshotFactoryTests.cs`, now exercising the current
+  `SharpDevelopDependenciesSnapshotFactory` API (`BuildTreeAsync`/`PruneSessionsExceptAsync`/
+  `ClearAllAsync` over `MutableProjectTree`) instead of the retired `BuildSnapshotAsync`. Covers
+  session reuse across repeated calls, TFM-set-change rebuild, and prune/dispose-and-rebuild — the
+  behaviors that live specifically in the factory rather than in `ProjectSystemTreeProviderTests`'s
+  already-existing end-to-end tree-shape coverage. Verified via `UnoDevelop.Core.Tests` (228/228).
+- Still needed: regression coverage for solution-explorer context-menu hit testing and flyout command routing.
 - Keep full integration verification on the MTP runner path documented in `AGENTS.md`.
 
 ## Deliberately Not Unified

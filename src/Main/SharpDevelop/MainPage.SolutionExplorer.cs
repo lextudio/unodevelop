@@ -273,7 +273,9 @@ public partial class MainPage
         }
     }
 
-    private static ProjectBrowserNodeContext? TryResolveNodeContext(object originalSource)
+    // internal (not private) so SolutionExplorerContextMenuTests in UnoDevelop.Core.Tests
+    // (covered by the InternalsVisibleTo below) can exercise the visual-tree walk directly.
+    internal static ProjectBrowserNodeContext? TryResolveNodeContext(object originalSource)
     {
         for (var current = originalSource as DependencyObject; current is not null; current = VisualTreeHelper.GetParent(current))
         {

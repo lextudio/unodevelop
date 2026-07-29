@@ -10,10 +10,16 @@ namespace UnoDevelop.Core.Tests;
 /// <summary>
 /// Exercises the real linked CPS dependency dataflow pipeline end-to-end (MSBuildDependencySubscriber
 /// + DependenciesSnapshotProvider + the manual composition/active-configuration wiring added in
-/// slice 43 — see externals/OpenDevelop/doc/technotes/project-system.md), rather than the imperative DependencyTreeBridgeBuilder path.
+/// slice 43 — see externals/OpenDevelop/doc/technotes/project-system.md), rather than the imperative
+/// DependencyTreeBridgeBuilder path. Exercised through the current public API
+/// (<see cref="SharpDevelopDependenciesSnapshotFactory.BuildTreeAsync"/>/<see cref="SharpDevelopDependenciesSnapshotFactory.PruneSessionsExceptAsync"/>/
+/// <see cref="SharpDevelopDependenciesSnapshotFactory.ClearAllAsync"/>) rather than the retired,
+/// internal <c>BuildSnapshotAsync</c> — <see cref="ProjectSystemTreeProviderTests"/> already covers
+/// the resulting tree shape end-to-end through <c>UnoDevelopProjectTreeProvider</c>; these tests
+/// instead focus on behavior that lives specifically in this factory: session reuse across repeated
+/// calls, rebuilding when a project's target framework set changes, and pruning/disposing sessions.
 /// </summary>
 [TestFixture]
-[Ignore("Targets a retired BuildSnapshotAsync API; SharpDevelopDependenciesSnapshotFactory now exposes BuildTreeAsync/PruneSessionsExceptAsync/ClearAllAsync over MutableProjectTree. Needs a full rewrite against the current API - see opendevelop-sync.md Phase 1.")]
 public sealed class SharpDevelopDependenciesSnapshotFactoryTests
 {
     [Test]
@@ -31,13 +37,10 @@ public sealed class SharpDevelopDependenciesSnapshotFactoryTests
 
         var itemsByTfm = new Dictionary<string, IReadOnlyList<DependencyBridgeItem>> { [""] = items };
 
-        var snapshot = await SharpDevelopDependenciesSnapshotFactory.BuildSnapshotAsync("/fake/App.csproj", itemsByTfm);
+        var tree = await SharpDevelopDependenciesSnapshotFactory.BuildTreeAsync("/fake/App.csproj", itemsByTfm);
 
-        Assert.That(snapshot, Is.Not.Null);
-        Assert.That(snapshot!.DependenciesBySlice.Count, Is.EqualTo(1));
-
-        var slice = snapshot.DependenciesBySlice[snapshot.PrimarySlice];
-        var groupNames = slice.DependenciesByType.Keys.Select(g => g.Caption).ToImmutableHashSet();
+        Assert.That(tree, Is.Not.Null);
+        var groupNames = tree!.Children.Select(child => child.Caption).ToImmutableHashSet();
 
         Assert.That(groupNames, Does.Contain("Packages"));
         Assert.That(groupNames, Does.Contain("Assemblies"));
@@ -50,8 +53,10 @@ public sealed class SharpDevelopDependenciesSnapshotFactoryTests
         Assert.That(groupNames, Does.Not.Contain("Frameworks"));
         Assert.That(groupNames, Does.Not.Contain("COM"));
 
-        var packages = slice.DependenciesByType.Single(kv => kv.Key.Caption == "Packages").Value;
-        Assert.That(packages.Single().Caption, Is.EqualTo("Newtonsoft.Json (13.0.3)"));
+        var packages = tree.Children.Single(child => child.Caption == "Packages");
+        Assert.That(packages.Children.Single().Caption, Is.EqualTo("Newtonsoft.Json (13.0.3)"));
+
+        await SharpDevelopDependenciesSnapshotFactory.ClearAllAsync();
     }
 
     [Test]
@@ -73,19 +78,21 @@ public sealed class SharpDevelopDependenciesSnapshotFactoryTests
             ["net9.0"] = net9Items,
         };
 
-        var snapshot = await SharpDevelopDependenciesSnapshotFactory.BuildSnapshotAsync("/fake/Multi.csproj", itemsByTfm);
+        var tree = await SharpDevelopDependenciesSnapshotFactory.BuildTreeAsync("/fake/Multi.csproj", itemsByTfm);
 
-        Assert.That(snapshot, Is.Not.Null);
-        Assert.That(snapshot!.DependenciesBySlice.Count, Is.EqualTo(2));
+        Assert.That(tree, Is.Not.Null);
+        Assert.That(tree!.Children.Select(child => child.Caption), Is.EquivalentTo(new[] { "net8.0", "net9.0" }));
 
-        var net8Slice = snapshot.DependenciesBySlice.Values.Single(s => s.ConfiguredProject.ProjectConfiguration.Dimensions["TargetFramework"] == "net8.0");
-        var net9Slice = snapshot.DependenciesBySlice.Values.Single(s => s.ConfiguredProject.ProjectConfiguration.Dimensions["TargetFramework"] == "net9.0");
+        var net8Slice = tree.Children.Single(child => child.Caption == "net8.0");
+        var net9Slice = tree.Children.Single(child => child.Caption == "net9.0");
 
-        var net8Packages = net8Slice.DependenciesByType.Single(kv => kv.Key.Caption == "Packages").Value;
-        var net9Packages = net9Slice.DependenciesByType.Single(kv => kv.Key.Caption == "Packages").Value;
+        var net8Packages = net8Slice.Children.Single(child => child.Caption == "Packages");
+        var net9Packages = net9Slice.Children.Single(child => child.Caption == "Packages");
 
-        Assert.That(net8Packages.Select(d => d.Caption), Is.EquivalentTo(new[] { "Common.Pkg (1.0.0)", "Net8Only.Pkg (2.0.0)" }));
-        Assert.That(net9Packages.Select(d => d.Caption), Is.EquivalentTo(new[] { "Common.Pkg (1.0.0)" }));
+        Assert.That(net8Packages.Children.Select(d => d.Caption), Is.EquivalentTo(new[] { "Common.Pkg (1.0.0)", "Net8Only.Pkg (2.0.0)" }));
+        Assert.That(net9Packages.Children.Select(d => d.Caption), Is.EquivalentTo(new[] { "Common.Pkg (1.0.0)" }));
+
+        await SharpDevelopDependenciesSnapshotFactory.ClearAllAsync();
     }
 
     [Test]
@@ -94,43 +101,45 @@ public sealed class SharpDevelopDependenciesSnapshotFactoryTests
         // Slice 47: the dataflow graph (DependenciesSnapshotSession) is kept alive per project path
         // rather than rebuilt from scratch every call. This proves reuse actually works — not just
         // that a second call doesn't crash, but that posting new evaluation data through the same
-        // long-lived graph produces a snapshot reflecting the new data.
+        // long-lived graph produces a tree reflecting the new data.
         var projectPath = "/fake/Incremental.csproj";
 
         var firstItems = new List<DependencyBridgeItem>
         {
             new(DependencyBridgeItemKind.Package, "First.Pkg", null, ImmutableDictionary<string, string>.Empty.Add("Version", "1.0.0")),
         };
-        var firstSnapshot = await SharpDevelopDependenciesSnapshotFactory.BuildSnapshotAsync(
+        var firstTree = await SharpDevelopDependenciesSnapshotFactory.BuildTreeAsync(
             projectPath, new Dictionary<string, IReadOnlyList<DependencyBridgeItem>> { [""] = firstItems });
 
-        Assert.That(firstSnapshot, Is.Not.Null);
-        var firstPackages = firstSnapshot!.DependenciesBySlice[firstSnapshot.PrimarySlice].DependenciesByType.Single(kv => kv.Key.Caption == "Packages").Value;
-        Assert.That(firstPackages.Select(d => d.Caption), Is.EquivalentTo(new[] { "First.Pkg (1.0.0)" }));
+        Assert.That(firstTree, Is.Not.Null);
+        var firstPackages = firstTree!.Children.Single(child => child.Caption == "Packages");
+        Assert.That(firstPackages.Children.Select(d => d.Caption), Is.EquivalentTo(new[] { "First.Pkg (1.0.0)" }));
 
         var secondItems = new List<DependencyBridgeItem>
         {
             new(DependencyBridgeItemKind.Package, "First.Pkg", null, ImmutableDictionary<string, string>.Empty.Add("Version", "1.0.0")),
             new(DependencyBridgeItemKind.Package, "Second.Pkg", null, ImmutableDictionary<string, string>.Empty.Add("Version", "2.0.0")),
         };
-        var secondSnapshot = await SharpDevelopDependenciesSnapshotFactory.BuildSnapshotAsync(
+        var secondTree = await SharpDevelopDependenciesSnapshotFactory.BuildTreeAsync(
             projectPath, new Dictionary<string, IReadOnlyList<DependencyBridgeItem>> { [""] = secondItems });
 
-        Assert.That(secondSnapshot, Is.Not.Null);
-        var secondPackages = secondSnapshot!.DependenciesBySlice[secondSnapshot.PrimarySlice].DependenciesByType.Single(kv => kv.Key.Caption == "Packages").Value;
-        Assert.That(secondPackages.Select(d => d.Caption), Is.EquivalentTo(new[] { "First.Pkg (1.0.0)", "Second.Pkg (2.0.0)" }));
+        Assert.That(secondTree, Is.Not.Null);
+        var secondPackages = secondTree!.Children.Single(child => child.Caption == "Packages");
+        Assert.That(secondPackages.Children.Select(d => d.Caption), Is.EquivalentTo(new[] { "First.Pkg (1.0.0)", "Second.Pkg (2.0.0)" }));
 
-        // And removing a package from the evaluation data removes it from the resulting snapshot too.
+        // And removing a package from the evaluation data removes it from the resulting tree too.
         var thirdItems = new List<DependencyBridgeItem>
         {
             new(DependencyBridgeItemKind.Package, "Second.Pkg", null, ImmutableDictionary<string, string>.Empty.Add("Version", "2.0.0")),
         };
-        var thirdSnapshot = await SharpDevelopDependenciesSnapshotFactory.BuildSnapshotAsync(
+        var thirdTree = await SharpDevelopDependenciesSnapshotFactory.BuildTreeAsync(
             projectPath, new Dictionary<string, IReadOnlyList<DependencyBridgeItem>> { [""] = thirdItems });
 
-        Assert.That(thirdSnapshot, Is.Not.Null);
-        var thirdPackages = thirdSnapshot!.DependenciesBySlice[thirdSnapshot.PrimarySlice].DependenciesByType.Single(kv => kv.Key.Caption == "Packages").Value;
-        Assert.That(thirdPackages.Select(d => d.Caption), Is.EquivalentTo(new[] { "Second.Pkg (2.0.0)" }));
+        Assert.That(thirdTree, Is.Not.Null);
+        var thirdPackages = thirdTree!.Children.Single(child => child.Caption == "Packages");
+        Assert.That(thirdPackages.Children.Select(d => d.Caption), Is.EquivalentTo(new[] { "Second.Pkg (2.0.0)" }));
+
+        await SharpDevelopDependenciesSnapshotFactory.ClearAllAsync();
     }
 
     [Test]
@@ -141,13 +150,13 @@ public sealed class SharpDevelopDependenciesSnapshotFactoryTests
         // incorrectly or left stale.
         var projectPath = "/fake/RetargetedApp.csproj";
 
-        var singleTfmSnapshot = await SharpDevelopDependenciesSnapshotFactory.BuildSnapshotAsync(
+        var singleTfmTree = await SharpDevelopDependenciesSnapshotFactory.BuildTreeAsync(
             projectPath,
             new Dictionary<string, IReadOnlyList<DependencyBridgeItem>> { [""] = new List<DependencyBridgeItem>() });
-        Assert.That(singleTfmSnapshot, Is.Not.Null);
-        Assert.That(singleTfmSnapshot!.DependenciesBySlice.Count, Is.EqualTo(1));
+        Assert.That(singleTfmTree, Is.Not.Null);
+        Assert.That(singleTfmTree!.Children.Any(child => child.Caption is "net8.0" or "net9.0"), Is.False);
 
-        var multiTfmSnapshot = await SharpDevelopDependenciesSnapshotFactory.BuildSnapshotAsync(
+        var multiTfmTree = await SharpDevelopDependenciesSnapshotFactory.BuildTreeAsync(
             projectPath,
             new Dictionary<string, IReadOnlyList<DependencyBridgeItem>>
             {
@@ -155,8 +164,10 @@ public sealed class SharpDevelopDependenciesSnapshotFactoryTests
                 ["net9.0"] = new List<DependencyBridgeItem>(),
             });
 
-        Assert.That(multiTfmSnapshot, Is.Not.Null);
-        Assert.That(multiTfmSnapshot!.DependenciesBySlice.Count, Is.EqualTo(2));
+        Assert.That(multiTfmTree, Is.Not.Null);
+        Assert.That(multiTfmTree!.Children.Select(child => child.Caption), Is.EquivalentTo(new[] { "net8.0", "net9.0" }));
+
+        await SharpDevelopDependenciesSnapshotFactory.ClearAllAsync();
     }
 
     [Test]
@@ -180,21 +191,23 @@ public sealed class SharpDevelopDependenciesSnapshotFactoryTests
             [""] = new List<DependencyBridgeItem> { new(DependencyBridgeItemKind.Package, "Removed.Pkg", null, ImmutableDictionary<string, string>.Empty.Add("Version", "1.0.0")) },
         };
 
-        Assert.That(await SharpDevelopDependenciesSnapshotFactory.BuildSnapshotAsync(keptPath, keptItems), Is.Not.Null);
-        Assert.That(await SharpDevelopDependenciesSnapshotFactory.BuildSnapshotAsync(removedPath, removedItems), Is.Not.Null);
+        Assert.That(await SharpDevelopDependenciesSnapshotFactory.BuildTreeAsync(keptPath, keptItems), Is.Not.Null);
+        Assert.That(await SharpDevelopDependenciesSnapshotFactory.BuildTreeAsync(removedPath, removedItems), Is.Not.Null);
 
         // Simulate a Solution Explorer rebuild where only "kept" is still in the solution.
         await SharpDevelopDependenciesSnapshotFactory.PruneSessionsExceptAsync(new[] { keptPath });
 
         // The removed project's session was disposed; rebuilding it must produce a fresh, working
         // session (not throw ObjectDisposedException, not hang against a faulted/disposed provider).
-        var rebuiltSnapshot = await SharpDevelopDependenciesSnapshotFactory.BuildSnapshotAsync(removedPath, removedItems);
-        Assert.That(rebuiltSnapshot, Is.Not.Null);
-        var rebuiltPackages = rebuiltSnapshot!.DependenciesBySlice[rebuiltSnapshot.PrimarySlice].DependenciesByType.Single(kv => kv.Key.Caption == "Packages").Value;
-        Assert.That(rebuiltPackages.Select(d => d.Caption), Is.EquivalentTo(new[] { "Removed.Pkg (1.0.0)" }));
+        var rebuiltTree = await SharpDevelopDependenciesSnapshotFactory.BuildTreeAsync(removedPath, removedItems);
+        Assert.That(rebuiltTree, Is.Not.Null);
+        var rebuiltPackages = rebuiltTree!.Children.Single(child => child.Caption == "Packages");
+        Assert.That(rebuiltPackages.Children.Select(d => d.Caption), Is.EquivalentTo(new[] { "Removed.Pkg (1.0.0)" }));
 
         // The kept project's session was untouched by the prune and still works normally.
-        var keptSnapshot = await SharpDevelopDependenciesSnapshotFactory.BuildSnapshotAsync(keptPath, keptItems);
-        Assert.That(keptSnapshot, Is.Not.Null);
+        var keptTree = await SharpDevelopDependenciesSnapshotFactory.BuildTreeAsync(keptPath, keptItems);
+        Assert.That(keptTree, Is.Not.Null);
+
+        await SharpDevelopDependenciesSnapshotFactory.ClearAllAsync();
     }
 }
