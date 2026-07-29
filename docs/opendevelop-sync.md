@@ -127,7 +127,77 @@ a modern technote, MVP implementation, or reusable UI-free service layer.
 - `AddIns/BackendBindings/XamlBinding`
   - OpenDevelop and UnoDevelop both have XAML language-service/design notes.
   - UnoDevelop direction is native Uno/WinUI plus LSP/shared language-service contracts.
-  - Status: partially unified.
+  - Status: partially unified, real progress this session, real gaps remain - see below.
+
+  **What's shared and working**: AXSG (`XamlToCSharpGenerator`, the submodule nested at
+  `externals/OpenDevelop/externals/vscode-wpf/external/wxsg/external/XamlToCSharpGenerator`) is a
+  genuinely framework-agnostic XAML LSP engine now. `XamlLanguageServiceEngine`'s core constructor
+  only depends on `ICompilationProvider` (a Roslyn `Compilation` source - this is where the shared,
+  framework-neutral `TieredCompilationProvider` two-tier compilation pipeline plugs in) and
+  `IXamlFrameworkProfile` (all framework-specific XAML semantics: build contract, semantic binder,
+  emitter, parser settings). A host mounts exactly the framework(s) it needs and never has to touch
+  the engine itself:
+  - **WPF**: real, deep `WpfFrameworkProfile` lives in `wxsg`'s own `XamlToCSharpGenerator.WPF`
+    project (external to AXSG core), consumed by `vscode-wpf/src/XamlLanguageServer.Wpf` (the
+    `wpf-xaml-ls` process both OpenDevelop and UnoDevelop launch for `.xaml` via
+    `LspServerRegistry`). Has its own WPF-specific Tier-1 fast-snapshot provider
+    (`Microsoft.WindowsDesktop.App.Ref`), full test coverage (`XamlLanguageServer.Wpf.Tests`,
+    10/10 passing), and is the most mature of these integrations.
+  - **Avalonia**: deep `AvaloniaFrameworkProfile` ships inside AXSG core itself, with its own Tier-1
+    provider (`AvaloniaFastCompilationProvider`, reads the Avalonia SDK's build-output references
+    file) and an on-disk Tier-1 type-index cache.
+  - **WinUI / MAUI**: "passive" providers (`PassiveXamlFrameworkProfile`) ship inside AXSG core -
+    "passive" means no code-generation contribution, not degraded language service: completions and
+    definitions are still driven off the project's real compilation (confirmed via a test asserting
+    a control that only exists in a synthetic test compilation gets offered), just without a
+    hand-tuned control catalog or Tier-1 provider of their own.
+  - **Uno** (new this session): `UnoLanguageFrameworkProvider`, same passive-profile shape as
+    WinUI/MAUI (Uno's XAML dialect *is* WinUI's - same presentation xmlns, `x:Bind`, `using:`
+    prefixes - just served by Uno.UI's assemblies instead of the Windows App SDK). Detection
+    priority outranks WinUI's own checks since an Uno project also carries `Microsoft.UI.Xaml`
+    types WinUI's heuristics would otherwise claim. `IXamlLanguageFrameworkProvider`'s detection
+    members (`CanResolveFrom*`, `DetectionPriority`) were changed from required to optional
+    (C# default interface members) in the same change - a host dedicated to one framework (like the
+    new UnoDevelop host below) should not have to implement, or pay for, heuristics it will never
+    call; it names its framework explicitly via `XamlLanguageServiceOptions.FrameworkId` instead.
+  - **UnoDevelop's own host**: `src/LanguageServer/XamlLanguageServer.Uno` (new), mirroring
+    `XamlLanguageServer.Wpf`'s shape - mounts `UnoLanguageFrameworkProvider` explicitly, wires
+    `TieredCompilationProvider` with `fastSnapshot: null` (no Uno Tier-1 provider yet - see below).
+    `ServiceBootstrapper.Initialize()` overwrites the Base-layer `LspServerRegistry`'s default
+    `.xaml` → WPF mapping with this host and adds `.xaml` to the extension-registration loop, which
+    had never included it before - UnoDevelop had no `.xaml` LSP wiring at all prior to this.
+    Launches via `dotnet exec <prebuilt dll>`, not `dotnet run --project <csproj>`: a real bug was
+    found where a plain `dotnet run` can trigger an implicit restore/build whose NuGet/MSBuild
+    progress writes to stdout - the exact stream the stdio-framed LSP protocol lives on, corrupting
+    every frame after it (confirmed directly: 7496 bytes of NuGet warnings on stdout before the
+    process ever spoke LSP). `UnoLanguageServerIntegrationTests` (new, in
+    `UnoDevelop.Core.Tests`) launches the real `uno-xaml-ls` process and round-trips a real LSP
+    handshake + completion/hover request - proving the process launches and speaks LSP correctly,
+    end to end, for the first time.
+
+  **Known gaps, not yet done**:
+  - No Uno Tier-1 fast-snapshot provider (cold start isn't accelerated the way WPF/Avalonia's are).
+    Unlike WPF's `Microsoft.WindowsDesktop.App.Ref`, Uno/WinUI has no single reference-assembly-only
+    NuGet package that resolves without a prior build, so this needs real design work, not a
+    straight copy of the WPF approach.
+  - No restorable Uno.Sdk project fixture to drive real MSBuild evaluation, so nothing yet proves
+    type-aware completion actually works for a real Uno project (only that the process/protocol
+    plumbing is sound) - `UnoLanguageServerIntegrationTests` says so explicitly rather than
+    overclaiming.
+  - **OpenDevelop's own WPF `.xaml` mapping likely has the same `dotnet run` stdout-corruption
+    exposure** (it's the same Base-layer `LspServerRegistry.CreateDefault()`, unchanged) - flagged,
+    not fixed, since no integration test had ever launched that real process before either. Worth a
+    dedicated follow-up.
+  - **The underlying AXSG submodule state is fragmented across three uncommitted-upstream local
+    lines**, none pushed: a `tiered-completion` branch (this repo's checkout, built on AXSG's own
+    unpushed local `main`, carries the Uno provider + a from-scratch tiered-compilation
+    reimplementation + its tests), a separate `wpf` branch (in the *other* local clone at
+    `~/vscode-axaml/src/XamlToCSharpGenerator` - has WPF-specific model types `tiered-completion`
+    lacks, e.g. `XamlCodeBlockDefinition` for `x:Code` blocks), and that same clone's own `main`
+    (has the original tiered-completion commits pre-dating this session's rework). A full merge
+    was attempted and aborted mid-session (real conflicts in `TieredCompilationProvider`,
+    `AvaloniaTypeIndex`, `XamlLanguageServiceEngine`) - reconciling these three lines into one is
+    unresolved and will need a deliberate decision, not another ad-hoc attempt.
 
 ### OpenDevelop Has Source, But Not A Clean MVP Migration Target
 
