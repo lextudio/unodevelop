@@ -5,6 +5,8 @@
 [submodule "externals/XAMLStudio"]
 	path = externals/XAMLStudio
 	url = https://github.com/lextudio/xamlstudio.git
+	shallow = true
 [submodule "externals/OpenDevelop"]
 	path = externals/OpenDevelop
 	url = https://github.com/lextudio/OpenDevelop
+	shallow = true
